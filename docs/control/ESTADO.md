@@ -14,7 +14,7 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 4 |
+| Terminadas | 5 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -23,26 +23,27 @@
 ## Qué se puede probar hoy en la aplicación
 
 Léelo antes de instalar el APK y reportar que algo "no funciona". La
-aplicación todavía no autentica a nadie: lo que hay son pantallas conectadas
-al grafo y una fuente de datos en memoria.
+aplicación ya inicia sesión y registra, pero contra una fuente de datos **en
+memoria**: no hay Supabase todavía.
 
 | Si haces esto | Pasa esto hoy | Lo arregla |
 |---|---|---|
 | Abres la aplicación | P-01 espera 800 ms y te deja en P-02 | — |
 | Estás en P-02 (iniciar sesión) | La pantalla real: marca, los dos campos y los enlaces a P-03 y P-04 | — |
-| Pulsas **Iniciar sesión** con un correo válido y cualquier contraseña | Entra **siempre como cliente**, a P-05. No se comprueba la cuenta: no se llama a `RepositorioAuth` | `S2-T05` |
-| Quieres entrar como trabajador | Desde P-02 no se puede todavía. Regístrate como trabajador en P-03 | `S2-T05` |
+| Entras con una cuenta de la fuente falsa, como `juan.perez@ejemplo.com` | Llegas a P-05 o P-10 **según el rol de la cuenta**. La fuente falsa **no revisa la contraseña**: cualquiera sirve | `S2-T07` |
+| Entras con un correo que no existe | "Correo o contraseña incorrectos" y lo escrito se queda | — |
 | Entras a P-03 desde el marcador de P-02 | La pantalla real de registro, con sus cinco campos y el selector de rol | — |
 | Confirmas el registro **sin elegir rol** | Te reclama el rol y no hace nada más | — |
 | Escribes un correo sin arroba y sales del campo | Sale "Ese correo no se ve bien, revísalo" debajo. Se borra en cuanto vuelves a escribir | — |
 | Pulsas el botón de P-02 o P-03 con campos mal | Marca **todos** los que fallan, no avanza y deja el foco en el primero | — |
 | Entras en P-02 con una contraseña de un carácter | **Entra.** Al iniciar sesión solo se exige que no esté vacía (5.2); el mínimo de 8 es del registro | — |
-| Confirmas el registro **con rol** | Te manda a P-05 o P-10. **No se crea ninguna cuenta**: no se llama a `RepositorioAuth`, no se guarda nada, no se comprueba si el correo ya existe | `S2-T05` |
+| Te registras con un correo nuevo | Se crea la cuenta **en memoria** y entras a P-05 o P-10 según el rol. Con ese correo ya puedes iniciar sesión | `S2-T07` |
+| Te registras con un correo que ya existe | "El correo ya está registrado, inicia sesión" y no se borra nada | — |
 | Cierras y vuelves a abrir | No hay cuenta que recordar, ni sesión | `S2-T08`, `S2-T09` |
 
-**Cuando `S2-T05` esté hecha, el alta seguirá sin ser real.** Escribirá en
-`FuenteDatosFalsa`, que vive en memoria: vas a poder registrarte y entrar, y
-la cuenta desaparece al reiniciar la aplicación. Cuentas de verdad, contra
+**El alta todavía no es real.** Escribe en `FuenteDatosFalsa`, que vive en
+memoria: puedes registrarte y entrar, y la cuenta desaparece al reiniciar la
+aplicación. Cuentas de verdad, contra
 Supabase Auth, son `S2-T07`. `H-10` ya se cerró: `DEC-25` decide que el
 registro deja sesión abierta, así que `S2-T07` va con la confirmación por
 correo de Supabase Auth desactivada.
@@ -60,6 +61,27 @@ _Ninguna._
 | Desde | — |
 
 ## Última tarea terminada
+
+**`S2-T05` — ViewModels y estados de UI del flujo de autenticación.** 2026-09-23.
+Rama `feat/S2-T05-viewmodels-autenticacion`, pull request **sin abrir
+todavía**. **Sale de la rama de `S2-T04`**,
+`feat/S2-T04-validaciones-formularios`, que todavía no está en `main`: hay que
+integrar primero esa.
+
+Ticket `docs/tareas/S2-T05.md`, redactado por el agente. El alcance salió de
+las secciones 2.2 a 2.4, 3.3 a 3.5 y 6 de `docs/producto/DISENO-AUTENTICACION.md`.
+
+- `ui/pantallas/IniciarSesionViewModel.kt` y `RegistroViewModel.kt`: `@HiltViewModel` que reciben `RepositorioAuth`, la interfaz. Exponen `StateFlow` con los contratos de 2.2 y 3.3 y un método por evento de 2.3 y 3.4. Al enviar normalizan como pide 1.6 y resuelven el resultado con las matrices de 2.4 y 3.5: `Exito` fija `destino` según el rol, y `Error` fija `errorPantalla` conservando lo escrito, con `mensajePantalla` solo en `VALIDACION` del registro. `LIMITE_IA` se pinta como `DESCONOCIDO` (sección 6).
+- `EstadoRegistro.kt`: gana `destino`, como pide 3.3.
+- `IniciarSesionPantalla.kt` y `RegistroPantalla.kt`: ya no guardan estado. Toman su ViewModel con `hiltViewModel()` y navegan cuando hay `destino`, consumiéndolo de inmediato. Los `listSaver` salieron: el ViewModel sobrevive al giro. El contenido visual no cambió.
+- `ui/navegacion/GrafoNavegacion.kt`: `entrarConSesion` navega al destino limpiando la pila del subgrafo de autenticación y sigue fijando `MarcadorSesionTemporal`, que P-01 lee hasta `S2-T09`.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 113 pruebas unitarias, 27 nuevas en `IniciarSesionViewModelTest` y `RegistroViewModelTest`: pasan todas **menos las 2 de `SplashViewModelTest`** que ya fallaban (hallazgo de `S2-T04`).
+  - 33 pruebas instrumentadas de P-02 y P-03 pasando, 0 fallas, con el ViewModel real contra la fuente falsa.
+  - Recorrido a mano en emulador `Pixel_8` con la aplicación completa: `noexiste@ejemplo.com` muestra "Correo o contraseña incorrectos" y conserva lo escrito; `juan.perez@ejemplo.com` entra a P-05 como cliente; un correo escrito en P-02 sigue ahí después de girar a horizontal. Sin excepciones en logcat.
+- **Desvío: el ViewModel de P-04 no se hizo.** La sección 9 lo asigna a esta tarea, pero su pantalla es `S2-T10` y no existe: sería código que nadie llama (AGENTS.md §7). Lo construye `S2-T10` con el contrato de 4.3. **Para que el líder lo confirme.**
+- **La fila "`Exito(Usuario)` sin sesión" de 3.5 no se implementó** porque `DEC-25` la eliminó: el registro deja la sesión abierta. `registrar` sigue devolviendo `Usuario`; el cambio a `Sesion` es de `S2-T06` y `S2-T07`.
 
 **`S2-T04` — Validaciones de formularios y mensajes de error.** 2026-09-23.
 Rama `feat/S2-T04-validaciones-formularios`, pull request **#11**, abierto desde el fork `michaelleonmoso25-MLM/don-chambitas`. **El #10 de Ricardo5690 implementa la misma tarea**: se trabajaron en paralelo sin saberlo, y el líder decide cuál integrar.
@@ -345,13 +367,12 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T05` — ViewModels y estados de UI del flujo de autenticación
-(prioridad 850, sprint 2, depende de: S1-T13, hecha)
+`S2-T06` — Contrato de la API de autenticación (endpoints, payloads y errores)
+(prioridad 800, sprint 2, sin dependencias)
 
-**No tiene ticket**: hay que redactarlo antes de tomarla, como se hizo con
-`S2-T03` y `S2-T04`. Hoy el estado y la validación de P-02 y P-03 viven en la
-pantalla; `S2-T05` los mueve al ViewModel reutilizando `ValidacionesAuth` tal
-cual, y hace ahí la normalización de 1.6 al enviar.
+**No tiene ticket**: hay que redactarlo antes de tomarla. Recoge dos
+consecuencias ya decididas: `DEC-25` (`registrar` devuelve `Sesion`) y
+`DEC-27` (el `redirectTo` de recuperación).
 
 ## Los dos huecos de S2-T01, ya cerrados
 
