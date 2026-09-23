@@ -15,6 +15,9 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import mx.donchambitas.app.R
+import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
+import mx.donchambitas.app.datos.falso.RepositorioAuthFalso
+import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.dominio.modelo.RolUsuario
 import mx.donchambitas.app.ui.tema.DonChambitasTema
 import mx.donchambitas.app.util.TipoError
@@ -28,8 +31,10 @@ import org.junit.runner.RunWith
  * Pruebas instrumentadas de la pantalla de registro (P-03).
  * Cubren lo que la pantalla decide por si misma: seleccion de rol, filtrado
  * del telefono, bloqueo durante la carga, pintado de los errores que le
- * llegan en el estado y cuando se valida (1.5). Cada regla se prueba sin
- * emulador en ValidacionesAuthTest; el alta contra el repositorio es de S2-T05.
+ * llegan en el estado, cuando se valida (1.5) y a donde entra una cuenta
+ * nueva. La pantalla usa su ViewModel real contra la fuente falsa en memoria;
+ * cada regla y cada resultado del repositorio se prueban sin emulador en
+ * ValidacionesAuthTest y RegistroViewModelTest.
  */
 @RunWith(AndroidJUnit4::class)
 class RegistroPantallaTest {
@@ -49,13 +54,15 @@ class RegistroPantallaTest {
         hasText(texto(R.string.registro_accion)) and hasClickAction()
     )
 
-    private fun montarPantalla(alRegistrarConRol: (RolUsuario) -> Unit = {}) {
+    private fun montarPantalla(alNavegarADestino: (Ruta) -> Unit = {}) {
+        val repositorio = RepositorioAuthFalso(FuenteDatosFalsa()).apply { retrasoMs = 0L }
         composeTestRule.setContent {
             DonChambitasTema {
                 RegistroPantalla(
-                    alRegistrarConRol = alRegistrarConRol,
+                    alNavegarADestino = alNavegarADestino,
                     alRegresar = {},
-                    alIrAIniciarSesion = {}
+                    alIrAIniciarSesion = {},
+                    viewModel = RegistroViewModel(repositorio)
                 )
             }
         }
@@ -128,31 +135,50 @@ class RegistroPantallaTest {
 
     @Test
     fun debeReclamarElRolYNoEnviar_cuandoSeConfirmaSinElegirlo() {
-        var rolRecibido: RolUsuario? = null
-        montarPantalla(alRegistrarConRol = { rolRecibido = it })
+        var destinoRecibido: Ruta? = null
+        montarPantalla(alNavegarADestino = { destinoRecibido = it })
 
         botonCrearCuenta().performClick()
 
         composeTestRule.onNodeWithText(texto(R.string.validacion_rol_sin_elegir)).assertIsDisplayed()
-        assertNull("Sin rol elegido no debe enviarse el registro", rolRecibido)
+        assertNull("Sin rol elegido no debe enviarse el registro", destinoRecibido)
     }
 
     @Test
-    fun debeEntregarElRolElegido_cuandoSeConfirmaConRol() {
-        var rolRecibido: RolUsuario? = null
-        montarPantalla(alRegistrarConRol = { rolRecibido = it })
+    fun debeEntrarAInicioTrabajador_cuandoSeRegistraComoTrabajador() {
+        var destinoRecibido: Ruta? = null
+        montarPantalla(alNavegarADestino = { destinoRecibido = it })
 
         composeTestRule.onNodeWithText(texto(R.string.registro_rol_trabajador)).performClick()
         llenarCamposValidos()
         botonCrearCuenta().performClick()
 
-        assertEquals(RolUsuario.TRABAJADOR, rolRecibido)
+        composeTestRule.waitUntil { destinoRecibido != null }
+        assertEquals(Ruta.InicioTrabajador, destinoRecibido)
+    }
+
+    @Test
+    fun debeAvisarQueElCorreoYaExisteYConservarLoCapturado_cuandoSeRepite() {
+        var destinoRecibido: Ruta? = null
+        montarPantalla(alNavegarADestino = { destinoRecibido = it })
+
+        composeTestRule.onNodeWithText(texto(R.string.registro_rol_cliente)).performClick()
+        escribir(R.string.registro_nombre, "Juan")
+        escribir(R.string.registro_apellidos, "Pérez")
+        escribir(R.string.auth_correo, "juan.perez@ejemplo.com")
+        escribir(R.string.auth_contrasena, "12345678")
+        escribir(R.string.registro_telefono, "4771234567")
+        botonCrearCuenta().performClick()
+
+        composeTestRule.onNodeWithText("El correo ya esta registrado, inicia sesion").assertExists()
+        composeTestRule.onNodeWithText("juan.perez@ejemplo.com").assertExists()
+        assertNull("Con el correo repetido no debe entrar", destinoRecibido)
     }
 
     @Test
     fun debeMarcarLosCincoCamposYNoEnviar_cuandoSeEnviaConRolYTodoVacio() {
-        var rolRecibido: RolUsuario? = null
-        montarPantalla(alRegistrarConRol = { rolRecibido = it })
+        var destinoRecibido: Ruta? = null
+        montarPantalla(alNavegarADestino = { destinoRecibido = it })
 
         composeTestRule.onNodeWithText(texto(R.string.registro_rol_cliente)).performClick()
         botonCrearCuenta().performClick()
@@ -165,13 +191,13 @@ class RegistroPantallaTest {
             R.string.validacion_telefono_vacio
         ).forEach { composeTestRule.onNodeWithText(texto(it)).assertExists() }
         composeTestRule.onNodeWithText(texto(R.string.registro_nombre)).assertIsFocused()
-        assertNull("Con errores no debe enviarse el registro", rolRecibido)
+        assertNull("Con errores no debe enviarse el registro", destinoRecibido)
     }
 
     @Test
     fun debeNoEnviar_cuandoLaContrasenaTieneSieteCaracteres() {
-        var rolRecibido: RolUsuario? = null
-        montarPantalla(alRegistrarConRol = { rolRecibido = it })
+        var destinoRecibido: Ruta? = null
+        montarPantalla(alNavegarADestino = { destinoRecibido = it })
 
         composeTestRule.onNodeWithText(texto(R.string.registro_rol_cliente)).performClick()
         escribir(R.string.registro_nombre, "Refugio")
@@ -183,7 +209,7 @@ class RegistroPantallaTest {
 
         composeTestRule.onNodeWithText(texto(R.string.validacion_contrasena_corta)).assertExists()
         composeTestRule.onNodeWithText(texto(R.string.auth_contrasena)).assertIsFocused()
-        assertNull("Con la contrasena corta no debe enviarse el registro", rolRecibido)
+        assertNull("Con la contrasena corta no debe enviarse el registro", destinoRecibido)
     }
 
     @Test
