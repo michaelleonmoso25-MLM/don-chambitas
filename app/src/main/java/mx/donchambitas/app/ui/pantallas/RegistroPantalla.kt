@@ -16,11 +16,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +36,11 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
 import mx.donchambitas.app.R
 import mx.donchambitas.app.dominio.modelo.RolUsuario
-import mx.donchambitas.app.dominio.validacion.LimitesRegistro
-import mx.donchambitas.app.dominio.validacion.ValidacionesAuth
 import mx.donchambitas.app.ui.componentes.BarraSuperior
+import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.ui.componentes.BotonPrincipal
 import mx.donchambitas.app.ui.componentes.BotonTexto
 import mx.donchambitas.app.ui.componentes.CampoContrasena
@@ -59,27 +58,6 @@ import mx.donchambitas.app.ui.tema.pie
 import mx.donchambitas.app.ui.tema.subtitulo
 import mx.donchambitas.app.util.TipoError
 
-/**
- * Conserva lo capturado al girar el dispositivo. Solo se guardan los seis
- * valores de captura y el rol: los errores y el indicador de carga se vuelven
- * a calcular, guardarlos mostraria un error viejo sobre un formulario nuevo.
- */
-private val GuardaEstadoRegistro = listSaver<EstadoRegistro, Any?>(
-    save = {
-        listOf(it.rol?.valor, it.nombre, it.apellidos, it.correo, it.contrasena, it.telefono)
-    },
-    restore = {
-        EstadoRegistro(
-            rol = (it[0] as String?)?.let(RolUsuario::desdeValor),
-            nombre = it[1] as String,
-            apellidos = it[2] as String,
-            correo = it[3] as String,
-            contrasena = it[4] as String,
-            telefono = it[5] as String
-        )
-    }
-)
-
 /** Campos de texto de P-03, en orden visual: el foco salta al primero que falle. */
 enum class CampoRegistro { NOMBRE, APELLIDOS, CORREO, CONTRASENA, TELEFONO }
 
@@ -87,97 +65,48 @@ enum class CampoRegistro { NOMBRE, APELLIDOS, CORREO, CONTRASENA, TELEFONO }
  * Pantalla de registro con seleccion de rol (P-03).
  * Especificada en docs/producto/DISENO-AUTENTICACION.md, seccion 3.
  *
- * El estado y la validacion viven aqui de forma provisional hasta que S2-T05
- * traiga RegistroViewModel. Las reglas son las de S2-T04, en ValidacionesAuth,
- * y se aplican cuando dice 1.5: al salir de un campo ya escrito y al enviar.
+ * El estado y las reglas viven en [RegistroViewModel]; la pantalla solo
+ * pinta y navega cuando el ViewModel fija un destino.
  *
- * @param alRegistrarConRol Se invoca con el rol elegido cuando el formulario se envia.
+ * @param alNavegarADestino Recibe la pantalla de inicio del rol una vez creada la cuenta.
  * @param alRegresar Regresa a P-02 descartando lo capturado.
  * @param alIrAIniciarSesion Lleva a P-02 desde el pie de la pantalla.
  */
 @Composable
 fun RegistroPantalla(
-    alRegistrarConRol: (RolUsuario) -> Unit,
+    alNavegarADestino: (Ruta) -> Unit,
     alRegresar: () -> Unit,
     alIrAIniciarSesion: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: RegistroViewModel = hiltViewModel()
 ) {
-    var estado by rememberSaveable(stateSaver = GuardaEstadoRegistro) {
-        mutableStateOf(EstadoRegistro())
+    val estado by viewModel.estado.collectAsState()
+
+    // destino es de un solo uso: se consume en cuanto se navega, o un giro
+    // del dispositivo volveria a navegar.
+    LaunchedEffect(estado.destino) {
+        estado.destino?.let { destino ->
+            alNavegarADestino(destino)
+            viewModel.alConsumirDestino()
+        }
     }
-    // Solo se valida al salir de un campo en el que ya se escribio: pasar por
-    // uno vacio camino a otro no es un error todavia.
-    var tocados by remember { mutableStateOf(emptySet<CampoRegistro>()) }
 
     RegistroContenido(
         estado = estado,
-        alElegirRol = { rol -> estado = estado.copy(rol = rol, errorRol = null) },
-        alCambiarNombre = { valor ->
-            tocados = tocados + CampoRegistro.NOMBRE
-            estado = estado.copy(
-                nombre = valor.take(LimitesRegistro.LARGO_MAXIMO_NOMBRE),
-                errorNombre = null
-            )
-        },
-        alCambiarApellidos = { valor ->
-            tocados = tocados + CampoRegistro.APELLIDOS
-            estado = estado.copy(
-                apellidos = valor.take(LimitesRegistro.LARGO_MAXIMO_APELLIDOS),
-                errorApellidos = null
-            )
-        },
-        alCambiarCorreo = { valor ->
-            tocados = tocados + CampoRegistro.CORREO
-            estado = estado.copy(
-                correo = valor.take(LimitesRegistro.LARGO_MAXIMO_CORREO),
-                errorCorreo = null
-            )
-        },
-        alCambiarContrasena = { valor ->
-            tocados = tocados + CampoRegistro.CONTRASENA
-            estado = estado.copy(contrasena = valor, errorContrasena = null)
-        },
-        alCambiarTelefono = { valor ->
-            // Se filtra al escribir en vez de validarse despues: no es una regla
-            // de negocio, es no dejar teclear lo que el campo no admite.
-            tocados = tocados + CampoRegistro.TELEFONO
-            estado = estado.copy(
-                telefono = valor.filter(Char::isDigit).take(LimitesRegistro.LARGO_TELEFONO),
-                errorTelefono = null
-            )
-        },
-        alSalirDeCampo = { campo ->
-            if (campo in tocados) estado = estado.validado(campo)
-        },
-        alRegistrar = {
-            estado = CampoRegistro.entries.fold(
-                estado.copy(errorRol = ValidacionesAuth.validarRol(estado.rol)?.mensaje())
-            ) { parcial, campo -> parcial.validado(campo) }
-            val rol = estado.rol
-            if (rol != null && estado.sinErrores()) alRegistrarConRol(rol)
-        },
+        alElegirRol = viewModel::alElegirRol,
+        alCambiarNombre = viewModel::alCambiarNombre,
+        alCambiarApellidos = viewModel::alCambiarApellidos,
+        alCambiarCorreo = viewModel::alCambiarCorreo,
+        alCambiarContrasena = viewModel::alCambiarContrasena,
+        alCambiarTelefono = viewModel::alCambiarTelefono,
+        alSalirDeCampo = viewModel::alPerderFoco,
+        alRegistrar = viewModel::alRegistrar,
         alRegresar = alRegresar,
         alIrAIniciarSesion = alIrAIniciarSesion,
+        alReintentar = viewModel::alReintentar,
         modifier = modifier
     )
 }
-
-private fun EstadoRegistro.validado(campo: CampoRegistro): EstadoRegistro = when (campo) {
-    CampoRegistro.NOMBRE ->
-        copy(errorNombre = ValidacionesAuth.validarNombre(nombre)?.mensaje())
-    CampoRegistro.APELLIDOS ->
-        copy(errorApellidos = ValidacionesAuth.validarApellidos(apellidos)?.mensaje())
-    CampoRegistro.CORREO ->
-        copy(errorCorreo = ValidacionesAuth.validarCorreo(correo)?.mensaje())
-    CampoRegistro.CONTRASENA ->
-        copy(errorContrasena = ValidacionesAuth.validarContrasenaRegistro(contrasena)?.mensaje())
-    CampoRegistro.TELEFONO ->
-        copy(errorTelefono = ValidacionesAuth.validarTelefono(telefono)?.mensaje())
-}
-
-private fun EstadoRegistro.sinErrores(): Boolean =
-    listOf(errorRol, errorNombre, errorApellidos, errorCorreo, errorContrasena, errorTelefono)
-        .all { it == null }
 
 private fun EstadoRegistro.errorDe(campo: CampoRegistro): Int? = when (campo) {
     CampoRegistro.NOMBRE -> errorNombre

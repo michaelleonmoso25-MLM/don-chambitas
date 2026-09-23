@@ -2,6 +2,7 @@ package mx.donchambitas.app.ui.pantallas
 
 import androidx.annotation.StringRes
 import mx.donchambitas.app.dominio.modelo.RolUsuario
+import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.TipoError
 
 /**
@@ -14,6 +15,7 @@ import mx.donchambitas.app.util.TipoError
  * su lugar. La unica excepcion es [mensajePantalla].
  *
  * @property rol Rol elegido. Nulo mientras el usuario no elige, que es el estado inicial.
+ * @property destino Evento de navegacion de un solo uso, igual que en [EstadoIniciarSesion].
  * @property mensajePantalla Mensaje que llega desde la capa de datos en un error de
  *   VALIDACION. CONTRATOS-API.md indica que ese texto ya viene escrito en espanol desde
  *   la base, asi que se muestra tal cual en vez de volver a traducirlo aqui.
@@ -33,5 +35,6 @@ data class EstadoRegistro(
     @StringRes val errorTelefono: Int? = null,
     val errorPantalla: TipoError? = null,
     val mensajePantalla: String? = null,
-    val cargando: Boolean = false
+    val cargando: Boolean = false,
+    val destino: Ruta? = null
 )

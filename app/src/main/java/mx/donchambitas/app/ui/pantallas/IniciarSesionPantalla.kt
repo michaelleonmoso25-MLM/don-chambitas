@@ -17,11 +17,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.listSaver
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,9 +35,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import mx.donchambitas.app.R
-import mx.donchambitas.app.dominio.validacion.ValidacionesAuth
 import mx.donchambitas.app.ui.componentes.BarraSuperior
+import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.ui.componentes.BotonPrincipal
 import mx.donchambitas.app.ui.componentes.BotonTexto
 import mx.donchambitas.app.ui.componentes.CampoContrasena
@@ -57,22 +57,6 @@ private val LadoIsotipo = 72.dp
 /** Alto minimo tactil de los enlaces de navegacion, por 1.8 de DISENO-AUTENTICACION.md. */
 private val AltoMinimoEnlace = 48.dp
 
-/**
- * Conserva lo capturado al girar el dispositivo. Solo se guardan los dos
- * valores de captura: los errores, el indicador de carga y el destino se
- * vuelven a calcular. Guardar el destino haria que la pantalla navegara otra
- * vez al restaurarse, que es justo lo que evita consumirlo.
- */
-private val GuardaEstadoIniciarSesion = listSaver<EstadoIniciarSesion, Any?>(
-    save = { listOf(it.correo, it.contrasena) },
-    restore = {
-        EstadoIniciarSesion(
-            correo = it[0] as String,
-            contrasena = it[1] as String
-        )
-    }
-)
-
 /** Campos de P-02, en orden visual: el foco salta al primero que falle. */
 enum class CampoIniciarSesion { CORREO, CONTRASENA }
 
@@ -80,64 +64,44 @@ enum class CampoIniciarSesion { CORREO, CONTRASENA }
  * Pantalla de inicio de sesion (P-02).
  * Especificada en docs/producto/DISENO-AUTENTICACION.md, seccion 2.
  *
- * El estado y la validacion viven aqui de forma provisional hasta que S2-T05
- * traiga IniciarSesionViewModel. Las reglas son las de S2-T04, en
- * ValidacionesAuth, y se aplican cuando dice 1.5: al salir de un campo ya
- * escrito y al enviar.
+ * El estado y las reglas viven en [IniciarSesionViewModel]; la pantalla solo
+ * pinta y navega cuando el ViewModel fija un destino.
  *
- * @param alIniciarSesion Se invoca con el correo ya normalizado cuando el formulario se envia.
+ * @param alNavegarADestino Recibe la pantalla de inicio del rol una vez que la sesion se abrio.
  * @param alIrARegistro Lleva a P-03. No pasa por el estado: no hay nada que decidir.
  * @param alIrARecuperarContrasena Lleva a P-04, por la misma razon.
  */
 @Composable
 fun IniciarSesionPantalla(
-    alIniciarSesion: (String) -> Unit,
+    alNavegarADestino: (Ruta) -> Unit,
     alIrARegistro: () -> Unit,
     alIrARecuperarContrasena: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: IniciarSesionViewModel = hiltViewModel()
 ) {
-    var estado by rememberSaveable(stateSaver = GuardaEstadoIniciarSesion) {
-        mutableStateOf(EstadoIniciarSesion())
+    val estado by viewModel.estado.collectAsState()
+
+    // destino es de un solo uso: se consume en cuanto se navega, o un giro
+    // del dispositivo volveria a navegar.
+    LaunchedEffect(estado.destino) {
+        estado.destino?.let { destino ->
+            alNavegarADestino(destino)
+            viewModel.alConsumirDestino()
+        }
     }
-    // Solo se valida al salir de un campo en el que ya se escribio: pasar por
-    // uno vacio camino a otro no es un error todavia.
-    var tocados by remember { mutableStateOf(emptySet<CampoIniciarSesion>()) }
 
     IniciarSesionContenido(
         estado = estado,
-        alCambiarCorreo = { valor ->
-            tocados = tocados + CampoIniciarSesion.CORREO
-            estado = estado.copy(correo = valor, errorCorreo = null)
-        },
-        alCambiarContrasena = { valor ->
-            tocados = tocados + CampoIniciarSesion.CONTRASENA
-            estado = estado.copy(contrasena = valor, errorContrasena = null)
-        },
-        alSalirDeCampo = { campo ->
-            if (campo in tocados) estado = estado.validado(campo)
-        },
-        alIniciarSesion = {
-            estado = CampoIniciarSesion.entries.fold(estado) { parcial, campo -> parcial.validado(campo) }
-            // La normalizacion es de 1.6: ck_usuario_correo_minusculas rechaza
-            // el correo tal como se escribio, y ese rechazo no es un mensaje
-            // para el usuario. En pantalla se sigue viendo lo que tecleo.
-            if (estado.errorCorreo == null && estado.errorContrasena == null) {
-                alIniciarSesion(estado.correo.trim().lowercase())
-            }
-        },
+        alCambiarCorreo = viewModel::alCambiarCorreo,
+        alCambiarContrasena = viewModel::alCambiarContrasena,
+        alSalirDeCampo = viewModel::alPerderFoco,
+        alIniciarSesion = viewModel::alIniciarSesion,
         alIrARegistro = alIrARegistro,
         alIrARecuperarContrasena = alIrARecuperarContrasena,
+        alReintentar = viewModel::alReintentar,
         modifier = modifier
     )
 }
-
-private fun EstadoIniciarSesion.validado(campo: CampoIniciarSesion): EstadoIniciarSesion =
-    when (campo) {
-        CampoIniciarSesion.CORREO ->
-            copy(errorCorreo = ValidacionesAuth.validarCorreo(correo)?.mensaje())
-        CampoIniciarSesion.CONTRASENA ->
-            copy(errorContrasena = ValidacionesAuth.validarContrasenaInicioSesion(contrasena)?.mensaje())
-    }
 
 private fun EstadoIniciarSesion.errorDe(campo: CampoIniciarSesion): Int? = when (campo) {
     CampoIniciarSesion.CORREO -> errorCorreo
