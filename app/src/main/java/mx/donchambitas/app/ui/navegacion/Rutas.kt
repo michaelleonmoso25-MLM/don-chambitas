@@ -200,7 +200,8 @@ sealed class Ruta(
 
 /**
  * Estados temporales de sesión para las guardas de navegación.
- * Se conecta de verdad con DataStore y Supabase Auth en S2-T09.
+ * Desde S2-T09 se mantiene al día con la sesión real de RepositorioAuth;
+ * S2-T15 lo retira cuando las guardas lean esa sesión directamente.
  */
 enum class EstadoSesionTemporal(val etiqueta: String) {
     SIN_SESION("Sin sesión"),
