@@ -176,14 +176,14 @@ criterios de aceptación y cómo probarla.
 
 Los tickets se redactan **al iniciar cada sprint**, no los seis por adelantado:
 detallar hoy el Sprint 5 es trabajo que se va a tirar. Hoy están escritos los
-16 del Sprint 1, los de `S2-T03` a `S2-T07`, el de `S2-T08` y el de `S2-T10`. Para los
+16 del Sprint 1 y los de `S2-T03` a `S2-T10`. Para los
 siguientes, ver el prompt 6 de `docs/proceso/PROMPTS.md`.
 
 > **Los del Sprint 2 se están redactando tarde, tarea por tarea.** `S2-T01` y
 > `S2-T02` se trabajaron **sin ticket**, por autorización del líder del
 > 2026-09-21, dejando su alcance escrito en el propio entregable. Desde
 > `S2-T03` sí hay ticket: el líder ordenó el 2026-09-22 redactarlo antes de
-> tomar la tarea. Las 7 restantes del Sprint 2 siguen sin ticket; cada una lo
+> tomar la tarea. Las 6 restantes del Sprint 2 siguen sin ticket; cada una lo
 > necesita antes de empezar.
 >
 > **2026-09-27 · El líder subió `S2-T10` de 600 a 700** porque urge cerrar la
