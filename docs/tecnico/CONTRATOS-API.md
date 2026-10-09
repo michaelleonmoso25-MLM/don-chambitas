@@ -107,8 +107,8 @@ aplicación solo decide **dónde** se guardan:
   Keystore no viaja, así que el respaldo no serviría.
 
 **La sesión se carga cuando se crea el cliente de Supabase**, que es perezoso
-desde `S2-T07`: hoy eso ocurre con la primera acción de autenticación. Cuando
-`S2-T09` haga que P-01 lea `sesionActual()`, ocurrirá al abrir la aplicación.
+desde `S2-T07`. Desde `S2-T09` eso ocurre al abrir la aplicación, porque P-01
+lee `sesionActual()`.
 
 Si el paso 2 falla, la operación devuelve el error del paso 2 según la tabla
 de errores, aunque el paso 1 haya salido bien. Ver la nota de `registrar`.
@@ -295,7 +295,24 @@ Se deriva de `auth.sessionStatus`:
   sesión y pasa a `NotAuthenticated`. Ese sí emite `null`.
 - **Si la lectura de la ficha falla en `Authenticated`,** no se emite nada, y
   se reintenta con el siguiente cambio de estado. Un tropiezo de red no es un
-  cierre de sesión. Qué muestra P-01 mientras tanto lo decide `S2-T09`.
+  cierre de sesión.
+
+**Quién lo lee** (`S2-T09`):
+
+- **P-01** toma el primer valor para decidir a dónde va: `null` a P-02, y una
+  `Sesion` a P-05 o P-10 según su rol. Si en **8 segundos** no llega nada,
+  muestra "Sin conexión" con "Reintentar" y no borra nada: el flujo no
+  distingue "todavía cargando" de "no pude leer la ficha", así que el tope es
+  lo único que corta la espera. "Reintentar" vuelve a recoger el flujo, y con
+  eso la ficha se lee otra vez. Si el flujo lanza porque faltan las llaves en
+  `local.properties`, P-01 manda a P-02.
+- **`SesionViewModel`**, uno por actividad, lo escucha mientras la aplicación
+  está abierta. Cada `null` es un aviso de "no hay sesión"; si había alguien
+  adentro, la aplicación sale a P-02 con la pila limpia. Cubre el cierre a mano
+  y el token de refresco que ya no sirve.
+
+Cada uno recoge el flujo por su cuenta, así que al abrir con sesión guardada
+la ficha se lee dos veces.
 
 ### Errores de autenticación
 
