@@ -65,10 +65,23 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 | Rama | `feat/S2-T09-manejo-sesion` |
 | Desde | 2026-10-08 |
 
+**El código y las pruebas están en la rama; falta la prueba contra Supabase.**
+La máquina donde se trabajó no tiene `SUPABASE_URL` ni `SUPABASE_ANON_KEY` en
+`local.properties`.
+
+- Hecho: compila, 169 pruebas unitarias y 54 instrumentadas con 0 fallas, y
+  en emulador `Pixel_10` **sin llaves** la aplicación abre y llega a P-02 sin
+  cerrarse.
+- Falta, con llaves, la sección "Cómo probarlo" de `docs/tareas/S2-T09.md`:
+  inicio automático de cliente y de trabajador, P-01 sin red y "Reintentar",
+  cierre de sesión desde el marcador de P-18 con y sin red, y la expiración.
+- Al cerrar: marcar los criterios del ticket, la fila "Cierras y vuelves a
+  abrir" de la tabla de arriba, `INDICE.md` y `BITACORA.md`.
+
 ## Última tarea terminada
 
 **`S2-T08` — Almacenamiento seguro de la sesión y el token.** 2026-10-08.
-Rama `feat/S2-T08-almacenamiento-seguro-sesion`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A.
+Rama `feat/S2-T08-almacenamiento-seguro-sesion`, pull request **#14**, integrado en `main`. Ticket redactado por el agente el mismo día; el líder eligió la opción A.
 
 - **`datos/local/CifradorSesion.kt`:** AES-256-GCM con una llave que se genera dentro del Android Keystore y nunca sale de ahí. IV nuevo en cada cifrado. Lo que no se puede descifrar devuelve `null`, nunca lanza. Sin dependencia nueva.
 - **`datos/local/AlmacenSesionCifrada.kt`:** el `SessionManager` de `supabase-kt`, sobre el DataStore `sesion_cifrada`. Sustituye al `SettingsSessionManager`, que guardaba la sesión **en texto plano** en `shared_prefs/mx.donchambitas.app_preferences.xml`.
