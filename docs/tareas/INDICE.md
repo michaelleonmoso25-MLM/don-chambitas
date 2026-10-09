@@ -72,7 +72,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S2-T06` | 800 | Contrato de la API de autenticación (endpoints, payloads y errores) | LMM | hecha | — |
 | `S2-T07` | 750 | Implementación real de autenticación con Supabase Auth | RRC | hecha | S2-T06 |
 | `S2-T08` | 650 | Almacenamiento seguro de la sesión y el token (DataStore cifrado) | GRI | hecha | S2-T05 |
-| `S2-T09` | 600 | Manejo de sesión: inicio automatico, cierre de sesión y expiracion | BCJL | pendiente | S2-T08 |
+| `S2-T09` | 600 | Manejo de sesión: inicio automatico, cierre de sesión y expiracion | BCJL | en curso | S2-T08 |
 | `S2-T10` | 700 | Pantalla de recuperación de contraseña | LMM | hecha | — |
 | `S2-T11` | 550 | Diseño y pantalla del perfil de usuario (ver y editar) | RRC | pendiente | S2-T12 |
 | `S2-T12` | 500 | Contrato de la API de perfil de usuario (y `RepositorioUsuario` real, `DEC-31`) | GRI | pendiente | — |

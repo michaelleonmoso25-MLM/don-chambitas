@@ -15,7 +15,7 @@
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
 | Terminadas | 9 |
-| En curso | 0 |
+| En curso | 1 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -57,15 +57,13 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
-_Ninguna._
-
 | Campo | Valor |
 |---|---|
-| ID | — |
-| Título | — |
-| Quién la tomó | — |
-| Rama | — |
-| Desde | — |
+| ID | `S2-T09` |
+| Título | Manejo de sesión: inicio automático, cierre de sesión y expiración |
+| Quién la tomó | Ricardo5690, con el agente |
+| Rama | `feat/S2-T09-manejo-sesion` |
+| Desde | 2026-10-08 |
 
 ## Última tarea terminada
 
