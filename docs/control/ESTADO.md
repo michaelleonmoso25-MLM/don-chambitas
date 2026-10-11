@@ -74,7 +74,7 @@ _Ninguna._
 ## Última tarea terminada
 
 **`S2-T09` — Manejo de sesión: inicio automático, cierre de sesión y expiración.** 2026-10-11.
-Rama `feat/S2-T09-manejo-sesion`, pull request **sin abrir todavía**. Ticket redactado por el agente el 2026-10-08; el líder eligió la opción A en las dos decisiones.
+Rama `feat/S2-T09-manejo-sesion`, pull request **#15**. Ticket redactado por el agente el 2026-10-08; el líder eligió la opción A en las dos decisiones.
 
 - **`SplashViewModel`** lee el primer valor de `RepositorioAuth.sesionActual()`: sin sesión va a P-02, cliente a P-05 y trabajador a P-10. El mínimo de 800 ms corre a la par de la lectura y se mide con `delay`. Si en 8 segundos no llega nada, `error = TipoError.RED`; si el flujo lanza (sin llaves), P-02.
 - **`SplashPantalla`:** con error, el bloque de abajo muestra "Sin conexión" y "Reintentar". Sin cadenas nuevas.
