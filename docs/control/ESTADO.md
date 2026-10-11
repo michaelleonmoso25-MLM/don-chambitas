@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-10-08
+**Última actualización:** 2026-10-11
 
 ---
 
@@ -14,7 +14,7 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 9 |
+| Terminadas | 11 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -30,7 +30,11 @@ de P-04 describen la rama de `S2-T10` mientras no se integre.
 
 | Si haces esto | Pasa esto hoy | Lo arregla |
 |---|---|---|
-| Abres la aplicación | P-01 espera 800 ms y te deja en P-02 | — |
+| Abres la aplicación **sin sesión guardada** | P-01 dura al menos 800 ms y te deja en P-02 | — |
+| Abres la aplicación **con sesión guardada** | P-01 y luego P-05 o P-10 según tu rol, sin pasar por P-02. Atrás cierra la aplicación. Probado con `ana.rls@…` y `beto.rls@…` | — |
+| Abres la aplicación con sesión guardada y **sin red** | A los 8 segundos, "Sin conexión" con "Reintentar" en P-01. La sesión no se borra, y con la red de vuelta "Reintentar" entra | — |
+| Pulsas "Cerrar sesión (P-02)" en el marcador de P-18 | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
+| Pulsas "Cerrar sesión (P-02)" **sin red** | No pasa nada: sigues en P-18 y la sesión sigue guardada. Todavía no hay mensaje | `S2-T11` |
 | Estás en P-02 (iniciar sesión) | La pantalla real: marca, los dos campos y los enlaces a P-03 y P-04 | — |
 | Pulsas **Iniciar sesión** o **Crear cuenta** **sin las llaves** en `local.properties` | "Algo salió mal" con "Reintentar". No se cierra la aplicación | Poner `SUPABASE_URL` y `SUPABASE_ANON_KEY` |
 | Pulsas **Iniciar sesión** con una cuenta real del proyecto | Entra a P-05 o P-10 según su rol en `public.usuarios`. Probado con las cuentas de `92_usuarios_prueba.sql`: `ana.rls@…` entra a P-05 y `beto.rls@…` a P-10 | — |
@@ -49,7 +53,7 @@ de P-04 describen la rama de `S2-T10` mientras no se integre.
 | Pides el enlace sin red | "Sin conexión" con "Reintentar", y el correo sigue escrito | — |
 | Esperas el correo en una cuenta que no es del equipo | **No llega.** El SMTP de fábrica de Supabase solo entrega a los miembros del equipo de la organización, y muy pocos por hora | `S6-T13` |
 | Abres el enlace del correo | La aplicación abre y no se cierra. Todavía no te lleva a P-18 | `S2-T11` |
-| Cierras y vuelves a abrir | La sesión real queda guardada **cifrada** (`S2-T08`), pero P-01 todavía lee el marcador temporal y te manda a P-02. La sesión se carga hasta la primera acción de Auth | `S2-T09`, `S2-T15` |
+| Cambias de pantalla con los botones "Sin sesión / Cliente / Trabajador" de los marcadores | Las guardas y las barras todavía leen el marcador temporal, no la sesión real. P-01 y el cierre de sesión lo mantienen al día | `S2-T15` |
 
 **El alta ya es real** desde `S2-T07`: la cuenta vive en Supabase Auth y en
 `public.usuarios`, y sobrevive al reinicio. Por `DEC-25` el registro deja
@@ -69,8 +73,56 @@ _Ninguna._
 
 ## Última tarea terminada
 
+**`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario` real).** 2026-10-11.
+Rama `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`**, pull request **sin abrir todavía**: se integra después del #15. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+
+- **`datos/repositorio/RepositorioUsuarioReal.kt`** (`DEC-31`), ya enlazado en `ModuloRepositorios`. Los otros ocho repositorios siguen falsos.
+  - `obtenerMiUsuario()` lee la ficha propia de `public.usuarios`.
+  - `actualizarMiUsuario(...)` manda solo `nombre`, `apellidos` y `telefono`, y devuelve la fila ya actualizada sin una segunda lectura.
+  - Sin sesión, o si vuelven cero filas, devuelve `AUTENTICACION`: RLS no rechaza, filtra, y PostgREST contesta `200` con una lista vacía.
+  - `subirFotoPerfil` devuelve `SERVIDOR` hasta `S2-T14`.
+- **`datos/remoto/supabase/ErroresDatos.kt`:** `traducirErrorDatos`, por código HTTP. `supabase-kt` 3.0.3 no deja pasar el código de Postgres.
+- **`CONTRATOS-API.md`:** la sección "Usuario" a detalle, con las llamadas exactas, la tabla de errores y la regla de que de la `Sesion` solo se leen el usuario y su rol.
+- **En pantalla no cambia nada.** Ninguna pantalla llama todavía a `RepositorioUsuario`; P-18 es `S2-T11`.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 180 pruebas unitarias (11 nuevas) y 59 instrumentadas (5 nuevas), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Pixel_10`, con `RepositorioUsuarioRealTest`: lee la ficha de `ana.rls@…`, la edita y la vuelve a leer, borra el teléfono con `null`, un nombre de 81 caracteres da `VALIDACION` y sin sesión da `AUTENTICACION`. La ficha quedó como estaba.
+  - **Sin llaves** en `local.properties`: la aplicación abre y llega a P-02, y los 5 casos nuevos salen omitidos.
+  - Con llaves, `ana.rls@…` entra a P-05 y al reabrir sigue en P-05. Sin excepciones en logcat.
+- **Lo que NO se probó en el dispositivo:** que sin red devuelva `RED`. Lo cubre `ErroresDatosTest`.
+- **`RepositorioUsuarioRealTest` es la primera prueba de la suite que necesita red** y un proyecto de Supabase vivo con las cuentas de `92_usuarios_prueba.sql`. Sin llaves se omite; con llaves y sin esas cuentas, falla.
+- **Dos hallazgos para el líder**, al final de `CONTRATOS-API.md`:
+  - **`H-13` · El `mensaje` de los errores de autenticación lleva el token.** `ErroresAuth.kt` guarda `error.message`, que en `supabase-kt` 3.0.3 incluye las cabeceras de la petición. Hoy nadie lo pinta ni lo registra. El código nuevo no lo repite.
+  - **`H-14` · `public.usuarios` acepta un nombre vacío.** No hay `CHECK` sobre nombre, apellidos ni teléfono; solo lo impide la validación de la aplicación.
+
+**`S2-T09` — Manejo de sesión: inicio automático, cierre de sesión y expiración.** 2026-10-11.
+Rama `feat/S2-T09-manejo-sesion`, pull request **#15**. Ticket redactado por el agente el 2026-10-08; el líder eligió la opción A en las dos decisiones.
+
+- **`SplashViewModel`** lee el primer valor de `RepositorioAuth.sesionActual()`: sin sesión va a P-02, cliente a P-05 y trabajador a P-10. El mínimo de 800 ms corre a la par de la lectura y se mide con `delay`. Si en 8 segundos no llega nada, `error = TipoError.RED`; si el flujo lanza (sin llaves), P-02.
+- **`SplashPantalla`:** con error, el bloque de abajo muestra "Sin conexión" y "Reintentar". Sin cadenas nuevas.
+- **`ui/navegacion/SesionViewModel.kt`**, uno por actividad: escucha `sesionActual()` y avisa cuando no hay sesión; `cerrarSesion()` llama al repositorio y no navega.
+- **`GrafoNavegacion`:** al terminar la sesión deja el marcador en `SIN_SESION` y va a P-02 con la pila limpia. P-01 deja el marcador con el rol de su destino. El botón "Cerrar sesión (P-02)" del marcador de P-18 cierra la sesión real.
+- `CONTRATOS-API.md` al día en "`sesionActual()`".
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 169 pruebas unitarias (10 nuevas) y 54 instrumentadas, 0 fallas. `SplashViewModelTest` pasó diez corridas seguidas y ya no usa `System.currentTimeMillis`.
+  - **Contra el proyecto de Supabase**, en emulador `Pixel_10`, el 2026-10-11:
+    - sin sesión guardada, abre en P-02;
+    - con la sesión de `ana.rls@…`, `force-stop` y abrir lleva a P-05 sin pasar por P-02; con `beto.rls@…`, a P-10. En los dos, atrás cierra la aplicación;
+    - en modo avión, P-01 muestra "Sin conexión" con "Reintentar" y `sesion_cifrada.preferences_pb` sigue igual; con la red de vuelta, "Reintentar" entra a P-05;
+    - "Cerrar sesión (P-02)" lleva a P-02, `sesion_cifrada.preferences_pb` queda en 0 bytes, atrás cierra la aplicación y al reabrir sigue en P-02;
+    - "Cerrar sesión (P-02)" en modo avión deja al usuario en P-18 con la sesión guardada;
+    - **migración al abrir:** con una sesión en claro puesta a mano en `shared_prefs` y sin `sesion_cifrada`, abrir la aplicación entra directo a P-05, la llave en claro desaparece y la sesión queda cifrada, sin tocar ningún botón.
+  - Sin excepciones en logcat.
+- **Lo que NO se probó en el dispositivo: la expiración.** Hace falta revocar la sesión desde la consola y bajar el *JWT expiry*, y el emulador no deja adelantar el reloj sin root. El ticket lo prevé: el caso queda cubierto en `SesionViewModelTest`, y el camino de `GrafoNavegacion` que lleva a P-02 es el mismo que se probó con el cierre a mano.
+- **Sin llaves** en `local.properties` se probó el 2026-10-08: abre y llega a P-02 sin cerrarse. No se repitió el 2026-10-11.
+- **Un desvío del ticket**, anotado en él: `SesionViewModel` avisa en cada `null`, también en el del arranque, y `GrafoNavegacion` decide si había alguien adentro mirando el marcador.
+- **La confirmación por correo estuvo activada y ya se corrigió.** El 2026-10-11 `GET /auth/v1/settings` devolvía `mailer_autoconfirm: false`, contra `DEC-25` (el 2026-09-27 daba `true`). El líder la desactivó ese mismo día en la consola y se verificó que volvió a `true`. No se probó un alta nueva desde P-03 después del cambio.
+- **Las cuatro cuentas `*.rls@prueba.donchambitas.mx` se volvieron a crear** el 2026-10-11 y siguen en el proyecto.
+
 **`S2-T08` — Almacenamiento seguro de la sesión y el token.** 2026-10-08.
-Rama `feat/S2-T08-almacenamiento-seguro-sesion`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A.
+Rama `feat/S2-T08-almacenamiento-seguro-sesion`, pull request **#14**, integrado en `main`. Ticket redactado por el agente el mismo día; el líder eligió la opción A.
 
 - **`datos/local/CifradorSesion.kt`:** AES-256-GCM con una llave que se genera dentro del Android Keystore y nunca sale de ahí. IV nuevo en cada cifrado. Lo que no se puede descifrar devuelve `null`, nunca lanza. Sin dependencia nueva.
 - **`datos/local/AlmacenSesionCifrada.kt`:** el `SessionManager` de `supabase-kt`, sobre el DataStore `sesion_cifrada`. Sustituye al `SettingsSessionManager`, que guardaba la sesión **en texto plano** en `shared_prefs/mx.donchambitas.app_preferences.xml`.
@@ -498,16 +550,16 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T09` — Manejo de sesión: inicio automático, cierre de sesión y expiración
-(prioridad 600, sprint 2, depende de `S2-T08`, que ya está hecha)
+`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar)
+(prioridad 550, sprint 2, depende de `S2-T12`, que ya está hecha)
 
-**No tiene ticket.** Es la que hace que P-01 lea `sesionActual()` en lugar del
-marcador temporal, y con eso la sesión cifrada de `S2-T08` se cargará al abrir
-la aplicación. Qué muestra P-01 si la ficha de `public.usuarios` no se puede
-leer lo deja abierto el contrato (`CONTRATOS-API.md`, "`sesionActual()`").
+**No tiene ticket.** Es P-18: ver y editar la ficha con `RepositorioUsuario`,
+cambiar la contraseña, cerrar sesión con su mensaje de error sin red, y
+aterrizar ahí al llegar por el enlace de recuperación.
 
-Con `S2-T10` la recuperación **todavía no queda completa**. Aterrizar en P-18
-y cambiar ahí la contraseña es `S2-T11`, que depende de `S2-T12` (`DEC-31`).
+Lo que `S2-T12` le deja dicho: nombre, apellidos y teléfono se piden a
+`obtenerMiUsuario()`, no a la `Sesion`; el repositorio no valida ni recorta; y
+un campo de teléfono vacío se manda como `null`.
 
 ## Los dos huecos de S2-T01, ya cerrados
 

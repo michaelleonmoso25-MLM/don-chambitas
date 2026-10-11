@@ -22,12 +22,12 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | Sprint | Tareas | Pendientes | Bloqueadas | Opcionales | Hechas |
 |---|---|---|---|---|---|
 | 1 | 16 | 0 | 0 | 0 | 16 |
-| 2 | 16 | 7 | 0 | 0 | 9 |
+| 2 | 16 | 5 | 0 | 0 | 11 |
 | 3 | 15 | 15 | 0 | 0 | 0 |
 | 4 | 15 | 13 | 0 | 2 | 0 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **60** | **0** | **2** | **25** |
+| **Total** | **87** | **58** | **0** | **2** | **27** |
 
 > **No queda ninguna tarea bloqueada, ni ningún pendiente abierto.** PEND-01 se
 > resolvió el 2026-09-14 a favor de Supabase (`DEC-16`) y PEND-02 el 2026-09-22
@@ -72,10 +72,10 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S2-T06` | 800 | Contrato de la API de autenticación (endpoints, payloads y errores) | LMM | hecha | — |
 | `S2-T07` | 750 | Implementación real de autenticación con Supabase Auth | RRC | hecha | S2-T06 |
 | `S2-T08` | 650 | Almacenamiento seguro de la sesión y el token (DataStore cifrado) | GRI | hecha | S2-T05 |
-| `S2-T09` | 600 | Manejo de sesión: inicio automatico, cierre de sesión y expiracion | BCJL | pendiente | S2-T08 |
+| `S2-T09` | 600 | Manejo de sesión: inicio automatico, cierre de sesión y expiracion | BCJL | hecha | S2-T08 |
 | `S2-T10` | 700 | Pantalla de recuperación de contraseña | LMM | hecha | — |
 | `S2-T11` | 550 | Diseño y pantalla del perfil de usuario (ver y editar) | RRC | pendiente | S2-T12 |
-| `S2-T12` | 500 | Contrato de la API de perfil de usuario (y `RepositorioUsuario` real, `DEC-31`) | GRI | pendiente | — |
+| `S2-T12` | 500 | Contrato de la API de perfil de usuario (y `RepositorioUsuario` real, `DEC-31`) | GRI | hecha | — |
 | `S2-T13` | 450 | Selección y recorte de la foto de perfil (solo interfaz) | BCJL | pendiente | — |
 | `S2-T14` | 400 | Almacenamiento real de imagenes en Supabase Storage | LMM | pendiente | S2-T13 |
 | `S2-T15` | 300 | Guardas de navegación por sesión y por rol | RRC | pendiente | S2-T09 |
@@ -176,14 +176,14 @@ criterios de aceptación y cómo probarla.
 
 Los tickets se redactan **al iniciar cada sprint**, no los seis por adelantado:
 detallar hoy el Sprint 5 es trabajo que se va a tirar. Hoy están escritos los
-16 del Sprint 1, los de `S2-T03` a `S2-T07`, el de `S2-T08` y el de `S2-T10`. Para los
+16 del Sprint 1 y los de `S2-T03` a `S2-T10` y el de `S2-T12`. Para los
 siguientes, ver el prompt 6 de `docs/proceso/PROMPTS.md`.
 
 > **Los del Sprint 2 se están redactando tarde, tarea por tarea.** `S2-T01` y
 > `S2-T02` se trabajaron **sin ticket**, por autorización del líder del
 > 2026-09-21, dejando su alcance escrito en el propio entregable. Desde
 > `S2-T03` sí hay ticket: el líder ordenó el 2026-09-22 redactarlo antes de
-> tomar la tarea. Las 7 restantes del Sprint 2 siguen sin ticket; cada una lo
+> tomar la tarea. Las 5 restantes del Sprint 2 siguen sin ticket; cada una lo
 > necesita antes de empezar.
 >
 > **2026-09-27 · El líder subió `S2-T10` de 600 a 700** porque urge cerrar la

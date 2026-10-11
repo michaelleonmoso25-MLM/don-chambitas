@@ -43,6 +43,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -87,11 +88,26 @@ import mx.donchambitas.app.ui.tema.titulo
 @Composable
 fun GrafoNavegacion(
     navController: NavHostController = rememberNavController(),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
     val estadoSesion = MarcadorSesionTemporal.estado
+
+    // La sesión terminó, porque el usuario la cerró o porque venció: se sale a
+    // P-02 con la pila limpia, para que atrás no regrese a una pantalla de
+    // adentro. Si nadie había entrado (el aviso del arranque), decide P-01.
+    LaunchedEffect(sesionViewModel) {
+        sesionViewModel.sinSesion.collect {
+            if (MarcadorSesionTemporal.estado != EstadoSesionTemporal.SIN_SESION) {
+                MarcadorSesionTemporal.estado = EstadoSesionTemporal.SIN_SESION
+                navController.navigate(Ruta.IniciarSesion.ruta) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        }
+    }
 
     // Guarda global de navegación en tiempo real
     LaunchedEffect(rutaActual, estadoSesion) {
@@ -211,7 +227,7 @@ fun GrafoNavegacion(
             subgrafoAutenticacion(navController)
             subgrafoCliente(navController)
             subgrafoTrabajador(navController)
-            pantallasCompartidas(navController)
+            pantallasCompartidas(navController, alCerrarSesion = sesionViewModel::cerrarSesion)
         }
     }
 }
@@ -249,6 +265,7 @@ private fun NavGraphBuilder.subgrafoAutenticacion(navController: NavHostControll
         composable(Ruta.Splash.ruta) {
             SplashPantalla(
                 alNavegarADestino = { destino ->
+                    marcarSesionSegun(destino)
                     navController.navigate(destino.ruta) {
                         popUpTo(Ruta.Splash.ruta) {
                             inclusive = true
@@ -473,7 +490,10 @@ private fun NavGraphBuilder.subgrafoTrabajador(navController: NavHostController)
 /**
  * Pantallas compartidas entre cliente y trabajador (P-15 a P-19).
  */
-private fun NavGraphBuilder.pantallasCompartidas(navController: NavHostController) {
+private fun NavGraphBuilder.pantallasCompartidas(
+    navController: NavHostController,
+    alCerrarSesion: () -> Unit
+) {
     composable(Ruta.Conversaciones.ruta) {
         MarcadorPantalla(
             ruta = Ruta.Conversaciones,
@@ -532,12 +552,7 @@ private fun NavGraphBuilder.pantallasCompartidas(navController: NavHostControlle
                 AccionNavegacion("Mi perfil (solo si Trabajador, P-11)") {
                     navController.navigate(Ruta.MiPerfil.ruta)
                 },
-                AccionNavegacion("Cerrar sesión (P-02)") {
-                    MarcadorSesionTemporal.estado = EstadoSesionTemporal.SIN_SESION
-                    navController.navigate(Ruta.IniciarSesion.ruta) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+                AccionNavegacion("Cerrar sesión (P-02)", alCerrarSesion)
             )
         )
     }
@@ -873,17 +888,23 @@ fun MarcadorPantalla(
  * Entra a la pantalla de inicio del rol desde P-02 o P-03, sacando de la pila
  * todo el subgrafo de autenticacion: despues de entrar, el boton atras no
  * regresa al formulario (seccion 8 de DISENO-AUTENTICACION.md).
- *
- * Las guardas todavia leen el marcador temporal de S1-T12, asi que se marca
- * con el rol que corresponde al destino. S2-T15 lo sustituye por la sesion
- * real de RepositorioAuth.
  */
 private fun entrarConSesion(navController: NavHostController, destino: Ruta) {
-    MarcadorSesionTemporal.estado = when (destino) {
-        Ruta.InicioTrabajador -> EstadoSesionTemporal.TRABAJADOR
-        else -> EstadoSesionTemporal.CLIENTE
-    }
+    marcarSesionSegun(destino)
     navController.navigate(destino.ruta) {
         popUpTo(Subgrafo.Autenticacion.ruta) { inclusive = true }
+    }
+}
+
+/**
+ * Las guardas todavia leen el marcador temporal de S1-T12, asi que quien
+ * decide un destino (P-01, P-02 o P-03) lo deja con el rol que le corresponde.
+ * S2-T15 lo sustituye por la sesion real de RepositorioAuth.
+ */
+private fun marcarSesionSegun(destino: Ruta) {
+    MarcadorSesionTemporal.estado = when (destino) {
+        Ruta.InicioCliente -> EstadoSesionTemporal.CLIENTE
+        Ruta.InicioTrabajador -> EstadoSesionTemporal.TRABAJADOR
+        else -> EstadoSesionTemporal.SIN_SESION
     }
 }

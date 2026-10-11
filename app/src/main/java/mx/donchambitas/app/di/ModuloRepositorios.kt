@@ -13,8 +13,8 @@ import mx.donchambitas.app.datos.falso.RepositorioResenasFalso
 import mx.donchambitas.app.datos.falso.RepositorioServiciosFalso
 import mx.donchambitas.app.datos.falso.RepositorioSolicitudesFalso
 import mx.donchambitas.app.datos.falso.RepositorioTrabajadorFalso
-import mx.donchambitas.app.datos.falso.RepositorioUsuarioFalso
 import mx.donchambitas.app.datos.repositorio.RepositorioAuthReal
+import mx.donchambitas.app.datos.repositorio.RepositorioUsuarioReal
 import mx.donchambitas.app.dominio.repositorio.RepositorioAuth
 import mx.donchambitas.app.dominio.repositorio.RepositorioCatalogos
 import mx.donchambitas.app.dominio.repositorio.RepositorioChat
@@ -30,7 +30,8 @@ import mx.donchambitas.app.dominio.repositorio.RepositorioUsuario
  * Modulo de Hilt que enlaza las diez interfaces de repositorio del dominio
  * con sus implementaciones activas.
  *
- * Hoy todas enlazan a la implementacion falsa en memoria (FuenteDatosFalsa).
+ * RepositorioAuth y RepositorioUsuario ya enlazan a su implementacion real;
+ * los otros ocho, a la falsa en memoria (FuenteDatosFalsa).
  * Cuando cada tarea real aterriza (S2-T07, S2-T12, S2-T14, S3-T09, S4-T09, S5-T07),
  * este archivo es el unico que cambia su enlace.
  */
@@ -47,7 +48,7 @@ abstract class ModuloRepositorios {
     @Binds
     @Singleton
     abstract fun enlazarRepositorioUsuario(
-        impl: RepositorioUsuarioFalso
+        impl: RepositorioUsuarioReal
     ): RepositorioUsuario
 
     @Binds
