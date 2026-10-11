@@ -95,7 +95,7 @@ Rama `feat/S2-T09-manejo-sesion`, pull request **sin abrir todavía**. Ticket re
 - **Lo que NO se probó en el dispositivo: la expiración.** Hace falta revocar la sesión desde la consola y bajar el *JWT expiry*, y el emulador no deja adelantar el reloj sin root. El ticket lo prevé: el caso queda cubierto en `SesionViewModelTest`, y el camino de `GrafoNavegacion` que lleva a P-02 es el mismo que se probó con el cierre a mano.
 - **Sin llaves** en `local.properties` se probó el 2026-10-08: abre y llega a P-02 sin cerrarse. No se repitió el 2026-10-11.
 - **Un desvío del ticket**, anotado en él: `SesionViewModel` avisa en cada `null`, también en el del arranque, y `GrafoNavegacion` decide si había alguien adentro mirando el marcador.
-- **Hallazgo para el líder: la confirmación por correo está activada otra vez.** `GET /auth/v1/settings` devuelve `mailer_autoconfirm: false` el 2026-10-11; el 2026-09-27 daba `true`. Contradice `DEC-25`: tal como está, un alta nueva desde P-03 no deja sesión abierta. Se cambia en la consola, Authentication → Sign In / Providers → Email → *Confirm email*. No se probó un alta con el ajuste así.
+- **La confirmación por correo estuvo activada y ya se corrigió.** El 2026-10-11 `GET /auth/v1/settings` devolvía `mailer_autoconfirm: false`, contra `DEC-25` (el 2026-09-27 daba `true`). El líder la desactivó ese mismo día en la consola y se verificó que volvió a `true`. No se probó un alta nueva desde P-03 después del cambio.
 - **Las cuatro cuentas `*.rls@prueba.donchambitas.mx` se volvieron a crear** el 2026-10-11 y siguen en el proyecto.
 
 **`S2-T08` — Almacenamiento seguro de la sesión y el token.** 2026-10-08.
