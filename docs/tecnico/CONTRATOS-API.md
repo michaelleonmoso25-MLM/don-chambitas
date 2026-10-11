@@ -372,22 +372,124 @@ el ajuste, no la ruta.
 
 ## Usuario · `RepositorioUsuario`
 
-| Operación | Con qué |
-|---|---|
-| `obtenerMiUsuario()` | `usuarios` where `id = auth.uid()` |
-| `actualizarMiUsuario(nombre, apellidos, telefono)` | `update` sobre `usuarios` |
-| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<archivo>`, y luego `usuarios.foto_url` |
+Escrito a detalle en `S2-T12`, contra `supabase-kt` 3.0.3 y contra el proyecto
+de Supabase. La implementación es `RepositorioUsuarioReal` (`DEC-31`).
 
-La ruta de Storage **tiene que empezar con el uid del usuario**: de ahí salen
-las políticas. Ver `basedatos/03_almacenamiento.sql`.
+### Resumen
 
-**El `update` sobre `usuarios` manda esas columnas y ninguna más.** RLS filtra
-filas, nunca columnas, así que quien cierra esto son los permisos por columna de
-`02_politicas_rls.sql`: `authenticated` puede actualizar `nombre`, `apellidos`,
-`telefono` y `foto_url`. El correo y el rol no se cambian —el correo vive en
-`auth.users` y el cambio de rol está fuera del MVP—. Consecuencia para S2-T12:
-un DTO que serialice la fila entera falla con `permission denied for column`.
-Lo mismo aplica a `marcarLeidos`, que solo puede tocar `leido_en`.
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `obtenerMiUsuario()` | `select` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>` |
+| `actualizarMiUsuario(nombre, apellidos, telefono)` | `update` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>`, ya actualizado |
+| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<archivo>`, y luego `usuarios.foto_url` | **Todavía no:** llega con `S2-T14` |
+
+**El `<uid>` sale de la sesión que ya tiene `supabase-kt`**:
+`auth.currentUserOrNull()?.id`, sin ir a la red. Si no hay sesión, la
+operación devuelve `AUTENTICACION` sin hacer ninguna petición.
+
+**El repositorio no valida ni recorta.** Manda lo que recibe. Las reglas de
+nombre, apellidos y teléfono viven en `ValidacionesAuth` y las aplica el
+ViewModel de P-18, igual que en P-03.
+
+### `obtenerMiUsuario`
+
+```kotlin
+from("usuarios")
+    .select { filter { eq("id", uid) } }
+    .decodeList<UsuarioDto>()
+```
+
+La deja pasar la política "usuario ve su propia ficha" (`id = auth.uid()`). Se
+convierte con `UsuarioDto.aUsuario()`, el mismo DTO de "Cómo se arma la
+`Sesion`".
+
+### `actualizarMiUsuario`
+
+```kotlin
+from("usuarios")
+    .update({
+        set("nombre", nombre)
+        set("apellidos", apellidos)
+        set("telefono", telefono)
+    }) {
+        filter { eq("id", uid) }
+        select()
+    }
+    .decodeList<UsuarioDto>()
+```
+
+- **Manda esas tres columnas y ninguna más.** RLS filtra filas, nunca
+  columnas, así que quien cierra esto son los permisos por columna de
+  `02_politicas_rls.sql`: `authenticated` puede actualizar `nombre`,
+  `apellidos`, `telefono` y `foto_url`. Con una sola columna de más, el
+  `update` entero falla con `403` (`permission denied for table usuarios`).
+  Por eso no se serializa un DTO: se nombra cada columna con `set`. Lo mismo
+  aplica a `marcarLeidos`, que solo puede tocar `leido_en`.
+- **`select()` pide la fila de vuelta** (`Prefer: return=representation`), y
+  de ahí sale el `Usuario` que se devuelve, con el `actualizado_en` que puso el
+  trigger. No hay segunda lectura.
+- **`telefono = null` borra el teléfono.** Convertir un campo vacío en `null`
+  es del ViewModel.
+- El correo y el rol no se cambian: el correo vive en `auth.users` y el cambio
+  de rol está fuera del MVP (`DEC-22`).
+
+### Cero filas es `AUTENTICACION`
+
+RLS no rechaza la fila ajena ni la petición sin sesión: las filtra. PostgREST
+contesta **`200` con una lista vacía**, tanto en el `select` como en el
+`update`. En las dos operaciones, una lista vacía se devuelve como
+`Resultado.Error(AUTENTICACION)`: la sesión ya no corresponde a ninguna ficha.
+Nunca es un éxito.
+
+### `subirFotoPerfil`
+
+`RepositorioUsuarioReal` devuelve `Resultado.Error(SERVIDOR)` hasta `S2-T14`
+(`DEC-31`, y la decisión 1 de `S2-T12`). Nadie la llama todavía.
+
+Cuando llegue: la ruta de Storage **tiene que empezar con el uid del
+usuario**, porque de ahí salen las políticas. Ver
+`basedatos/03_almacenamiento.sql`.
+
+### La `Sesion` no se entera de la edición
+
+`sesionActual()` lee la ficha una vez por usuario. Después de
+`actualizarMiUsuario`, la `Sesion` que emite sigue con los datos de antes
+hasta que se cierre la aplicación o se vuelva a entrar (decisión 2 de
+`S2-T12`).
+
+**Regla:** de la `Sesion` se lee quién es el usuario y su rol, que no cambian.
+Una pantalla que pinte nombre, apellidos, teléfono o foto los pide a
+`obtenerMiUsuario()`.
+
+### Errores de `RepositorioUsuario`
+
+`traducirErrorDatos`, en `datos/remoto/supabase/ErroresDatos.kt`. Si esta
+tabla cambia, esa función cambia igual.
+
+**Se clasifica por el código HTTP**, porque `supabase-kt` 3.0.3 no deja pasar
+el código de Postgres: arma la excepción con `message`, `details` y `hint`, y
+`code` (`42501`, `22001`) se pierde.
+
+| Qué llega | Cuándo pasa, probado el 2026-10-11 | `TipoError` |
+|---|---|---|
+| `HttpRequestException`, `HttpRequestTimeoutException` | Sin red, tiempo agotado | `RED` |
+| Sin usuario en `auth` | No hay sesión abierta | `AUTENTICACION` |
+| `200` con lista vacía | La sesión no corresponde a ninguna ficha | `AUTENTICACION` |
+| `401` | El token no se puede leer o venció (`PGRST301`) | `AUTENTICACION` |
+| `403` | El `update` nombra una columna sin permiso (`42501`). **Es un defecto nuestro**, no del usuario | `AUTENTICACION` |
+| `400` | El valor no cabe en la columna (`22001`): nombre de más de 80, apellidos de más de 120, teléfono de más de 20 | `VALIDACION` |
+| `409` | Llave duplicada. No pasa con estas tres columnas; queda por la tabla general | `VALIDACION` |
+| `5xx` | El servidor falla | `SERVIDOR` |
+| Cualquier otra cosa | | `DESCONOCIDO` |
+
+**El `mensaje` del `Resultado.Error` es `RestException.error`**, el texto que
+mandó el servidor. **Nunca `RestException.message`**: en 3.0.3 ese texto
+incluye las cabeceras de la petición, con `Authorization: Bearer <token>`
+(`H-13`).
+
+**La base no valida el contenido.** `public.usuarios` no tiene `CHECK` sobre
+`nombre`, `apellidos` ni `telefono`: un nombre vacío devuelve `200`. Lo único
+que lo impide hoy es la validación de la aplicación.
 
 ## Perfil del trabajador · `RepositorioTrabajador`
 
@@ -592,7 +694,7 @@ Y todos viven en `strings.xml`.
 
 Las traducciones concretas de arriba son **el contrato**, no la
 implementación. Cada tarea de contrato detalla su módulo con los nombres de
-columna exactos y los DTO: S2-T06 autenticación (ya escrito, arriba), S2-T12 perfil de usuario,
+columna exactos y los DTO: S2-T06 autenticación y S2-T12 perfil de usuario (ya escritos, arriba),
 S3-T08 trabajador y servicios, S3-T12 la Edge Function de IA, S4-T08 solicitudes
 y búsqueda, S5-T06 mensajería y postulaciones.
 
@@ -680,3 +782,27 @@ así que con la autenticación real fallan igual que fallaba `RepositorioUsuario
 No urge hasta los sprints 4 y 5, pero hay que asignarlos antes de redactar
 esos tickets. **Lo decide el líder.**
 
+
+Salen de escribir el contrato de perfil de usuario en `S2-T12`. **Ninguno se
+resolvió aquí.**
+
+**`H-13` · El `mensaje` de los errores de autenticación lleva el token.**
+- `traducirErrorAuth` y `traducirErrorFicha` guardan `error.message` en
+  `Resultado.Error.mensaje`.
+- En `supabase-kt` 3.0.3, `RestException.message` incluye las cabeceras de la
+  petición, y entre ellas van `Authorization: Bearer <token>` y la `anon key`.
+- Hoy ninguna pantalla pinta ni registra ese `mensaje`, así que el token no
+  sale del proceso. El día que alguien lo mande a un registro o a un reporte
+  de fallas, el token va con él.
+- `ErroresDatos.kt`, de `S2-T12`, ya usa `RestException.error` y tiene una
+  prueba que lo cuida. `ErroresAuth.kt` no se tocó: es de otra tarea.
+  **Lo decide el líder.**
+
+**`H-14` · `public.usuarios` no valida el contenido de nombre, apellidos ni
+teléfono.**
+- No hay `CHECK` que impida un nombre vacío: `nombre = ''` devuelve `200`,
+  probado el 2026-10-11. El teléfono solo tiene el tope de 20 caracteres.
+- Lo único que lo impide es `ValidacionesAuth`, en la aplicación, y la `anon
+  key` es pública: cualquiera con una cuenta puede escribir directo.
+- El daño se limita a la ficha propia. Cerrarlo es un cambio de
+  `01_esquema.sql`. **Lo decide el líder.**
