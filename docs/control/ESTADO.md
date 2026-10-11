@@ -14,8 +14,8 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 10 |
-| En curso | 1 |
+| Terminadas | 11 |
+| En curso | 0 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -61,17 +61,40 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
+_Ninguna._
+
 | Campo | Valor |
 |---|---|
-| ID | `S2-T12` |
-| Título | Contrato de la API de perfil de usuario (y `RepositorioUsuario` real) |
-| Quién la tomó | Ricardo5690, con el agente |
-| Rama | `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`** mientras el #15 no se integre |
-| Desde | 2026-10-11 |
-
-**Solo está el ticket.** `docs/tareas/S2-T12.md` tiene tres decisiones abiertas para el líder; el código empieza cuando las tome.
+| ID | — |
+| Título | — |
+| Quién la tomó | — |
+| Rama | — |
+| Desde | — |
 
 ## Última tarea terminada
+
+**`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario` real).** 2026-10-11.
+Rama `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`**, pull request **sin abrir todavía**: se integra después del #15. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+
+- **`datos/repositorio/RepositorioUsuarioReal.kt`** (`DEC-31`), ya enlazado en `ModuloRepositorios`. Los otros ocho repositorios siguen falsos.
+  - `obtenerMiUsuario()` lee la ficha propia de `public.usuarios`.
+  - `actualizarMiUsuario(...)` manda solo `nombre`, `apellidos` y `telefono`, y devuelve la fila ya actualizada sin una segunda lectura.
+  - Sin sesión, o si vuelven cero filas, devuelve `AUTENTICACION`: RLS no rechaza, filtra, y PostgREST contesta `200` con una lista vacía.
+  - `subirFotoPerfil` devuelve `SERVIDOR` hasta `S2-T14`.
+- **`datos/remoto/supabase/ErroresDatos.kt`:** `traducirErrorDatos`, por código HTTP. `supabase-kt` 3.0.3 no deja pasar el código de Postgres.
+- **`CONTRATOS-API.md`:** la sección "Usuario" a detalle, con las llamadas exactas, la tabla de errores y la regla de que de la `Sesion` solo se leen el usuario y su rol.
+- **En pantalla no cambia nada.** Ninguna pantalla llama todavía a `RepositorioUsuario`; P-18 es `S2-T11`.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 180 pruebas unitarias (11 nuevas) y 59 instrumentadas (5 nuevas), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Pixel_10`, con `RepositorioUsuarioRealTest`: lee la ficha de `ana.rls@…`, la edita y la vuelve a leer, borra el teléfono con `null`, un nombre de 81 caracteres da `VALIDACION` y sin sesión da `AUTENTICACION`. La ficha quedó como estaba.
+  - **Sin llaves** en `local.properties`: la aplicación abre y llega a P-02, y los 5 casos nuevos salen omitidos.
+  - Con llaves, `ana.rls@…` entra a P-05 y al reabrir sigue en P-05. Sin excepciones en logcat.
+- **Lo que NO se probó en el dispositivo:** que sin red devuelva `RED`. Lo cubre `ErroresDatosTest`.
+- **`RepositorioUsuarioRealTest` es la primera prueba de la suite que necesita red** y un proyecto de Supabase vivo con las cuentas de `92_usuarios_prueba.sql`. Sin llaves se omite; con llaves y sin esas cuentas, falla.
+- **Dos hallazgos para el líder**, al final de `CONTRATOS-API.md`:
+  - **`H-13` · El `mensaje` de los errores de autenticación lleva el token.** `ErroresAuth.kt` guarda `error.message`, que en `supabase-kt` 3.0.3 incluye las cabeceras de la petición. Hoy nadie lo pinta ni lo registra. El código nuevo no lo repite.
+  - **`H-14` · `public.usuarios` acepta un nombre vacío.** No hay `CHECK` sobre nombre, apellidos ni teléfono; solo lo impide la validación de la aplicación.
 
 **`S2-T09` — Manejo de sesión: inicio automático, cierre de sesión y expiración.** 2026-10-11.
 Rama `feat/S2-T09-manejo-sesion`, pull request **#15**. Ticket redactado por el agente el 2026-10-08; el líder eligió la opción A en las dos decisiones.
@@ -527,16 +550,16 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario`
-real, `DEC-31`) (prioridad 500, sprint 2, sin dependencias)
+`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar)
+(prioridad 550, sprint 2, depende de `S2-T12`, que ya está hecha)
 
-**No tiene ticket.** `S2-T11` tiene más prioridad (550), pero depende de ella.
+**No tiene ticket.** Es P-18: ver y editar la ficha con `RepositorioUsuario`,
+cambiar la contraseña, cerrar sesión con su mensaje de error sin red, y
+aterrizar ahí al llegar por el enlace de recuperación.
 
-Con `S2-T09` hecha, `S2-T15` (guardas por sesión y por rol, prioridad 300) ya
-no tiene dependencias abiertas.
-
-Con `S2-T10` la recuperación **todavía no queda completa**. Aterrizar en P-18
-y cambiar ahí la contraseña es `S2-T11`, que depende de `S2-T12` (`DEC-31`).
+Lo que `S2-T12` le deja dicho: nombre, apellidos y teléfono se piden a
+`obtenerMiUsuario()`, no a la `Sesion`; el repositorio no valida ni recorta; y
+un campo de teléfono vacío se manda como `null`.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
