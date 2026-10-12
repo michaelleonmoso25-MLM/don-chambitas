@@ -10,6 +10,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.storage.Storage
 import javax.inject.Singleton
 import mx.donchambitas.app.BuildConfig
 import mx.donchambitas.app.datos.local.crearAlmacenSesionCifrada
@@ -41,6 +42,8 @@ object ModuloSupabase {
                 sessionManager = crearAlmacenSesionCifrada(contexto)
             }
             install(Postgrest)
+            // Fotos de perfil, cubeta perfiles (S2-T14).
+            install(Storage)
         }
     }
 }
