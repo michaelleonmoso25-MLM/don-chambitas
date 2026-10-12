@@ -1,11 +1,19 @@
 package mx.donchambitas.app.datos.repositorio
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.MemorySessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 import kotlinx.coroutines.runBlocking
 import mx.donchambitas.app.BuildConfig
 import mx.donchambitas.app.dominio.modelo.Usuario
@@ -24,10 +32,12 @@ import org.junit.runner.RunWith
  * RepositorioUsuarioReal contra el proyecto de Supabase, con RLS y los
  * permisos por columna de verdad. Es la unica prueba de la suite que necesita
  * red: ninguna pantalla llama todavia a RepositorioUsuario (P-18 es S2-T11),
- * asi que no hay otra forma de ejecutarlo en el dispositivo.
+ * asi que no hay otra forma de ejecutarlo en el dispositivo. Desde S2-T14
+ * tambien prueba la foto de perfil contra la cubeta perfiles.
  *
  * Se omite sola si faltan las llaves en local.properties. Usa la cuenta
- * ana.rls de basedatos/92_usuarios_prueba.sql y deja su ficha como estaba.
+ * ana.rls de basedatos/92_usuarios_prueba.sql y deja su ficha y su carpeta
+ * de Storage como estaban.
  */
 @RunWith(AndroidJUnit4::class)
 class RepositorioUsuarioRealTest {
@@ -46,6 +56,7 @@ class RepositorioUsuarioRealTest {
         cliente = createSupabaseClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY) {
             install(Auth) { sessionManager = MemorySessionManager() }
             install(Postgrest)
+            install(Storage)
         }
         auth = RepositorioAuthReal { cliente }
         repositorio = RepositorioUsuarioReal { cliente }
@@ -128,6 +139,46 @@ class RepositorioUsuarioRealTest {
     fun debeSerAutenticacion_cuandoNoHaySesion() = runBlocking {
         assertEquals(TipoError.AUTENTICACION, tipoDe(repositorio.obtenerMiUsuario()))
         assertEquals(TipoError.AUTENTICACION, tipoDe(repositorio.actualizarMiUsuario("X", "Y", null)))
+        val foto = repositorio.subirFotoPerfil(jpegDePrueba())
+        assertTrue(foto.toString(), foto is Resultado.Error && foto.tipo == TipoError.AUTENTICACION)
+    }
+
+    @Test
+    fun debeDejarSoloLaFotoNueva_cuandoSeSubeDosVeces() = runBlocking {
+        val usuario = entrar()
+        val cubeta = cliente.storage.from("perfiles")
+        try {
+            val primera = repositorio.subirFotoPerfil(jpegDePrueba(Color.RED))
+            assertTrue(primera.toString(), primera is Resultado.Exito)
+            val segunda = repositorio.subirFotoPerfil(jpegDePrueba(Color.BLUE))
+            assertTrue(segunda.toString(), segunda is Resultado.Exito)
+            val url = (segunda as Resultado.Exito).dato
+
+            val archivos = cubeta.list(usuario.id).map { "${usuario.id}/${it.name}" }
+            assertEquals(1, archivos.size)
+            assertTrue(url.endsWith(archivos.single()))
+            assertEquals(url, exito(repositorio.obtenerMiUsuario()).fotoUrl)
+            val conexion = URL(url).openConnection() as HttpURLConnection
+            assertEquals(200, conexion.responseCode)
+            assertEquals("image/jpeg", conexion.contentType)
+            conexion.disconnect()
+        } finally {
+            // La cuenta de prueba se queda sin foto, como estaba.
+            val restos = cubeta.list(usuario.id).map { "${usuario.id}/${it.name}" }
+            if (restos.isNotEmpty()) cubeta.delete(restos)
+            cliente.from("usuarios").update({ set("foto_url", null as String?) }) {
+                filter { eq("id", usuario.id) }
+            }
+        }
+    }
+
+    /** Un JPEG de 512 x 512 de un solo color, como el que manda P-18. */
+    private fun jpegDePrueba(color: Int = Color.GRAY): ByteArray {
+        val bitmap = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888).apply { eraseColor(color) }
+        return ByteArrayOutputStream().use {
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, it)
+            it.toByteArray()
+        }
     }
 
     private companion object {
