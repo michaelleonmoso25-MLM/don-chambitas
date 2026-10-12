@@ -382,7 +382,7 @@ de Supabase. La implementación es `RepositorioUsuarioReal` (`DEC-31`).
 |---|---|---|
 | `obtenerMiUsuario()` | `select` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>` |
 | `actualizarMiUsuario(nombre, apellidos, telefono)` | `update` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>`, ya actualizado |
-| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<archivo>`, y luego `usuarios.foto_url` | **Todavía no:** llega con `S2-T14` |
+| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<milisegundos>.jpg`; luego `usuarios.foto_url`, y al final borra el resto de la carpeta | `Resultado<String>`, la URL pública nueva (`S2-T14`) |
 
 **El `<uid>` sale de la sesión que ya tiene `supabase-kt`**:
 `auth.currentUserOrNull()?.id`, sin ir a la red. Si no hay sesión, la
@@ -444,12 +444,58 @@ Nunca es un éxito.
 
 ### `subirFotoPerfil`
 
-`RepositorioUsuarioReal` devuelve `Resultado.Error(SERVIDOR)` hasta `S2-T14`
-(`DEC-31`, y la decisión 1 de `S2-T12`). Nadie la llama todavía.
+Escrito a detalle en `S2-T14`. Recibe el JPEG de 512 × 512 que arma P-18
+(`S2-T13`). **La foto anterior se borra**: lo decidió el líder el 2026-10-11.
 
-Cuando llegue: la ruta de Storage **tiene que empezar con el uid del
-usuario**, porque de ahí salen las políticas. Ver
-`basedatos/03_almacenamiento.sql`.
+```kotlin
+val cubeta = storage.from("perfiles")
+val ruta = "$uid/${System.currentTimeMillis()}.jpg"
+cubeta.upload(ruta, bytes) { contentType = ContentType.Image.JPEG }   // 1. subir
+val url = cubeta.publicUrl(ruta)
+from("usuarios").update({ set("foto_url", url) }) {                    // 2. apuntar
+    filter { eq("id", uid) }
+    select()
+}
+cubeta.delete(cubeta.list(uid).map { "$uid/${it.name}" } - ruta)       // 3. limpiar
+```
+
+- **La ruta empieza con el uid**: las políticas de `03_almacenamiento.sql`
+  solo dejan escribir y borrar dentro de `perfiles/<uid>/`.
+- **Un nombre nuevo cada vez, sin `upsert`.** Con un nombre fijo la URL no
+  cambiaría y Coil seguiría pintando la foto vieja.
+- **El orden importa**: la ficha nunca apunta a un archivo que no existe.
+
+| Si falla… | Qué pasa |
+|---|---|
+| 1, subir | Nada cambió. Se devuelve el error |
+| 2, apuntar | Se borra el archivo recién subido y se devuelve el error. La ficha sigue con la foto anterior, que no se tocó |
+| 3, limpiar | **Es un éxito igual**: la foto nueva ya está y la ficha ya apunta a ella. Lo que quedó se borra en la siguiente subida, porque el paso 3 borra todo lo que no sea la foto nueva |
+
+**Errores de Storage.** Storage contesta todos sus rechazos con HTTP `400`, y
+pone el código real como texto dentro del cuerpo (verificado el 2026-10-11):
+
+| Motivo | Cuerpo |
+|---|---|
+| Ruta repetida sin `upsert` | `"409"`, `KeyAlreadyExists` |
+| Carpeta de otro uid | `"403"`, `new row violates row-level security policy` |
+| Tipo que no es JPG, PNG ni WebP | `"415"`, `InvalidMimeType` |
+| Más de 5 MB | `"413"`, `EntityTooLarge` |
+
+`storage-kt` 3.0.3 espera ese código como número y no lo recupera, así que
+desde la aplicación no se distingue el motivo (`H-17`). `traducirErrorStorage`
+(`ErroresStorage.kt`) traduce así:
+
+| Qué llega | `TipoError` |
+|---|---|
+| Sin sesión (antes de ir a la red) | `AUTENTICACION` |
+| `HttpRequestException`, `HttpRequestTimeoutException` | `RED` |
+| Cualquier `RestException` de Storage | `SERVIDOR` |
+| Error de PostgREST en el paso 2 | El de `traducirErrorDatos`. Cero filas, `AUTENTICACION` |
+| Cualquier otra cosa | `DESCONOCIDO` |
+
+La aplicación evita los cuatro motivos: sube JPEG de 512 × 512, a su carpeta y
+con un nombre nuevo. El `mensaje` es `RestException.error`, nunca `message`
+(`H-13`).
 
 ### La `Sesion` no se entera de la edición
 

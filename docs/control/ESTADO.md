@@ -14,8 +14,8 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 13 |
-| En curso | 1 |
+| Terminadas | 14 |
+| En curso | 0 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -36,7 +36,7 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Tocas la pestaña **Cuenta** | P-18 real: tu ficha de `public.usuarios`, editar datos, cambiar contraseña y cerrar sesión. El trabajador ve además "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14) | — |
 | Editas nombre, apellidos o teléfono y guardas | La tarjeta cambia en ese momento y sigue así al reabrir. El teléfono es obligatorio, como en P-03 | — |
 | Tocas el avatar de P-18 | Hoja con "Elegir de la galería" y "Tomar foto", y luego el recortador. Una imagen de más de 5 MB o que no sea JPG, PNG o WebP se rechaza con el motivo | — |
-| Pulsas "Usar foto" en el recortador | **"Error del servidor"** y el avatar no cambia: el repositorio real todavía no guarda la foto | `S2-T14` |
+| Pulsas "Usar foto" en el recortador | La foto se guarda en Supabase Storage, el avatar la muestra y sigue al reabrir. La anterior se borra de la cubeta. Sin red, "Sin conexión" | — |
 | Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
 | Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
 | Pulsas "Cerrar sesión" **sin red** | "Sin conexión. Revisa tu conexión e intenta de nuevo." Sigues en P-18 y la sesión sigue guardada | — |
@@ -66,33 +66,33 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
+_Ninguna._
+
 | Campo | Valor |
 |---|---|
-| ID | `S2-T14` |
-| Título | Almacenamiento real de imágenes en Supabase Storage |
-| Quién la tomó | aztemik, con el agente |
-| Rama | `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`** |
-| Desde | 2026-10-11 |
-
-El líder decidió al pedirla que la foto anterior se borra de la cubeta.
+| ID | — |
+| Título | — |
+| Quién la tomó | — |
+| Rama | — |
+| Desde | — |
 
 ## Última tarea terminada
 
-**`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz).** 2026-10-11.
-Rama `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**, pull request **sin abrir todavía**: se integra después del de `S2-T11`. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+**`S2-T14` — Almacenamiento real de imágenes en Supabase Storage.** 2026-10-11.
+Rama `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`**, pull request **sin abrir todavía**. Orden de integración: `S2-T11`, `S2-T13` y luego esta. Ticket redactado por el agente el mismo día; el líder decidió al pedirla que **la foto anterior se borra**.
 
-- **Tocar el avatar de P-18** abre una hoja con "Elegir de la galería" (`PickVisualMedia`) y "Tomar foto" (`TakePicture` con un `FileProvider` sobre `cache/fotos/`). No se pide ningún permiso.
-- **Antes de recortar** se valida tipo y peso con los topes de la cubeta `perfiles` (5 MB; JPG, PNG o WebP), y se decodifica reducida y derecha según el EXIF (`FotoPerfil.kt`).
-- **`RecortadorFoto`** (`ui/componentes`), propio, en un `Dialog` de pantalla completa: círculo fijo, mover y acercar de 1× a 4× sin dejar hueco.
-- **"Usar foto"** manda a `subirFotoPerfil` un JPEG de 512 × 512. **Hoy el repositorio real responde "Error del servidor"** hasta `S2-T14`, por la decisión 3.
-- `MensajeMiCuenta.Exito` pasó a llamarse `Texto`. `WIREFRAMES.md` §7 al día.
+- **`RepositorioUsuarioReal.subirFotoPerfil`** real: sube a `perfiles/<uid>/<milisegundos>.jpg`, escribe la URL pública en `usuarios.foto_url` y borra todo lo demás de la carpeta. Si escribir `foto_url` falla, borra lo que subió. Si limpiar falla, sigue siendo éxito y la siguiente subida limpia.
+- **`install(Storage)`** en `ModuloSupabase`, y `traducirErrorStorage` (`ErroresStorage.kt`).
+- `CONTRATOS-API.md` ("`subirFotoPerfil`" a detalle) y `ARQUITECTURA.md` al día.
 - Verificación del proyecto:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 208 pruebas unitarias (12 nuevas) y 66 instrumentadas (2 nuevas), 0 fallas.
-  - En emulador `Medium_Phone`: hoja, galería, recortador, cancelar, rechazo de una PNG de 7,3 MB y de un GIF, arrastre hasta el borde y cámara virtual con la foto derecha.
+  - 212 pruebas unitarias (4 nuevas) y 67 instrumentadas (1 nueva, contra Supabase), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: subir desde la galería, reabrir, cambiar desde la cámara (queda un solo archivo en la carpeta) y subir sin red ("Sin conexión"). La carpeta de `ana.rls@…` quedó vacía y su `foto_url` en `null`.
   - **Sin llaves**: la aplicación abre y llega a P-02.
-- **Lo que NO se probó en el dispositivo:** acercar con dos dedos (`adb` no hace el gesto; lo cubre `FotoPerfilTest`) y el éxito de punta a punta (llega con `S2-T14`).
-- **Para `S2-T14`:** la interfaz ya manda los bytes listos. Falta guardarlos en `perfiles/<uid>/`, escribir `usuarios.foto_url` y decidir qué pasa con la foto anterior (`H-06`).
+- **Lo que NO se probó en el dispositivo:** la falla del paso 2 (escribir `foto_url` después de subir); no se puede provocar desde la aplicación.
+- **Dos hallazgos para el líder**, al final de `docs/tareas/S2-T14.md`:
+  - **`H-16` · `ARQUITECTURA.md` le daba a `S2-T14` también las fotos de servicio.** Son de `RepositorioServicios`, real en `S3-T09`; esta tarea hizo solo la de perfil y la tabla ya lo dice.
+  - **`H-17` · Storage no deja saber por qué rechazó un archivo:** todo llega como `400`. Hoy no estorba; con las fotos de servicio, sí.
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
 

@@ -38,6 +38,7 @@
 | 2026-10-11 | S2-T12 | GRI | feat/S2-T12-repositorio-usuario-real | #16 | Contrato de perfil de usuario a detalle y RepositorioUsuarioReal enlazado (DEC-31): leer y editar la ficha propia en public.usuarios. Opcion A en las tres decisiones: subirFotoPerfil devuelve error hasta S2-T14, sesionActual() no se entera de la edicion, y el repositorio se prueba con una prueba instrumentada contra Supabase que se omite sin llaves. Los errores de PostgREST se clasifican por codigo HTTP porque supabase-kt 3.0.3 no deja pasar el de Postgres. **Rama apilada sobre la de S2-T09.** **Hallazgos para el lider:** H-13, el mensaje de los errores de Auth lleva el token; H-14, public.usuarios acepta un nombre vacio. 180 unitarias y 59 instrumentadas pasando |
 | 2026-10-11 | S2-T11 | RRC | feat/S2-T11-perfil-usuario |  | P-18 real: ficha de public.usuarios, edicion de nombre, apellidos y telefono (obligatorio, como P-03), cambio de contrasena solo con la nueva y cierre de sesion con aviso sin red. El enlace de recuperacion aterriza en P-18 con la seccion de contrasena abierta (AvisosEnlace). Opcion A en las cinco decisiones. Se borro SesionViewModel.cerrarSesion. El enlace se probo armado con adb, no con un correo real. H-15: el wireframe pedia municipio |
 | 2026-10-11 | S2-T13 | BCJL | feat/S2-T13-foto-perfil-interfaz |  | Avatar de P-18: hoja con galeria (PickVisualMedia) y camara (TakePicture + FileProvider), validacion de 5 MB y JPG/PNG/WebP, recortador propio en Compose dentro de un Dialog y JPEG de 512 x 512 a subirFotoPerfil. Opcion A en las tres decisiones. Apilada sobre S2-T11. Hasta S2-T14 el repositorio real responde Error del servidor. El zoom con dos dedos no se probo en el dispositivo |
+| 2026-10-11 | S2-T14 | LMM | feat/S2-T14-almacenamiento-imagenes |  | subirFotoPerfil real: sube a perfiles/<uid>/<ms>.jpg, escribe foto_url y borra el resto de la carpeta (la foto anterior no se conserva, por decision del lider). install(Storage) y traducirErrorStorage. Apilada sobre S2-T13. H-16: las fotos de servicio quedan en S3-T09. H-17: Storage responde 400 a todo rechazo |
 
 ---
 
@@ -56,6 +57,22 @@ que se descubrió y no estaba previsto. Si no pasó nada, se deja vacía.
 > Lo que cada tarea dejó escrito en `ESTADO.md` como "Última tarea terminada"
 > antes de que la siguiente la relevara. La más reciente va arriba. Se agrega,
 > no se edita.
+
+**`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz).** 2026-10-11.
+Rama `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**, pull request **sin abrir todavía**: se integra después del de `S2-T11`. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+
+- **Tocar el avatar de P-18** abre una hoja con "Elegir de la galería" (`PickVisualMedia`) y "Tomar foto" (`TakePicture` con un `FileProvider` sobre `cache/fotos/`). No se pide ningún permiso.
+- **Antes de recortar** se valida tipo y peso con los topes de la cubeta `perfiles` (5 MB; JPG, PNG o WebP), y se decodifica reducida y derecha según el EXIF (`FotoPerfil.kt`).
+- **`RecortadorFoto`** (`ui/componentes`), propio, en un `Dialog` de pantalla completa: círculo fijo, mover y acercar de 1× a 4× sin dejar hueco.
+- **"Usar foto"** manda a `subirFotoPerfil` un JPEG de 512 × 512. **Hoy el repositorio real responde "Error del servidor"** hasta `S2-T14`, por la decisión 3.
+- `MensajeMiCuenta.Exito` pasó a llamarse `Texto`. `WIREFRAMES.md` §7 al día.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 208 pruebas unitarias (12 nuevas) y 66 instrumentadas (2 nuevas), 0 fallas.
+  - En emulador `Medium_Phone`: hoja, galería, recortador, cancelar, rechazo de una PNG de 7,3 MB y de un GIF, arrastre hasta el borde y cámara virtual con la foto derecha.
+  - **Sin llaves**: la aplicación abre y llega a P-02.
+- **Lo que NO se probó en el dispositivo:** acercar con dos dedos (`adb` no hace el gesto; lo cubre `FotoPerfilTest`) y el éxito de punta a punta (llega con `S2-T14`).
+- **Para `S2-T14`:** la interfaz ya manda los bytes listos. Falta guardarlos en `perfiles/<uid>/`, escribir `usuarios.foto_url` y decidir qué pasa con la foto anterior (`H-06`).
 
 **`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar).** 2026-10-11.
 Rama `feat/S2-T11-perfil-usuario`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A en sus cuatro decisiones y en una quinta que salió al implementar (el teléfono es obligatorio en P-18).
