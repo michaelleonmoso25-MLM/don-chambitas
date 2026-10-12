@@ -14,8 +14,8 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 11 |
-| En curso | 1 |
+| Terminadas | 12 |
+| En curso | 0 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -33,8 +33,11 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Abres la aplicación **sin sesión guardada** | P-01 dura al menos 800 ms y te deja en P-02 | — |
 | Abres la aplicación **con sesión guardada** | P-01 y luego P-05 o P-10 según tu rol, sin pasar por P-02. Atrás cierra la aplicación. Probado con `ana.rls@…` y `beto.rls@…` | — |
 | Abres la aplicación con sesión guardada y **sin red** | A los 8 segundos, "Sin conexión" con "Reintentar" en P-01. La sesión no se borra, y con la red de vuelta "Reintentar" entra | — |
-| Pulsas "Cerrar sesión (P-02)" en el marcador de P-18 | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
-| Pulsas "Cerrar sesión (P-02)" **sin red** | No pasa nada: sigues en P-18 y la sesión sigue guardada. Todavía no hay mensaje | `S2-T11` |
+| Tocas la pestaña **Cuenta** | P-18 real: tu ficha de `public.usuarios`, editar datos, cambiar contraseña y cerrar sesión. El trabajador ve además "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14) | — |
+| Editas nombre, apellidos o teléfono y guardas | La tarjeta cambia en ese momento y sigue así al reabrir. El teléfono es obligatorio, como en P-03 | — |
+| Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
+| Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
+| Pulsas "Cerrar sesión" **sin red** | "Sin conexión. Revisa tu conexión e intenta de nuevo." Sigues en P-18 y la sesión sigue guardada | — |
 | Estás en P-02 (iniciar sesión) | La pantalla real: marca, los dos campos y los enlaces a P-03 y P-04 | — |
 | Pulsas **Iniciar sesión** o **Crear cuenta** **sin las llaves** en `local.properties` | "Algo salió mal" con "Reintentar". No se cierra la aplicación | Poner `SUPABASE_URL` y `SUPABASE_ANON_KEY` |
 | Pulsas **Iniciar sesión** con una cuenta real del proyecto | Entra a P-05 o P-10 según su rol en `public.usuarios`. Probado con las cuentas de `92_usuarios_prueba.sql`: `ana.rls@…` entra a P-05 y `beto.rls@…` a P-10 | — |
@@ -52,7 +55,7 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Pides el enlace con cualquier correo bien escrito | "Revisa tu correo", sin repetir el correo, **exista o no la cuenta** y aunque su correo no pueda recibir | — |
 | Pides el enlace sin red | "Sin conexión" con "Reintentar", y el correo sigue escrito | — |
 | Esperas el correo en una cuenta que no es del equipo | **No llega.** El SMTP de fábrica de Supabase solo entrega a los miembros del equipo de la organización, y muy pocos por hora | `S6-T13` |
-| Abres el enlace del correo | La aplicación abre y no se cierra. Todavía no te lleva a P-18 | `S2-T11` |
+| Abres el enlace del correo | P-18 con la sección de contraseña abierta, con la aplicación abierta o en frío. Atrás cierra la aplicación | — |
 | Cambias de pantalla con los botones "Sin sesión / Cliente / Trabajador" de los marcadores | Las guardas y las barras todavía leen el marcador temporal, no la sesión real. P-01 y el cierre de sesión lo mantienen al día | `S2-T15` |
 
 **El alta ya es real** desde `S2-T07`: la cuenta vive en Supabase Auth y en
@@ -61,41 +64,38 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
+_Ninguna._
+
 | Campo | Valor |
 |---|---|
-| ID | `S2-T11` |
-| Título | Diseño y pantalla del perfil de usuario (ver y editar) |
-| Quién la tomó | aztemik, con el agente |
-| Rama | `feat/S2-T11-perfil-usuario` |
-| Desde | 2026-10-11 |
-
-**Solo está el ticket.** El líder eligió la opción A en sus cuatro decisiones el mismo día; falta el código. Reporta un hallazgo nuevo, `H-15`: el wireframe de P-18 pide municipio y ubicación, que `public.usuarios` no tiene.
+| ID | — |
+| Título | — |
+| Quién la tomó | — |
+| Rama | — |
+| Desde | — |
 
 ## Última tarea terminada
 
-**`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario` real).** 2026-10-11.
-Rama `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`**, pull request **#16**. Ese pull request integró también los commits de `S2-T09`: el #15 nunca se fusionó por separado. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+**`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar).** 2026-10-11.
+Rama `feat/S2-T11-perfil-usuario`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A en sus cuatro decisiones y en una quinta que salió al implementar (el teléfono es obligatorio en P-18).
 
-- **`datos/repositorio/RepositorioUsuarioReal.kt`** (`DEC-31`), ya enlazado en `ModuloRepositorios`. Los otros ocho repositorios siguen falsos.
-  - `obtenerMiUsuario()` lee la ficha propia de `public.usuarios`.
-  - `actualizarMiUsuario(...)` manda solo `nombre`, `apellidos` y `telefono`, y devuelve la fila ya actualizada sin una segunda lectura.
-  - Sin sesión, o si vuelven cero filas, devuelve `AUTENTICACION`: RLS no rechaza, filtra, y PostgREST contesta `200` con una lista vacía.
-  - `subirFotoPerfil` devuelve `SERVIDOR` hasta `S2-T14`.
-- **`datos/remoto/supabase/ErroresDatos.kt`:** `traducirErrorDatos`, por código HTTP. `supabase-kt` 3.0.3 no deja pasar el código de Postgres.
-- **`CONTRATOS-API.md`:** la sección "Usuario" a detalle, con las llamadas exactas, la tabla de errores y la regla de que de la `Sesion` solo se leen el usuario y su rol.
-- **En pantalla no cambia nada.** Ninguna pantalla llama todavía a `RepositorioUsuario`; P-18 es `S2-T11`.
+- **P-18 real** (`MiCuentaPantalla`, `MiCuentaViewModel`, `EstadoMiCuenta`), en lugar del marcador:
+  - la ficha se lee con `obtenerMiUsuario()`; sin foto, el avatar muestra las iniciales;
+  - "Editar datos personales" cambia la tarjeta por nombre, apellidos y teléfono, con las reglas de P-03, y pinta la fila que devuelve `actualizarMiUsuario`;
+  - "Cambiar contraseña" pide solo la nueva; `same_password` se pinta bajo el campo;
+  - "Cerrar sesión" pide confirmación y, sin red, avisa "Sin conexión";
+  - el trabajador ve "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14).
+- **El enlace de recuperación aterriza en P-18** (`DEC-27`, pasos 5 y 6): `esEnlaceDeRecuperacion` en `EnlaceAuth.kt`, `AvisosEnlace` en `ui/navegacion`, y `SesionViewModel` entrega el rol para poner el marcador. P-01 ya no navega si el enlace llegó primero.
+- **`SesionViewModel.cerrarSesion()` se borró**; cerrar sesión ahora es de `MiCuentaViewModel`.
+- `BotonSecundario` acepta `color` y `EtiquetaEstado` tiene una sobrecarga con colores dados.
+- `CONTRATOS-API.md` (pasos 5 y 6 del recorrido, `same_password`) y `WIREFRAMES.md` §7 al día.
 - Verificación del proyecto:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 180 pruebas unitarias (11 nuevas) y 59 instrumentadas (5 nuevas), 0 fallas.
-  - **Contra el proyecto de Supabase**, en emulador `Pixel_10`, con `RepositorioUsuarioRealTest`: lee la ficha de `ana.rls@…`, la edita y la vuelve a leer, borra el teléfono con `null`, un nombre de 81 caracteres da `VALIDACION` y sin sesión da `AUTENTICACION`. La ficha quedó como estaba.
-  - **Sin llaves** en `local.properties`: la aplicación abre y llega a P-02, y los 5 casos nuevos salen omitidos.
-  - Con llaves, `ana.rls@…` entra a P-05 y al reabrir sigue en P-05. Sin excepciones en logcat.
-- **Lo que NO se probó en el dispositivo:** que sin red devuelva `RED`. Lo cubre `ErroresDatosTest`.
-- **`RepositorioUsuarioRealTest` es la primera prueba de la suite que necesita red** y un proyecto de Supabase vivo con las cuentas de `92_usuarios_prueba.sql`. Sin llaves se omite; con llaves y sin esas cuentas, falla.
-- **Dos hallazgos para el líder**, al final de `CONTRATOS-API.md`:
-  - **`H-13` · El `mensaje` de los errores de autenticación lleva el token.** `ErroresAuth.kt` guarda `error.message`, que en `supabase-kt` 3.0.3 incluye las cabeceras de la petición. Hoy nadie lo pinta ni lo registra. El código nuevo no lo repite.
-  - **`H-14` · `public.usuarios` acepta un nombre vacío.** No hay `CHECK` sobre nombre, apellidos ni teléfono; solo lo impide la validación de la aplicación.
-
+  - 196 pruebas unitarias (16 nuevas, 2 borradas con `cerrarSesion`) y 64 instrumentadas (5 nuevas), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: editar y reabrir, nombre vacío, cambiar la contraseña y entrar con la nueva, `same_password`, cerrar sesión con y sin red, accesos del trabajador con `beto.rls@…`. La ficha y la contraseña de `ana.rls@…` quedaron como estaban.
+  - **Sin llaves**: la aplicación abre y llega a P-02.
+- **Lo que NO se probó con un correo real:** el enlace de recuperación. Se armó con una sesión real de `ana.rls@…` y `type=recovery`, y se abrió con `adb`: aterrizó en P-18 con la aplicación abierta, en frío sin sesión y en frío con sesión. El enlace vencido sigue dejando la aplicación en P-02.
+- **Un hallazgo para el líder:** `H-15` · el wireframe de P-18 pedía municipio y ubicación, que `public.usuarios` no tiene. `WIREFRAMES.md` ya no los pide.
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
 
@@ -138,8 +138,7 @@ explicados al final de `MODELO-ER.md`.
 `S2-T13` — Selección y recorte de la foto de perfil (solo interfaz)
 (prioridad 450, sprint 2, sin dependencias)
 
-**No tiene ticket.** Se toma cuando `S2-T11` termine: las tareas van en
-secuencia.
+**No tiene ticket.** Hay que redactarlo antes de empezar.
 
 ## Los dos huecos de S2-T01, ya cerrados
 

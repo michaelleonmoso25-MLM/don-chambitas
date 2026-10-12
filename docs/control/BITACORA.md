@@ -36,6 +36,7 @@
 | 2026-10-08 | S2-T08 | GRI | feat/S2-T08-almacenamiento-seguro-sesion |  | La sesion de Supabase Auth ya no se guarda en texto plano: AlmacenSesionCifrada sustituye al SettingsSessionManager, con AES-256-GCM y llave del Android Keystore sobre DataStore (opcion A del ticket, sin dependencia nueva, eleccion del lider). Migra la sesion en claro existente y la borra; sesion y SharedPreferences fuera del respaldo de Google. Sesion pierde tokenAcceso (H-12). **Desvios:** la migracion ocurre con la primera accion de Auth y no al abrir, porque el cliente es perezoso y P-01 aun no lee la sesion (S2-T09); se tocaron FuenteDatosFalsa y RepositorioAuthFalso; se agrego manejador de corrupcion al DataStore. Probado en emulador: migracion, recarga tras reinicio, inicio de sesion nuevo cifrado y archivo danado sin cierre. 159 unitarias y 54 instrumentadas pasando |
 | 2026-10-11 | S2-T09 | BCJL | feat/S2-T09-manejo-sesion | #15 | P-01 lee la sesion real (sesionActual) y lleva a P-05 o P-10; SesionViewModel saca a P-02 con la pila limpia cuando la sesion termina, y el marcador de P-18 cierra la sesion real. Opcion A en las dos decisiones. Probado en Pixel_10 contra Supabase el 2026-10-11. **No se probo en el dispositivo la expiracion:** queda en SesionViewModelTest, como preve el ticket. **Desvio:** SesionViewModel avisa en cada null y GrafoNavegacion decide con el marcador. mailer_autoconfirm estaba en false, contra DEC-25; el lider lo corrigio el mismo dia y se verifico en true. El marcador temporal sigue hasta S2-T15. 169 unitarias y 54 instrumentadas pasando |
 | 2026-10-11 | S2-T12 | GRI | feat/S2-T12-repositorio-usuario-real | #16 | Contrato de perfil de usuario a detalle y RepositorioUsuarioReal enlazado (DEC-31): leer y editar la ficha propia en public.usuarios. Opcion A en las tres decisiones: subirFotoPerfil devuelve error hasta S2-T14, sesionActual() no se entera de la edicion, y el repositorio se prueba con una prueba instrumentada contra Supabase que se omite sin llaves. Los errores de PostgREST se clasifican por codigo HTTP porque supabase-kt 3.0.3 no deja pasar el de Postgres. **Rama apilada sobre la de S2-T09.** **Hallazgos para el lider:** H-13, el mensaje de los errores de Auth lleva el token; H-14, public.usuarios acepta un nombre vacio. 180 unitarias y 59 instrumentadas pasando |
+| 2026-10-11 | S2-T11 | RRC | feat/S2-T11-perfil-usuario |  | P-18 real: ficha de public.usuarios, edicion de nombre, apellidos y telefono (obligatorio, como P-03), cambio de contrasena solo con la nueva y cierre de sesion con aviso sin red. El enlace de recuperacion aterriza en P-18 con la seccion de contrasena abierta (AvisosEnlace). Opcion A en las cinco decisiones. Se borro SesionViewModel.cerrarSesion. El enlace se probo armado con adb, no con un correo real. H-15: el wireframe pedia municipio |
 
 ---
 
@@ -54,6 +55,29 @@ que se descubrió y no estaba previsto. Si no pasó nada, se deja vacía.
 > Lo que cada tarea dejó escrito en `ESTADO.md` como "Última tarea terminada"
 > antes de que la siguiente la relevara. La más reciente va arriba. Se agrega,
 > no se edita.
+
+**`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario` real).** 2026-10-11.
+Rama `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`**, pull request **#16**. Ese pull request integró también los commits de `S2-T09`: el #15 nunca se fusionó por separado. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
+
+- **`datos/repositorio/RepositorioUsuarioReal.kt`** (`DEC-31`), ya enlazado en `ModuloRepositorios`. Los otros ocho repositorios siguen falsos.
+  - `obtenerMiUsuario()` lee la ficha propia de `public.usuarios`.
+  - `actualizarMiUsuario(...)` manda solo `nombre`, `apellidos` y `telefono`, y devuelve la fila ya actualizada sin una segunda lectura.
+  - Sin sesión, o si vuelven cero filas, devuelve `AUTENTICACION`: RLS no rechaza, filtra, y PostgREST contesta `200` con una lista vacía.
+  - `subirFotoPerfil` devuelve `SERVIDOR` hasta `S2-T14`.
+- **`datos/remoto/supabase/ErroresDatos.kt`:** `traducirErrorDatos`, por código HTTP. `supabase-kt` 3.0.3 no deja pasar el código de Postgres.
+- **`CONTRATOS-API.md`:** la sección "Usuario" a detalle, con las llamadas exactas, la tabla de errores y la regla de que de la `Sesion` solo se leen el usuario y su rol.
+- **En pantalla no cambia nada.** Ninguna pantalla llama todavía a `RepositorioUsuario`; P-18 es `S2-T11`.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 180 pruebas unitarias (11 nuevas) y 59 instrumentadas (5 nuevas), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Pixel_10`, con `RepositorioUsuarioRealTest`: lee la ficha de `ana.rls@…`, la edita y la vuelve a leer, borra el teléfono con `null`, un nombre de 81 caracteres da `VALIDACION` y sin sesión da `AUTENTICACION`. La ficha quedó como estaba.
+  - **Sin llaves** en `local.properties`: la aplicación abre y llega a P-02, y los 5 casos nuevos salen omitidos.
+  - Con llaves, `ana.rls@…` entra a P-05 y al reabrir sigue en P-05. Sin excepciones en logcat.
+- **Lo que NO se probó en el dispositivo:** que sin red devuelva `RED`. Lo cubre `ErroresDatosTest`.
+- **`RepositorioUsuarioRealTest` es la primera prueba de la suite que necesita red** y un proyecto de Supabase vivo con las cuentas de `92_usuarios_prueba.sql`. Sin llaves se omite; con llaves y sin esas cuentas, falla.
+- **Dos hallazgos para el líder**, al final de `CONTRATOS-API.md`:
+  - **`H-13` · El `mensaje` de los errores de autenticación lleva el token.** `ErroresAuth.kt` guarda `error.message`, que en `supabase-kt` 3.0.3 incluye las cabeceras de la petición. Hoy nadie lo pinta ni lo registra. El código nuevo no lo repite.
+  - **`H-14` · `public.usuarios` acepta un nombre vacío.** No hay `CHECK` sobre nombre, apellidos ni teléfono; solo lo impide la validación de la aplicación.
 
 **`S2-T09` — Manejo de sesión: inicio automático, cierre de sesión y expiración.** 2026-10-11.
 Rama `feat/S2-T09-manejo-sesion`, pull request **#15**. Ticket redactado por el agente el 2026-10-08; el líder eligió la opción A en las dos decisiones.

@@ -22,12 +22,12 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | Sprint | Tareas | Pendientes | Bloqueadas | Opcionales | Hechas |
 |---|---|---|---|---|---|
 | 1 | 16 | 0 | 0 | 0 | 16 |
-| 2 | 16 | 4 | 0 | 0 | 11 |
+| 2 | 16 | 4 | 0 | 0 | 12 |
 | 3 | 15 | 15 | 0 | 0 | 0 |
 | 4 | 15 | 13 | 0 | 2 | 0 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **57** | **0** | **2** | **27** |
+| **Total** | **87** | **57** | **0** | **2** | **28** |
 
 > **No queda ninguna tarea bloqueada, ni ningún pendiente abierto.** PEND-01 se
 > resolvió el 2026-09-14 a favor de Supabase (`DEC-16`) y PEND-02 el 2026-09-22
@@ -74,7 +74,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S2-T08` | 650 | Almacenamiento seguro de la sesión y el token (DataStore cifrado) | GRI | hecha | S2-T05 |
 | `S2-T09` | 600 | Manejo de sesión: inicio automatico, cierre de sesión y expiracion | BCJL | hecha | S2-T08 |
 | `S2-T10` | 700 | Pantalla de recuperación de contraseña | LMM | hecha | — |
-| `S2-T11` | 550 | Diseño y pantalla del perfil de usuario (ver y editar) | RRC | en curso | S2-T12 |
+| `S2-T11` | 550 | Diseño y pantalla del perfil de usuario (ver y editar) | RRC | hecha | S2-T12 |
 | `S2-T12` | 500 | Contrato de la API de perfil de usuario (y `RepositorioUsuario` real, `DEC-31`) | GRI | hecha | — |
 | `S2-T13` | 450 | Selección y recorte de la foto de perfil (solo interfaz) | BCJL | pendiente | — |
 | `S2-T14` | 400 | Almacenamiento real de imagenes en Supabase Storage | LMM | pendiente | S2-T13 |
