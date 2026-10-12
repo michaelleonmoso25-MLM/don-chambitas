@@ -1,5 +1,6 @@
 package mx.donchambitas.app.ui.pantallas
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -141,7 +142,7 @@ class MiCuentaViewModel @Inject constructor(
                     // no hace falta volver a leerla.
                     is Resultado.Exito -> it.limpio().copy(
                         usuario = resultado.dato,
-                        mensaje = MensajeMiCuenta.Exito(R.string.mi_cuenta_datos_guardados)
+                        mensaje = MensajeMiCuenta.Texto(R.string.mi_cuenta_datos_guardados)
                     )
                     is Resultado.Error -> it.copy(
                         guardando = false,
@@ -172,7 +173,7 @@ class MiCuentaViewModel @Inject constructor(
             _estado.update {
                 when {
                     resultado is Resultado.Exito -> it.limpio().copy(
-                        mensaje = MensajeMiCuenta.Exito(R.string.mi_cuenta_contrasena_actualizada)
+                        mensaje = MensajeMiCuenta.Texto(R.string.mi_cuenta_contrasena_actualizada)
                     )
                     resultado is Resultado.Error && resultado.tipo == TipoError.VALIDACION -> it.copy(
                         guardando = false,
@@ -203,6 +204,36 @@ class MiCuentaViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Decisión 3 de S2-T13: se llama al repositorio aunque el real devuelva
+     * error hasta S2-T14. Así S2-T14 solo cambia el repositorio.
+     */
+    fun alConfirmarFoto(bytes: ByteArray) {
+        if (_estado.value.subiendoFoto) return
+        _estado.update { it.copy(subiendoFoto = true) }
+        viewModelScope.launch {
+            val resultado = repositorioUsuario.subirFotoPerfil(bytes)
+            _estado.update {
+                when (resultado) {
+                    is Resultado.Exito -> it.copy(
+                        subiendoFoto = false,
+                        usuario = it.usuario?.copy(fotoUrl = resultado.dato),
+                        mensaje = MensajeMiCuenta.Texto(R.string.mi_cuenta_foto_actualizada)
+                    )
+                    is Resultado.Error -> it.copy(
+                        subiendoFoto = false,
+                        mensaje = MensajeMiCuenta.Error(resultado.tipo)
+                    )
+                }
+            }
+        }
+    }
+
+    /** La imagen no se pudo usar (pesada, de otro tipo, ilegible o sin cámara): solo se avisa. */
+    fun alRechazarFoto(@StringRes motivo: Int) {
+        _estado.update { it.copy(mensaje = MensajeMiCuenta.Texto(motivo)) }
     }
 
     fun alConsumirMensaje() {

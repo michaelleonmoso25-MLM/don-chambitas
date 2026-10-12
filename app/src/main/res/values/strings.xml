@@ -112,6 +112,19 @@
     <string name="mi_cuenta_datos_guardados">Datos guardados</string>
     <string name="mi_cuenta_contrasena_actualizada">Contraseña actualizada</string>
     <string name="mi_cuenta_contrasena_igual">La contraseña nueva es igual a la actual</string>
+    <string name="mi_cuenta_cambiar_foto">Cambiar foto de perfil</string>
+    <string name="mi_cuenta_foto_actualizada">Foto actualizada</string>
+
+    <!-- Foto de perfil: selección y recorte (S2-T13) -->
+    <string name="foto_elegir_galeria">Elegir de la galería</string>
+    <string name="foto_tomar">Tomar foto</string>
+    <string name="foto_recortador_ayuda">Mueve y acerca la imagen para encuadrarla</string>
+    <string name="foto_recortador_descripcion">Imagen a recortar dentro del círculo</string>
+    <string name="foto_usar">Usar foto</string>
+    <string name="foto_pesada">La imagen pesa más de 5 MB</string>
+    <string name="foto_tipo">Usa una imagen JPG, PNG o WebP</string>
+    <string name="foto_no_se_abrio">No se pudo abrir la imagen</string>
+    <string name="foto_sin_camara">No hay una aplicación de cámara disponible</string>
     <!-- Título y mensaje de un TipoError en un solo renglón, para el Snackbar de P-18 -->
     <string name="mi_cuenta_formato_error">%1$s. %2$s</string>
 

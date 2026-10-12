@@ -11,11 +11,12 @@ enum class SeccionMiCuenta { NINGUNA, DATOS, CONTRASENA }
 enum class CampoMiCuenta { NOMBRE, APELLIDOS, TELEFONO }
 
 /**
- * Aviso de una sola vez de P-18, que se pinta en un Snackbar. Un error trae su
- * TipoError y la pantalla lo traduce, igual que en P-02 y P-03.
+ * Aviso de una sola vez de P-18, que se pinta en un Snackbar: un texto fijo
+ * (un éxito o el motivo de rechazar una foto), o un error con su TipoError,
+ * que la pantalla traduce igual que en P-02 y P-03.
  */
 sealed interface MensajeMiCuenta {
-    data class Exito(@StringRes val texto: Int) : MensajeMiCuenta
+    data class Texto(@StringRes val texto: Int) : MensajeMiCuenta
     data class Error(val tipo: TipoError) : MensajeMiCuenta
 }
 
@@ -27,6 +28,7 @@ sealed interface MensajeMiCuenta {
  * @property errorCarga Por qué no se pudo leer la ficha; la pantalla ofrece reintentar.
  * @property guardando Una operación de datos o de contraseña va en camino.
  * @property cerrandoSesion Se pidió cerrar sesión. Si sale bien, quien navega es SesionViewModel.
+ * @property subiendoFoto La foto recortada va camino a subirFotoPerfil (S2-T13).
  */
 data class EstadoMiCuenta(
     val usuario: Usuario? = null,
@@ -43,5 +45,6 @@ data class EstadoMiCuenta(
     @StringRes val errorContrasena: Int? = null,
     val guardando: Boolean = false,
     val cerrandoSesion: Boolean = false,
+    val subiendoFoto: Boolean = false,
     val mensaje: MensajeMiCuenta? = null
 )

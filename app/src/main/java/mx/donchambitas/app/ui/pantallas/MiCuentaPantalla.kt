@@ -1,5 +1,25 @@
 package mx.donchambitas.app.ui.pantallas
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.graphics.Bitmap
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.FileProvider
+import mx.donchambitas.app.ui.componentes.RecortadorFoto
+import mx.donchambitas.app.ui.tema.FormaHojaInferior
+import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -8,6 +28,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -105,6 +127,33 @@ fun MiCuentaPantalla(
     viewModel: MiCuentaViewModel = hiltViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
+    val contexto = LocalContext.current
+    val alcance = rememberCoroutineScope()
+    // La imagen ya decodificada y derecha, mientras el recortador está abierto.
+    var aRecortar by remember { mutableStateOf<Bitmap?>(null) }
+
+    // Valida antes de cargar nada en memoria y decodifica fuera del hilo
+    // principal: una foto de cámara puede pesar varios megas (S2-T13, paso 3).
+    fun abrirEnRecortador(uri: Uri) {
+        alcance.launch {
+            val resolvedor = contexto.contentResolver
+            val fallo = withContext(Dispatchers.IO) { resolvedor.validarImagen(uri) }
+            if (fallo != null) {
+                viewModel.alRechazarFoto(fallo.mensaje())
+                return@launch
+            }
+            val bitmap = withContext(Dispatchers.IO) { runCatching { resolvedor.decodificarFoto(uri) }.getOrNull() }
+            if (bitmap == null) viewModel.alRechazarFoto(R.string.foto_no_se_abrio) else aRecortar = bitmap
+        }
+    }
+
+    val galeria = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) abrirEnRecortador(uri)
+    }
+    val archivoCamara = remember { archivoDeCamara(contexto) }
+    val camara = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { tomada ->
+        if (tomada) abrirEnRecortador(archivoCamara)
+    }
 
     MiCuentaContenido(
         estado = estado,
@@ -121,8 +170,48 @@ fun MiCuentaPantalla(
         alConsumirMensaje = viewModel::alConsumirMensaje,
         alIrAMiPerfil = alIrAMiPerfil,
         alIrAMisPostulaciones = alIrAMisPostulaciones,
+        alElegirDeGaleria = {
+            galeria.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+        },
+        alTomarFoto = {
+            try {
+                camara.launch(archivoCamara)
+            } catch (e: ActivityNotFoundException) {
+                viewModel.alRechazarFoto(R.string.foto_sin_camara)
+            }
+        },
         modifier = modifier
     )
+
+    val rellenoSistema = WindowInsets.systemBars.asPaddingValues()
+    aRecortar?.let { bitmap ->
+        Dialog(
+            onDismissRequest = { aRecortar = null },
+            properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)
+        ) {
+            RecortadorFoto(
+                rellenoSistema = rellenoSistema,
+                imagen = remember(bitmap) { bitmap.asImageBitmap() },
+                alConfirmar = { recorte ->
+                    aRecortar = null
+                    alcance.launch {
+                        val bytes = withContext(Dispatchers.Default) { prepararFoto(bitmap, recorte) }
+                        viewModel.alConfirmarFoto(bytes)
+                    }
+                },
+                alCancelar = { aRecortar = null }
+            )
+        }
+    }
+}
+
+/**
+ * Archivo donde la cámara del sistema deja la foto, expuesto con el
+ * FileProvider de AndroidManifest.xml. Se reescribe en cada toma.
+ */
+private fun archivoDeCamara(contexto: Context): Uri {
+    val archivo = File(contexto.cacheDir, "fotos/camara.jpg").apply { parentFile?.mkdirs() }
+    return FileProvider.getUriForFile(contexto, "${contexto.packageName}.archivos", archivo)
 }
 
 /**
@@ -145,17 +234,20 @@ fun MiCuentaContenido(
     alConsumirMensaje: () -> Unit,
     alIrAMiPerfil: () -> Unit,
     alIrAMisPostulaciones: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    alElegirDeGaleria: () -> Unit = {},
+    alTomarFoto: () -> Unit = {}
 ) {
     val contexto = LocalContext.current
     val avisos = remember { SnackbarHostState() }
     val alcance = rememberCoroutineScope()
     var confirmandoCierre by rememberSaveable { mutableStateOf(false) }
+    var eligiendoFoto by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(estado.mensaje) {
         val mensaje = estado.mensaje ?: return@LaunchedEffect
         val texto = when (mensaje) {
-            is MensajeMiCuenta.Exito -> contexto.getString(mensaje.texto)
+            is MensajeMiCuenta.Texto -> contexto.getString(mensaje.texto)
             is MensajeMiCuenta.Error -> contexto.getString(
                 R.string.mi_cuenta_formato_error,
                 contexto.getString(obtenerTituloErrorRes(mensaje.tipo)),
@@ -204,7 +296,11 @@ fun MiCuentaContenido(
                         alCancelar = alCancelar
                     )
                 } else {
-                    TarjetaCuenta(usuario)
+                    TarjetaCuenta(
+                        usuario = usuario,
+                        subiendoFoto = estado.subiendoFoto,
+                        alTocarAvatar = { eligiendoFoto = true }
+                    )
                 }
 
                 Titulo(stringResource(R.string.mi_cuenta_configuracion))
@@ -256,6 +352,20 @@ fun MiCuentaContenido(
         }
     }
 
+    if (eligiendoFoto) {
+        OpcionesFoto(
+            alElegirDeGaleria = {
+                eligiendoFoto = false
+                alElegirDeGaleria()
+            },
+            alTomarFoto = {
+                eligiendoFoto = false
+                alTomarFoto()
+            },
+            alCerrar = { eligiendoFoto = false }
+        )
+    }
+
     if (confirmandoCierre) {
         AlertDialog(
             onDismissRequest = { confirmandoCierre = false },
@@ -291,7 +401,7 @@ private fun Titulo(texto: String) {
 
 /** Cabecera de WIREFRAMES.md, P-18, sin municipio: public.usuarios no lo tiene (H-15). */
 @Composable
-private fun TarjetaCuenta(usuario: Usuario) {
+private fun TarjetaCuenta(usuario: Usuario, subiendoFoto: Boolean, alTocarAvatar: () -> Unit) {
     Surface(
         color = Arena,
         shape = FormaTarjeta,
@@ -303,7 +413,7 @@ private fun TarjetaCuenta(usuario: Usuario) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Espaciado.dp16)
         ) {
-            Avatar(usuario)
+            Avatar(usuario, subiendoFoto, alTocarAvatar)
             Column(verticalArrangement = Arrangement.spacedBy(Espaciado.dp4)) {
                 Text(
                     text = "${usuario.nombre} ${usuario.apellidos}",
@@ -342,14 +452,29 @@ private fun TarjetaCuenta(usuario: Usuario) {
 
 /**
  * Foto si la hay; si no, las iniciales (HU-07), nunca un espacio vacio.
- * Tocarlo no hace nada todavia: elegir la foto es S2-T13.
+ * Tocarlo abre las opciones para cambiarla (S2-T13); mientras sube, no.
  */
 @Composable
-private fun Avatar(usuario: Usuario) {
+private fun Avatar(usuario: Usuario, subiendoFoto: Boolean, alTocar: () -> Unit) {
     val forma = Modifier
         .size(TamanoAvatar)
         .clip(FormaFotoPerfil)
         .border(GrosorBordeAvatar, MostazaOscuro, FormaFotoPerfil)
+        .clickable(
+            enabled = !subiendoFoto,
+            onClickLabel = stringResource(R.string.mi_cuenta_cambiar_foto),
+            onClick = alTocar
+        )
+    Box(contentAlignment = Alignment.Center) {
+        AvatarImagen(usuario, forma)
+        if (subiendoFoto) {
+            CircularProgressIndicator(color = MostazaOscuro, modifier = Modifier.size(TamanoAvatar))
+        }
+    }
+}
+
+@Composable
+private fun AvatarImagen(usuario: Usuario, forma: Modifier) {
     if (usuario.fotoUrl != null) {
         AsyncImage(
             model = usuario.fotoUrl,
@@ -366,6 +491,39 @@ private fun Avatar(usuario: Usuario) {
                 text = iniciales(usuario.nombre, usuario.apellidos),
                 style = DonChambitasTema.tipografia.titulo,
                 color = Carbon
+            )
+        }
+    }
+}
+
+/** Hoja inferior al tocar el avatar (decisión 2 de S2-T13): galería o cámara. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun OpcionesFoto(
+    alElegirDeGaleria: () -> Unit,
+    alTomarFoto: () -> Unit,
+    alCerrar: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = alCerrar,
+        shape = FormaHojaInferior,
+        containerColor = Crema
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Espaciado.margenPantalla)
+                .padding(bottom = Espaciado.dp24),
+            verticalArrangement = Arrangement.spacedBy(Espaciado.dp12)
+        ) {
+            Titulo(stringResource(R.string.mi_cuenta_cambiar_foto))
+            BotonSecundario(
+                texto = stringResource(R.string.foto_elegir_galeria),
+                onClick = alElegirDeGaleria
+            )
+            BotonSecundario(
+                texto = stringResource(R.string.foto_tomar),
+                onClick = alTomarFoto
             )
         }
     }
