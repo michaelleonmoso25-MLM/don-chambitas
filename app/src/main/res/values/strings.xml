@@ -93,6 +93,28 @@
     <string name="recuperar_vigencia">El enlace vence en 1 hora</string>
     <string name="recuperar_enviado_descripcion">Correo enviado</string>
 
+    <!-- Pantalla Mi cuenta (P-18) -->
+    <string name="mi_cuenta_titulo">Mi cuenta</string>
+    <string name="mi_cuenta_rol_cliente">Cliente</string>
+    <string name="mi_cuenta_rol_trabajador">Trabajador</string>
+    <string name="mi_cuenta_telefono">Tel: %1$s</string>
+    <string name="mi_cuenta_configuracion">Configuración de la cuenta</string>
+    <string name="mi_cuenta_editar_datos">Editar datos personales</string>
+    <string name="mi_cuenta_cambiar_contrasena">Cambiar contraseña</string>
+    <string name="mi_cuenta_contrasena_nueva">Contraseña nueva</string>
+    <string name="mi_cuenta_guardar">Guardar</string>
+    <string name="mi_cuenta_cancelar">Cancelar</string>
+    <string name="mi_cuenta_accesos_trabajador">Accesos directos de trabajador</string>
+    <string name="mi_cuenta_mi_perfil">Mi perfil profesional</string>
+    <string name="mi_cuenta_mis_postulaciones">Mis postulaciones</string>
+    <string name="mi_cuenta_cerrar_sesion">Cerrar sesión</string>
+    <string name="mi_cuenta_confirmar_cierre">¿Deseas cerrar tu sesión?</string>
+    <string name="mi_cuenta_datos_guardados">Datos guardados</string>
+    <string name="mi_cuenta_contrasena_actualizada">Contraseña actualizada</string>
+    <string name="mi_cuenta_contrasena_igual">La contraseña nueva es igual a la actual</string>
+    <!-- Título y mensaje de un TipoError en un solo renglón, para el Snackbar de P-18 -->
+    <string name="mi_cuenta_formato_error">%1$s. %2$s</string>
+
     <!-- Mensajes de validación de P-02 y P-03 (los eligen las reglas de S2-T04) -->
     <string name="validacion_rol_sin_elegir">Elige si vienes a contratar o a trabajar</string>
     <string name="validacion_nombre_vacio">Escribe tu nombre</string>

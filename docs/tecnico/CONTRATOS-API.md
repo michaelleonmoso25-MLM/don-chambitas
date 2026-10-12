@@ -213,8 +213,8 @@ lugar donde está escrito; el código lo toma de una sola constante.
 | 2 | Supabase manda el correo. El enlace pasa por su servidor y redirige a `mx.donchambitas.app://auth#access_token=…&refresh_token=…&type=recovery…` | Supabase |
 | 3 | Un `intent-filter` de `MainActivity` con ese esquema y ese host abre la aplicación | `S2-T07` |
 | 4 | `MainActivity` revisa el enlace con `esEnlaceConSesion` y llama a `importarSesionDeEnlace` (`datos/remoto/supabase/EnlaceAuth.kt`). Hace lo mismo que `handleDeeplinks`: `parseSessionFromFragment`, `retrieveUser` e `importSession`, pero dentro de un `try`. La sesión queda importada, y `UserSession.type` trae `"recovery"` | `S2-T07` |
-| 5 | Con esa marca, la aplicación aterriza en P-18, directo en la sección de contraseña | `S2-T11` |
-| 6 | P-18 llama a `cambiarContrasena(nueva)` | `S2-T11` |
+| 5 | Si la importación salió bien y `esEnlaceDeRecuperacion` encuentra `type=recovery` en el fragmento, `MainActivity` avisa por `AvisosEnlace` (`ui/navegacion`). `SesionViewModel` espera el primer valor no nulo de `sesionActual()` y entrega el rol; `GrafoNavegacion` deja el marcador temporal con ese rol y navega a P-18 con la pila limpia. P-18 abre con la sección de contraseña desplegada. Si P-01 todavía no decidía, ya no decide | `S2-T11` |
+| 6 | P-18 pide solo la contraseña nueva, con el mínimo de 8 del registro, y llama a `cambiarContrasena(nueva)` | `S2-T11` |
 
 **El enlace vencido o ya usado.** En ese caso Supabase redirige con
 `#error=…&error_code=…` en vez de tokens. `parseSessionFromFragment` lanza
@@ -227,8 +227,9 @@ descarta el enlace sin tokens, con `error=` o con partes sin `=`, e
 `importarSesionDeEnlace` hace la importación dentro de un `try`.
 
 Con un enlace vencido, la aplicación abre normal, sin sesión, en P-02.
-Verificado en emulador, en frío y con la aplicación abierta. Si además hay
-que avisarle algo al usuario, lo decide `S2-T11`.
+Verificado en emulador, en frío y con la aplicación abierta. `S2-T11` no
+agrega ningún aviso, porque su ticket no lo pide: el usuario puede pedir otro
+enlace en P-04. Si se quiere avisar, lo decide el líder.
 
 **`recuperarContrasena` siempre reporta éxito cuando la petición llega al
 servidor,** exista o no el correo. Decir cuáles correos están registrados es
@@ -329,7 +330,7 @@ códigos son los de `AuthErrorCode` en 3.0.3 y llegan en
 | `session_not_found`, `session_expired`, `refresh_token_not_found`, `bad_jwt` | `cambiarContrasena` | `AUTENTICACION` |
 | `user_already_exists`, `email_exists` | `registrar` | `CORREO_DUPLICADO` (`H-11`). La pantalla pinta `error_correo_duplicado` |
 | `weak_password` (`AuthWeakPasswordException`) | `registrar`, `cambiarContrasena` | `VALIDACION`. Con el mínimo en 8 en el servidor y en la interfaz no debería llegar. Se pinta el mensaje genérico de `VALIDACION` |
-| `same_password` | `cambiarContrasena` | `VALIDACION`. Qué mensaje pinta P-18 lo decide `S2-T11` |
+| `same_password` | `cambiarContrasena` | `VALIDACION`. P-18 pinta "La contraseña nueva es igual a la actual" debajo del campo (`S2-T11`). Como `weak_password` no debería llegar, P-18 trata todo `VALIDACION` de `cambiarContrasena` como este caso |
 | `validation_failed`, `email_address_invalid` | `registrar`, `iniciarSesion` | `VALIDACION`. La interfaz ya validó con la misma expresión que el esquema, así que no debería llegar |
 | `over_request_rate_limit` | `registrar`, `iniciarSesion`, `cambiarContrasena` | `SERVIDOR` |
 | `over_email_send_rate_limit`, `over_request_rate_limit`, `email_address_invalid`, `email_address_not_authorized` | `recuperarContrasena` | **Éxito**, ver arriba |

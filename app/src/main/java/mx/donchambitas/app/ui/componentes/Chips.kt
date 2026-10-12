@@ -120,8 +120,26 @@ fun EtiquetaEstado(
         EstadoSolicitud.CANCELADA -> Triple(Error, Blanco, R.string.estado_cancelada)
     }
 
-    val textoAMostrar = texto ?: stringResource(textoRecurso)
+    EtiquetaEstado(
+        texto = texto ?: stringResource(textoRecurso),
+        colorFondo = colorFondo,
+        colorTexto = colorTexto,
+        modifier = modifier
+    )
+}
 
+/**
+ * Insignia con colores dados, para lo que no es un estado de solicitud: el rol
+ * de P-18 va en Advertencia para el trabajador y en Mostaza para el cliente
+ * (WIREFRAMES.md, P-18), los dos con texto Carbon.
+ */
+@Composable
+fun EtiquetaEstado(
+    texto: String,
+    colorFondo: Color,
+    colorTexto: Color,
+    modifier: Modifier = Modifier
+) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -132,7 +150,7 @@ fun EtiquetaEstado(
             )
     ) {
         Text(
-            text = textoAMostrar,
+            text = texto,
             style = DonChambitasTema.tipografia.pie,
             color = colorTexto,
             fontWeight = FontWeight.Medium
