@@ -99,7 +99,7 @@ class MiCuentaViewModelTest {
         val estado = viewModel.estado.value
         assertEquals(actualizado, estado.usuario)
         assertEquals(SeccionMiCuenta.NINGUNA, estado.seccion)
-        assertEquals(MensajeMiCuenta.Exito(R.string.mi_cuenta_datos_guardados), estado.mensaje)
+        assertEquals(MensajeMiCuenta.Texto(R.string.mi_cuenta_datos_guardados), estado.mensaje)
     }
 
     @Test
@@ -183,7 +183,7 @@ class MiCuentaViewModelTest {
         val estado = viewModel.estado.value
         assertEquals(SeccionMiCuenta.NINGUNA, estado.seccion)
         assertEquals("", estado.contrasenaNueva)
-        assertEquals(MensajeMiCuenta.Exito(R.string.mi_cuenta_contrasena_actualizada), estado.mensaje)
+        assertEquals(MensajeMiCuenta.Texto(R.string.mi_cuenta_contrasena_actualizada), estado.mensaje)
     }
 
     @Test
@@ -239,6 +239,62 @@ class MiCuentaViewModelTest {
 
         assertEquals(SeccionMiCuenta.CONTRASENA, primera.estado.value.seccion)
         assertEquals(SeccionMiCuenta.NINGUNA, segunda.estado.value.seccion)
+    }
+
+    @Test
+    fun debePintarLaFotoNueva_cuandoSubirSaleBien() = runTest(reglaCorrutinas.testDispatcher) {
+        val bytes = byteArrayOf(1, 2, 3)
+        coEvery { repositorioUsuario.subirFotoPerfil(bytes) } returns Resultado.Exito("https://ejemplo.mx/foto.jpg")
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alConfirmarFoto(bytes)
+        assertTrue(viewModel.estado.value.subiendoFoto)
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertFalse(estado.subiendoFoto)
+        assertEquals("https://ejemplo.mx/foto.jpg", estado.usuario?.fotoUrl)
+        assertEquals(MensajeMiCuenta.Texto(R.string.mi_cuenta_foto_actualizada), estado.mensaje)
+    }
+
+    @Test
+    fun debeDejarLaFotoAnteriorYAvisar_cuandoSubirFalla() = runTest(reglaCorrutinas.testDispatcher) {
+        coEvery { repositorioUsuario.subirFotoPerfil(any()) } returns Resultado.Error(TipoError.SERVIDOR, "S2-T14")
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alConfirmarFoto(byteArrayOf(1))
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertFalse(estado.subiendoFoto)
+        assertNull(estado.usuario?.fotoUrl)
+        assertEquals(MensajeMiCuenta.Error(TipoError.SERVIDOR), estado.mensaje)
+    }
+
+    @Test
+    fun noDebeSubirDosVeces_cuandoUnaVaEnCamino() = runTest(reglaCorrutinas.testDispatcher) {
+        coEvery { repositorioUsuario.subirFotoPerfil(any()) } returns Resultado.Exito("https://ejemplo.mx/foto.jpg")
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alConfirmarFoto(byteArrayOf(1))
+        viewModel.alConfirmarFoto(byteArrayOf(2))
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { repositorioUsuario.subirFotoPerfil(any()) }
+    }
+
+    @Test
+    fun debeAvisarElMotivo_cuandoSeRechazaUnaFoto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alRechazarFoto(FalloFoto.PESADA.mensaje())
+
+        assertEquals(MensajeMiCuenta.Texto(R.string.foto_pesada), viewModel.estado.value.mensaje)
+        coVerify(exactly = 0) { repositorioUsuario.subirFotoPerfil(any()) }
     }
 
     @Test

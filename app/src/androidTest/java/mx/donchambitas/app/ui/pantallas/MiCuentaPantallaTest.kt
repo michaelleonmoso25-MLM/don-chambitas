@@ -128,6 +128,38 @@ class MiCuentaPantallaTest {
     }
 
     @Test
+    fun tocarElAvatarOfreceGaleriaYCamara() {
+        var galeria = 0
+        composeTestRule.setContent {
+            DonChambitasTema {
+                MiCuentaContenido(
+                    estado = EstadoMiCuenta(usuario = usuario(RolUsuario.CLIENTE), cargando = false),
+                    alReintentar = {},
+                    alAbrirSeccion = {},
+                    alCancelar = {},
+                    alCambiarNombre = {},
+                    alCambiarApellidos = {},
+                    alCambiarTelefono = {},
+                    alGuardarDatos = {},
+                    alCambiarContrasena = {},
+                    alGuardarContrasena = {},
+                    alCerrarSesion = {},
+                    alConsumirMensaje = {},
+                    alIrAMiPerfil = {},
+                    alIrAMisPostulaciones = {},
+                    alElegirDeGaleria = { galeria++ }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("RM").performClick()
+        composeTestRule.onNodeWithText(texto(R.string.foto_tomar)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.foto_elegir_galeria)).performClick()
+
+        assertTrue(galeria == 1)
+    }
+
+    @Test
     fun cerrarSesionPideConfirmacionAntesDeLlamar() {
         var cierres = 0
         montar(
