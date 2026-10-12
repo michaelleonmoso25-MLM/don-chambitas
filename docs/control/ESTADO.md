@@ -14,8 +14,8 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 12 |
-| En curso | 1 |
+| Terminadas | 13 |
+| En curso | 0 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -35,6 +35,8 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Abres la aplicación con sesión guardada y **sin red** | A los 8 segundos, "Sin conexión" con "Reintentar" en P-01. La sesión no se borra, y con la red de vuelta "Reintentar" entra | — |
 | Tocas la pestaña **Cuenta** | P-18 real: tu ficha de `public.usuarios`, editar datos, cambiar contraseña y cerrar sesión. El trabajador ve además "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14) | — |
 | Editas nombre, apellidos o teléfono y guardas | La tarjeta cambia en ese momento y sigue así al reabrir. El teléfono es obligatorio, como en P-03 | — |
+| Tocas el avatar de P-18 | Hoja con "Elegir de la galería" y "Tomar foto", y luego el recortador. Una imagen de más de 5 MB o que no sea JPG, PNG o WebP se rechaza con el motivo | — |
+| Pulsas "Usar foto" en el recortador | **"Error del servidor"** y el avatar no cambia: el repositorio real todavía no guarda la foto | `S2-T14` |
 | Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
 | Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
 | Pulsas "Cerrar sesión" **sin red** | "Sin conexión. Revisa tu conexión e intenta de nuevo." Sigues en P-18 y la sesión sigue guardada | — |
@@ -64,38 +66,33 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
+_Ninguna._
+
 | Campo | Valor |
 |---|---|
-| ID | `S2-T13` |
-| Título | Selección y recorte de la foto de perfil (solo interfaz) |
-| Quién la tomó | aztemik, con el agente |
-| Rama | `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**: P-18 solo existe ahí |
-| Desde | 2026-10-11 |
-
-**Solo está el ticket.** El líder eligió la opción A en sus tres decisiones el mismo día; falta el código.
+| ID | — |
+| Título | — |
+| Quién la tomó | — |
+| Rama | — |
+| Desde | — |
 
 ## Última tarea terminada
 
-**`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar).** 2026-10-11.
-Rama `feat/S2-T11-perfil-usuario`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A en sus cuatro decisiones y en una quinta que salió al implementar (el teléfono es obligatorio en P-18).
+**`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz).** 2026-10-11.
+Rama `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**, pull request **sin abrir todavía**: se integra después del de `S2-T11`. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
 
-- **P-18 real** (`MiCuentaPantalla`, `MiCuentaViewModel`, `EstadoMiCuenta`), en lugar del marcador:
-  - la ficha se lee con `obtenerMiUsuario()`; sin foto, el avatar muestra las iniciales;
-  - "Editar datos personales" cambia la tarjeta por nombre, apellidos y teléfono, con las reglas de P-03, y pinta la fila que devuelve `actualizarMiUsuario`;
-  - "Cambiar contraseña" pide solo la nueva; `same_password` se pinta bajo el campo;
-  - "Cerrar sesión" pide confirmación y, sin red, avisa "Sin conexión";
-  - el trabajador ve "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14).
-- **El enlace de recuperación aterriza en P-18** (`DEC-27`, pasos 5 y 6): `esEnlaceDeRecuperacion` en `EnlaceAuth.kt`, `AvisosEnlace` en `ui/navegacion`, y `SesionViewModel` entrega el rol para poner el marcador. P-01 ya no navega si el enlace llegó primero.
-- **`SesionViewModel.cerrarSesion()` se borró**; cerrar sesión ahora es de `MiCuentaViewModel`.
-- `BotonSecundario` acepta `color` y `EtiquetaEstado` tiene una sobrecarga con colores dados.
-- `CONTRATOS-API.md` (pasos 5 y 6 del recorrido, `same_password`) y `WIREFRAMES.md` §7 al día.
+- **Tocar el avatar de P-18** abre una hoja con "Elegir de la galería" (`PickVisualMedia`) y "Tomar foto" (`TakePicture` con un `FileProvider` sobre `cache/fotos/`). No se pide ningún permiso.
+- **Antes de recortar** se valida tipo y peso con los topes de la cubeta `perfiles` (5 MB; JPG, PNG o WebP), y se decodifica reducida y derecha según el EXIF (`FotoPerfil.kt`).
+- **`RecortadorFoto`** (`ui/componentes`), propio, en un `Dialog` de pantalla completa: círculo fijo, mover y acercar de 1× a 4× sin dejar hueco.
+- **"Usar foto"** manda a `subirFotoPerfil` un JPEG de 512 × 512. **Hoy el repositorio real responde "Error del servidor"** hasta `S2-T14`, por la decisión 3.
+- `MensajeMiCuenta.Exito` pasó a llamarse `Texto`. `WIREFRAMES.md` §7 al día.
 - Verificación del proyecto:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 196 pruebas unitarias (16 nuevas, 2 borradas con `cerrarSesion`) y 64 instrumentadas (5 nuevas), 0 fallas.
-  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: editar y reabrir, nombre vacío, cambiar la contraseña y entrar con la nueva, `same_password`, cerrar sesión con y sin red, accesos del trabajador con `beto.rls@…`. La ficha y la contraseña de `ana.rls@…` quedaron como estaban.
+  - 208 pruebas unitarias (12 nuevas) y 66 instrumentadas (2 nuevas), 0 fallas.
+  - En emulador `Medium_Phone`: hoja, galería, recortador, cancelar, rechazo de una PNG de 7,3 MB y de un GIF, arrastre hasta el borde y cámara virtual con la foto derecha.
   - **Sin llaves**: la aplicación abre y llega a P-02.
-- **Lo que NO se probó con un correo real:** el enlace de recuperación. Se armó con una sesión real de `ana.rls@…` y `type=recovery`, y se abrió con `adb`: aterrizó en P-18 con la aplicación abierta, en frío sin sesión y en frío con sesión. El enlace vencido sigue dejando la aplicación en P-02.
-- **Un hallazgo para el líder:** `H-15` · el wireframe de P-18 pedía municipio y ubicación, que `public.usuarios` no tiene. `WIREFRAMES.md` ya no los pide.
+- **Lo que NO se probó en el dispositivo:** acercar con dos dedos (`adb` no hace el gesto; lo cubre `FotoPerfilTest`) y el éxito de punta a punta (llega con `S2-T14`).
+- **Para `S2-T14`:** la interfaz ya manda los bytes listos. Falta guardarlos en `perfiles/<uid>/`, escribir `usuarios.foto_url` y decidir qué pasa con la foto anterior (`H-06`).
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
 
@@ -135,11 +132,12 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T15` — Guardas de navegación por sesión y por rol
-(prioridad 300, sprint 2, depende de `S2-T09`, que ya está hecha)
+`S2-T14` — Almacenamiento real de imágenes en Supabase Storage
+(prioridad 400, sprint 2, depende de `S2-T13`, que ya está hecha)
 
-**No tiene ticket.** `S2-T14` tiene más prioridad (400), pero depende de
-`S2-T13`, que está en curso.
+**No tiene ticket.** Es una de las seis tareas que pueden escribir código que
+hable con Supabase (`AGENTS.md` §6). Su rama tendría que salir de la de
+`S2-T13` mientras los pull requests de `S2-T11` y `S2-T13` no se integren.
 
 ## Los dos huecos de S2-T01, ya cerrados
 

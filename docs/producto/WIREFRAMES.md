@@ -255,7 +255,7 @@ Pantalla compartida para la administración del perfil, seguridad de la cuenta y
 ### Elementos tocables y comportamiento
 | Elemento | Componente | Comportamiento al tocar |
 |---|---|---|
-| Avatar / Foto de perfil | Avatar circular | Sin foto muestra las iniciales. Abrir el selector de imagen es de `S2-T13`; hasta entonces no hace nada. |
+| Avatar / Foto de perfil | Avatar circular | Sin foto muestra las iniciales. Al tocarlo abre una hoja inferior con "Elegir de la galería" y "Tomar foto"; la imagen se recorta en círculo y se sube con `subirFotoPerfil` (`S2-T13`). Se rechazan, con el motivo, las de más de 5 MB o que no sean JPG, PNG o WebP. |
 | "Editar datos personales" | `BotonSecundario` | La tarjeta se convierte en los campos de nombre, apellidos y teléfono, con "Guardar" y "Cancelar". El teléfono es obligatorio, como en P-03. |
 | "Cambiar contraseña" | `BotonSecundario` | Despliega debajo un solo campo, la contraseña nueva (mínimo 8), con "Guardar" y "Cancelar". Al llegar por el enlace de recuperación ya está desplegado (`DEC-27`). |
 | "Mi perfil profesional" | `BotonSecundario` | Navega a `P-11`. Solo lo ve el trabajador. |

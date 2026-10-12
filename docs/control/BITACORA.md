@@ -37,6 +37,7 @@
 | 2026-10-11 | S2-T09 | BCJL | feat/S2-T09-manejo-sesion | #15 | P-01 lee la sesion real (sesionActual) y lleva a P-05 o P-10; SesionViewModel saca a P-02 con la pila limpia cuando la sesion termina, y el marcador de P-18 cierra la sesion real. Opcion A en las dos decisiones. Probado en Pixel_10 contra Supabase el 2026-10-11. **No se probo en el dispositivo la expiracion:** queda en SesionViewModelTest, como preve el ticket. **Desvio:** SesionViewModel avisa en cada null y GrafoNavegacion decide con el marcador. mailer_autoconfirm estaba en false, contra DEC-25; el lider lo corrigio el mismo dia y se verifico en true. El marcador temporal sigue hasta S2-T15. 169 unitarias y 54 instrumentadas pasando |
 | 2026-10-11 | S2-T12 | GRI | feat/S2-T12-repositorio-usuario-real | #16 | Contrato de perfil de usuario a detalle y RepositorioUsuarioReal enlazado (DEC-31): leer y editar la ficha propia en public.usuarios. Opcion A en las tres decisiones: subirFotoPerfil devuelve error hasta S2-T14, sesionActual() no se entera de la edicion, y el repositorio se prueba con una prueba instrumentada contra Supabase que se omite sin llaves. Los errores de PostgREST se clasifican por codigo HTTP porque supabase-kt 3.0.3 no deja pasar el de Postgres. **Rama apilada sobre la de S2-T09.** **Hallazgos para el lider:** H-13, el mensaje de los errores de Auth lleva el token; H-14, public.usuarios acepta un nombre vacio. 180 unitarias y 59 instrumentadas pasando |
 | 2026-10-11 | S2-T11 | RRC | feat/S2-T11-perfil-usuario |  | P-18 real: ficha de public.usuarios, edicion de nombre, apellidos y telefono (obligatorio, como P-03), cambio de contrasena solo con la nueva y cierre de sesion con aviso sin red. El enlace de recuperacion aterriza en P-18 con la seccion de contrasena abierta (AvisosEnlace). Opcion A en las cinco decisiones. Se borro SesionViewModel.cerrarSesion. El enlace se probo armado con adb, no con un correo real. H-15: el wireframe pedia municipio |
+| 2026-10-11 | S2-T13 | BCJL | feat/S2-T13-foto-perfil-interfaz |  | Avatar de P-18: hoja con galeria (PickVisualMedia) y camara (TakePicture + FileProvider), validacion de 5 MB y JPG/PNG/WebP, recortador propio en Compose dentro de un Dialog y JPEG de 512 x 512 a subirFotoPerfil. Opcion A en las tres decisiones. Apilada sobre S2-T11. Hasta S2-T14 el repositorio real responde Error del servidor. El zoom con dos dedos no se probo en el dispositivo |
 
 ---
 
@@ -55,6 +56,27 @@ que se descubrió y no estaba previsto. Si no pasó nada, se deja vacía.
 > Lo que cada tarea dejó escrito en `ESTADO.md` como "Última tarea terminada"
 > antes de que la siguiente la relevara. La más reciente va arriba. Se agrega,
 > no se edita.
+
+**`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar).** 2026-10-11.
+Rama `feat/S2-T11-perfil-usuario`, pull request **sin abrir todavía**. Ticket redactado por el agente el mismo día; el líder eligió la opción A en sus cuatro decisiones y en una quinta que salió al implementar (el teléfono es obligatorio en P-18).
+
+- **P-18 real** (`MiCuentaPantalla`, `MiCuentaViewModel`, `EstadoMiCuenta`), en lugar del marcador:
+  - la ficha se lee con `obtenerMiUsuario()`; sin foto, el avatar muestra las iniciales;
+  - "Editar datos personales" cambia la tarjeta por nombre, apellidos y teléfono, con las reglas de P-03, y pinta la fila que devuelve `actualizarMiUsuario`;
+  - "Cambiar contraseña" pide solo la nueva; `same_password` se pinta bajo el campo;
+  - "Cerrar sesión" pide confirmación y, sin red, avisa "Sin conexión";
+  - el trabajador ve "Mi perfil profesional" (P-11) y "Mis postulaciones" (P-14).
+- **El enlace de recuperación aterriza en P-18** (`DEC-27`, pasos 5 y 6): `esEnlaceDeRecuperacion` en `EnlaceAuth.kt`, `AvisosEnlace` en `ui/navegacion`, y `SesionViewModel` entrega el rol para poner el marcador. P-01 ya no navega si el enlace llegó primero.
+- **`SesionViewModel.cerrarSesion()` se borró**; cerrar sesión ahora es de `MiCuentaViewModel`.
+- `BotonSecundario` acepta `color` y `EtiquetaEstado` tiene una sobrecarga con colores dados.
+- `CONTRATOS-API.md` (pasos 5 y 6 del recorrido, `same_password`) y `WIREFRAMES.md` §7 al día.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 196 pruebas unitarias (16 nuevas, 2 borradas con `cerrarSesion`) y 64 instrumentadas (5 nuevas), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: editar y reabrir, nombre vacío, cambiar la contraseña y entrar con la nueva, `same_password`, cerrar sesión con y sin red, accesos del trabajador con `beto.rls@…`. La ficha y la contraseña de `ana.rls@…` quedaron como estaban.
+  - **Sin llaves**: la aplicación abre y llega a P-02.
+- **Lo que NO se probó con un correo real:** el enlace de recuperación. Se armó con una sesión real de `ana.rls@…` y `type=recovery`, y se abrió con `adb`: aterrizó en P-18 con la aplicación abierta, en frío sin sesión y en frío con sesión. El enlace vencido sigue dejando la aplicación en P-02.
+- **Un hallazgo para el líder:** `H-15` · el wireframe de P-18 pedía municipio y ubicación, que `public.usuarios` no tiene. `WIREFRAMES.md` ya no los pide.
 
 **`S2-T12` — Contrato de la API de perfil de usuario (y `RepositorioUsuario` real).** 2026-10-11.
 Rama `feat/S2-T12-repositorio-usuario-real`, **apilada sobre la de `S2-T09`**, pull request **#16**. Ese pull request integró también los commits de `S2-T09`: el #15 nunca se fusionó por separado. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.
