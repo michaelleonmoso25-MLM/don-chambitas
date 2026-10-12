@@ -15,7 +15,7 @@
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
 | Terminadas | 11 |
-| En curso | 0 |
+| En curso | 1 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -61,15 +61,15 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
-_Ninguna._
-
 | Campo | Valor |
 |---|---|
-| ID | — |
-| Título | — |
-| Quién la tomó | — |
-| Rama | — |
-| Desde | — |
+| ID | `S2-T11` |
+| Título | Diseño y pantalla del perfil de usuario (ver y editar) |
+| Quién la tomó | aztemik, con el agente |
+| Rama | `feat/S2-T11-perfil-usuario` |
+| Desde | 2026-10-11 |
+
+**Solo está el ticket.** `docs/tareas/S2-T11.md` tiene cuatro decisiones abiertas para el líder; el código empieza cuando las tome. Reporta un hallazgo nuevo, `H-15`: el wireframe de P-18 pide municipio y ubicación, que `public.usuarios` no tiene.
 
 ## Última tarea terminada
 
@@ -135,16 +135,11 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T11` — Diseño y pantalla del perfil de usuario (ver y editar)
-(prioridad 550, sprint 2, depende de `S2-T12`, que ya está hecha)
+`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz)
+(prioridad 450, sprint 2, sin dependencias)
 
-**No tiene ticket.** Es P-18: ver y editar la ficha con `RepositorioUsuario`,
-cambiar la contraseña, cerrar sesión con su mensaje de error sin red, y
-aterrizar ahí al llegar por el enlace de recuperación.
-
-Lo que `S2-T12` le deja dicho: nombre, apellidos y teléfono se piden a
-`obtenerMiUsuario()`, no a la `Sesion`; el repositorio no valida ni recorta; y
-un campo de teléfono vacío se manda como `null`.
+**No tiene ticket.** Se toma cuando `S2-T11` termine: las tareas van en
+secuencia.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
