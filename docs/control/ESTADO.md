@@ -72,7 +72,7 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 | Rama | `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**: P-18 solo existe ahí |
 | Desde | 2026-10-11 |
 
-**Solo está el ticket.** `docs/tareas/S2-T13.md` tiene tres decisiones abiertas para el líder; el código empieza cuando las tome.
+**Solo está el ticket.** El líder eligió la opción A en sus tres decisiones el mismo día; falta el código.
 
 ## Última tarea terminada
 
