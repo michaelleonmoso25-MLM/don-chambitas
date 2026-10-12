@@ -69,7 +69,7 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 | Rama | `feat/S2-T11-perfil-usuario` |
 | Desde | 2026-10-11 |
 
-**Solo está el ticket.** `docs/tareas/S2-T11.md` tiene cuatro decisiones abiertas para el líder; el código empieza cuando las tome. Reporta un hallazgo nuevo, `H-15`: el wireframe de P-18 pide municipio y ubicación, que `public.usuarios` no tiene.
+**Solo está el ticket.** El líder eligió la opción A en sus cuatro decisiones el mismo día; falta el código. Reporta un hallazgo nuevo, `H-15`: el wireframe de P-18 pide municipio y ubicación, que `public.usuarios` no tiene.
 
 ## Última tarea terminada
 
