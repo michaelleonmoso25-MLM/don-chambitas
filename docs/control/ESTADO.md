@@ -15,7 +15,7 @@
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
 | Terminadas | 13 |
-| En curso | 0 |
+| En curso | 1 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -66,15 +66,15 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
-_Ninguna._
-
 | Campo | Valor |
 |---|---|
-| ID | — |
-| Título | — |
-| Quién la tomó | — |
-| Rama | — |
-| Desde | — |
+| ID | `S2-T14` |
+| Título | Almacenamiento real de imágenes en Supabase Storage |
+| Quién la tomó | aztemik, con el agente |
+| Rama | `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`** |
+| Desde | 2026-10-11 |
+
+El líder decidió al pedirla que la foto anterior se borra de la cubeta.
 
 ## Última tarea terminada
 
@@ -132,12 +132,10 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T14` — Almacenamiento real de imágenes en Supabase Storage
-(prioridad 400, sprint 2, depende de `S2-T13`, que ya está hecha)
+`S2-T15` — Guardas de navegación por sesión y por rol
+(prioridad 300, sprint 2, depende de `S2-T09`, que ya está hecha)
 
-**No tiene ticket.** Es una de las seis tareas que pueden escribir código que
-hable con Supabase (`AGENTS.md` §6). Su rama tendría que salir de la de
-`S2-T13` mientras los pull requests de `S2-T11` y `S2-T13` no se integren.
+**No tiene ticket.**
 
 ## Los dos huecos de S2-T01, ya cerrados
 
