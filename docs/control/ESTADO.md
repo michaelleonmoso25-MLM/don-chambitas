@@ -15,7 +15,7 @@
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
 | Terminadas | 12 |
-| En curso | 0 |
+| En curso | 1 |
 | Bloqueadas | 0 |
 
 > Sprint 1 cerrado el 2026-09-20 con sus 16 tareas en `hecha`.
@@ -64,15 +64,15 @@ sesión abierta, con la confirmación por correo desactivada en la consola.
 
 ## Tarea en curso
 
-_Ninguna._
-
 | Campo | Valor |
 |---|---|
-| ID | — |
-| Título | — |
-| Quién la tomó | — |
-| Rama | — |
-| Desde | — |
+| ID | `S2-T13` |
+| Título | Selección y recorte de la foto de perfil (solo interfaz) |
+| Quién la tomó | aztemik, con el agente |
+| Rama | `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**: P-18 solo existe ahí |
+| Desde | 2026-10-11 |
+
+**Solo está el ticket.** `docs/tareas/S2-T13.md` tiene tres decisiones abiertas para el líder; el código empieza cuando las tome.
 
 ## Última tarea terminada
 
@@ -135,10 +135,11 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz)
-(prioridad 450, sprint 2, sin dependencias)
+`S2-T15` — Guardas de navegación por sesión y por rol
+(prioridad 300, sprint 2, depende de `S2-T09`, que ya está hecha)
 
-**No tiene ticket.** Hay que redactarlo antes de empezar.
+**No tiene ticket.** `S2-T14` tiene más prioridad (400), pero depende de
+`S2-T13`, que está en curso.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
