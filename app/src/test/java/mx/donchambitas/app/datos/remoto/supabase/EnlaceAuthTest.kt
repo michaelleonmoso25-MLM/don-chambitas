@@ -39,4 +39,21 @@ class EnlaceAuthTest {
         assertFalse(esEnlaceConSesion("donchambitas", host, "access_token=abc"))
         assertFalse(esEnlaceConSesion(esquema, "recuperar", "access_token=abc"))
     }
+
+    @Test
+    fun debeReconocerLaRecuperacion_cuandoElTipoEsRecovery() {
+        val fragmento = "access_token=abc&expires_in=3600&refresh_token=def&token_type=bearer&type=recovery"
+
+        assertTrue(esEnlaceDeRecuperacion(fragmento))
+    }
+
+    @Test
+    fun noDebeReconocerLaRecuperacion_cuandoElTipoEsOtroOFalta() {
+        assertFalse(esEnlaceDeRecuperacion("access_token=abc&type=signup"))
+        assertFalse(esEnlaceDeRecuperacion("access_token=abc&refresh_token=def"))
+        assertFalse(esEnlaceDeRecuperacion("access_token=abc&type=recovery2"))
+        assertFalse(esEnlaceDeRecuperacion("access_token=abc&type"))
+        assertFalse(esEnlaceDeRecuperacion(null))
+        assertFalse(esEnlaceDeRecuperacion(""))
+    }
 }
