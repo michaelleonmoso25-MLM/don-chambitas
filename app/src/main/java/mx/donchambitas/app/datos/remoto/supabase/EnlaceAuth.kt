@@ -24,6 +24,19 @@ fun esEnlaceConSesion(esquema: String?, host: String?, fragmento: String?): Bool
 }
 
 /**
+ * Decide si el enlace es el del correo de recuperacion: Supabase lo marca con
+ * `type=recovery` en el fragmento, que con el flujo IMPLICIT llega tal cual
+ * (CONTRATOS-API.md, "El recorrido completo"). Con eso la aplicacion aterriza
+ * en P-18 en vez de quedarse donde estaba (DEC-27).
+ */
+fun esEnlaceDeRecuperacion(fragmento: String?): Boolean {
+    if (fragmento.isNullOrBlank()) return false
+    return fragmento.split("&").any { parte ->
+        parte.substringBefore('=') == "type" && parte.substringAfter('=', "") == "recovery"
+    }
+}
+
+/**
  * Importa la sesion que trae el fragmento del enlace (flujo IMPLICIT).
  *
  * Hace lo mismo que `handleDeeplinks` de supabase-kt 3.0.3, pero dentro de un

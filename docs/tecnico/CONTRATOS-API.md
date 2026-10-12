@@ -213,8 +213,8 @@ lugar donde está escrito; el código lo toma de una sola constante.
 | 2 | Supabase manda el correo. El enlace pasa por su servidor y redirige a `mx.donchambitas.app://auth#access_token=…&refresh_token=…&type=recovery…` | Supabase |
 | 3 | Un `intent-filter` de `MainActivity` con ese esquema y ese host abre la aplicación | `S2-T07` |
 | 4 | `MainActivity` revisa el enlace con `esEnlaceConSesion` y llama a `importarSesionDeEnlace` (`datos/remoto/supabase/EnlaceAuth.kt`). Hace lo mismo que `handleDeeplinks`: `parseSessionFromFragment`, `retrieveUser` e `importSession`, pero dentro de un `try`. La sesión queda importada, y `UserSession.type` trae `"recovery"` | `S2-T07` |
-| 5 | Con esa marca, la aplicación aterriza en P-18, directo en la sección de contraseña | `S2-T11` |
-| 6 | P-18 llama a `cambiarContrasena(nueva)` | `S2-T11` |
+| 5 | Si la importación salió bien y `esEnlaceDeRecuperacion` encuentra `type=recovery` en el fragmento, `MainActivity` avisa por `AvisosEnlace` (`ui/navegacion`). `SesionViewModel` espera el primer valor no nulo de `sesionActual()` y entrega el rol; `GrafoNavegacion` deja el marcador temporal con ese rol y navega a P-18 con la pila limpia. P-18 abre con la sección de contraseña desplegada. Si P-01 todavía no decidía, ya no decide | `S2-T11` |
+| 6 | P-18 pide solo la contraseña nueva, con el mínimo de 8 del registro, y llama a `cambiarContrasena(nueva)` | `S2-T11` |
 
 **El enlace vencido o ya usado.** En ese caso Supabase redirige con
 `#error=…&error_code=…` en vez de tokens. `parseSessionFromFragment` lanza
@@ -227,8 +227,9 @@ descarta el enlace sin tokens, con `error=` o con partes sin `=`, e
 `importarSesionDeEnlace` hace la importación dentro de un `try`.
 
 Con un enlace vencido, la aplicación abre normal, sin sesión, en P-02.
-Verificado en emulador, en frío y con la aplicación abierta. Si además hay
-que avisarle algo al usuario, lo decide `S2-T11`.
+Verificado en emulador, en frío y con la aplicación abierta. `S2-T11` no
+agrega ningún aviso, porque su ticket no lo pide: el usuario puede pedir otro
+enlace en P-04. Si se quiere avisar, lo decide el líder.
 
 **`recuperarContrasena` siempre reporta éxito cuando la petición llega al
 servidor,** exista o no el correo. Decir cuáles correos están registrados es
@@ -329,7 +330,7 @@ códigos son los de `AuthErrorCode` en 3.0.3 y llegan en
 | `session_not_found`, `session_expired`, `refresh_token_not_found`, `bad_jwt` | `cambiarContrasena` | `AUTENTICACION` |
 | `user_already_exists`, `email_exists` | `registrar` | `CORREO_DUPLICADO` (`H-11`). La pantalla pinta `error_correo_duplicado` |
 | `weak_password` (`AuthWeakPasswordException`) | `registrar`, `cambiarContrasena` | `VALIDACION`. Con el mínimo en 8 en el servidor y en la interfaz no debería llegar. Se pinta el mensaje genérico de `VALIDACION` |
-| `same_password` | `cambiarContrasena` | `VALIDACION`. Qué mensaje pinta P-18 lo decide `S2-T11` |
+| `same_password` | `cambiarContrasena` | `VALIDACION`. P-18 pinta "La contraseña nueva es igual a la actual" debajo del campo (`S2-T11`). Como `weak_password` no debería llegar, P-18 trata todo `VALIDACION` de `cambiarContrasena` como este caso |
 | `validation_failed`, `email_address_invalid` | `registrar`, `iniciarSesion` | `VALIDACION`. La interfaz ya validó con la misma expresión que el esquema, así que no debería llegar |
 | `over_request_rate_limit` | `registrar`, `iniciarSesion`, `cambiarContrasena` | `SERVIDOR` |
 | `over_email_send_rate_limit`, `over_request_rate_limit`, `email_address_invalid`, `email_address_not_authorized` | `recuperarContrasena` | **Éxito**, ver arriba |
@@ -381,7 +382,7 @@ de Supabase. La implementación es `RepositorioUsuarioReal` (`DEC-31`).
 |---|---|---|
 | `obtenerMiUsuario()` | `select` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>` |
 | `actualizarMiUsuario(nombre, apellidos, telefono)` | `update` sobre `usuarios` con `id = <uid>` | `Resultado<Usuario>`, ya actualizado |
-| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<archivo>`, y luego `usuarios.foto_url` | **Todavía no:** llega con `S2-T14` |
+| `subirFotoPerfil(bytes)` | Storage, cubeta `perfiles`, ruta `<uid>/<milisegundos>.jpg`; luego `usuarios.foto_url`, y al final borra el resto de la carpeta | `Resultado<String>`, la URL pública nueva (`S2-T14`) |
 
 **El `<uid>` sale de la sesión que ya tiene `supabase-kt`**:
 `auth.currentUserOrNull()?.id`, sin ir a la red. Si no hay sesión, la
@@ -443,12 +444,58 @@ Nunca es un éxito.
 
 ### `subirFotoPerfil`
 
-`RepositorioUsuarioReal` devuelve `Resultado.Error(SERVIDOR)` hasta `S2-T14`
-(`DEC-31`, y la decisión 1 de `S2-T12`). Nadie la llama todavía.
+Escrito a detalle en `S2-T14`. Recibe el JPEG de 512 × 512 que arma P-18
+(`S2-T13`). **La foto anterior se borra**: lo decidió el líder el 2026-10-11.
 
-Cuando llegue: la ruta de Storage **tiene que empezar con el uid del
-usuario**, porque de ahí salen las políticas. Ver
-`basedatos/03_almacenamiento.sql`.
+```kotlin
+val cubeta = storage.from("perfiles")
+val ruta = "$uid/${System.currentTimeMillis()}.jpg"
+cubeta.upload(ruta, bytes) { contentType = ContentType.Image.JPEG }   // 1. subir
+val url = cubeta.publicUrl(ruta)
+from("usuarios").update({ set("foto_url", url) }) {                    // 2. apuntar
+    filter { eq("id", uid) }
+    select()
+}
+cubeta.delete(cubeta.list(uid).map { "$uid/${it.name}" } - ruta)       // 3. limpiar
+```
+
+- **La ruta empieza con el uid**: las políticas de `03_almacenamiento.sql`
+  solo dejan escribir y borrar dentro de `perfiles/<uid>/`.
+- **Un nombre nuevo cada vez, sin `upsert`.** Con un nombre fijo la URL no
+  cambiaría y Coil seguiría pintando la foto vieja.
+- **El orden importa**: la ficha nunca apunta a un archivo que no existe.
+
+| Si falla… | Qué pasa |
+|---|---|
+| 1, subir | Nada cambió. Se devuelve el error |
+| 2, apuntar | Se borra el archivo recién subido y se devuelve el error. La ficha sigue con la foto anterior, que no se tocó |
+| 3, limpiar | **Es un éxito igual**: la foto nueva ya está y la ficha ya apunta a ella. Lo que quedó se borra en la siguiente subida, porque el paso 3 borra todo lo que no sea la foto nueva |
+
+**Errores de Storage.** Storage contesta todos sus rechazos con HTTP `400`, y
+pone el código real como texto dentro del cuerpo (verificado el 2026-10-11):
+
+| Motivo | Cuerpo |
+|---|---|
+| Ruta repetida sin `upsert` | `"409"`, `KeyAlreadyExists` |
+| Carpeta de otro uid | `"403"`, `new row violates row-level security policy` |
+| Tipo que no es JPG, PNG ni WebP | `"415"`, `InvalidMimeType` |
+| Más de 5 MB | `"413"`, `EntityTooLarge` |
+
+`storage-kt` 3.0.3 espera ese código como número y no lo recupera, así que
+desde la aplicación no se distingue el motivo (`H-17`). `traducirErrorStorage`
+(`ErroresStorage.kt`) traduce así:
+
+| Qué llega | `TipoError` |
+|---|---|
+| Sin sesión (antes de ir a la red) | `AUTENTICACION` |
+| `HttpRequestException`, `HttpRequestTimeoutException` | `RED` |
+| Cualquier `RestException` de Storage | `SERVIDOR` |
+| Error de PostgREST en el paso 2 | El de `traducirErrorDatos`. Cero filas, `AUTENTICACION` |
+| Cualquier otra cosa | `DESCONOCIDO` |
+
+La aplicación evita los cuatro motivos: sube JPEG de 512 × 512, a su carpeta y
+con un nombre nuevo. El `mensaje` es `RestException.error`, nunca `message`
+(`H-13`).
 
 ### La `Sesion` no se entera de la edición
 

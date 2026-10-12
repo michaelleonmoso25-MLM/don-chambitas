@@ -125,7 +125,8 @@ de ser de este diseño.
 | Registro, sesión, refresco de token, recuperación | Supabase Auth | S2-T07 |
 | Base de datos y consultas | Postgrest sobre el esquema de `basedatos/` | S3-T09, S4-T09 |
 | Operaciones atómicas | Funciones RPC, ya escritas en `01_esquema.sql` | S3-T09, S5-T07 |
-| Fotos de perfil y de servicio | Supabase Storage | S2-T14 |
+| Foto de perfil | Supabase Storage, cubeta `perfiles` | S2-T14 |
+| Fotos de servicio | Supabase Storage, cubeta `servicios` | S3-T09 (`H-16`) |
 | Chat en vivo | Supabase Realtime | S5-T07 |
 | Proxy de IA con la llave de OpenAI | Edge Function | S4-T10 |
 | Control de acceso | Políticas RLS, ya escritas en `basedatos/02_politicas_rls.sql` | las valida S1-T03 |

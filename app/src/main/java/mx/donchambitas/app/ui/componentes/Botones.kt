@@ -76,6 +76,9 @@ fun BotonPrincipal(
 
 /**
  * Boton secundario con contorno Mostaza Oscuro y fondo transparente.
+ *
+ * @param color Contorno y texto. Mostaza Oscuro salvo en acciones que cierran
+ * algo, como "Cerrar sesion" de P-18, que van en Error (WIREFRAMES.md, P-18).
  */
 @Composable
 fun BotonSecundario(
@@ -83,6 +86,7 @@ fun BotonSecundario(
     onClick: () -> Unit,
     habilitado: Boolean = true,
     cargando: Boolean = false,
+    color: Color = MostazaOscuro,
     modifier: Modifier = Modifier
 ) {
     OutlinedButton(
@@ -91,13 +95,13 @@ fun BotonSecundario(
         shape = FormaBoton,
         border = BorderStroke(
             width = GrosorBorde,
-            color = if (habilitado && !cargando) MostazaOscuro else MostazaOscuro.copy(alpha = 0.5f)
+            color = if (habilitado && !cargando) color else color.copy(alpha = 0.5f)
         ),
         colors = ButtonDefaults.outlinedButtonColors(
             containerColor = Color.Transparent,
-            contentColor = MostazaOscuro,
+            contentColor = color,
             disabledContainerColor = Color.Transparent,
-            disabledContentColor = MostazaOscuro.copy(alpha = 0.5f)
+            disabledContentColor = color.copy(alpha = 0.5f)
         ),
         modifier = modifier
             .fillMaxWidth()
@@ -106,7 +110,7 @@ fun BotonSecundario(
         if (cargando) {
             CircularProgressIndicator(
                 modifier = Modifier.size(TamanoIndicador),
-                color = MostazaOscuro,
+                color = color,
                 strokeWidth = GrosorIndicador
             )
         } else {

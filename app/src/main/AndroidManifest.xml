@@ -40,6 +40,18 @@
                     android:scheme="mx.donchambitas.app" />
             </intent-filter>
         </activity>
+
+        <!-- Donde la camara del sistema deja la foto de perfil (S2-T13). Solo
+             expone cache/fotos/, ver res/xml/rutas_archivos.xml. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.archivos"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/rutas_archivos" />
+        </provider>
     </application>
 
 </manifest>

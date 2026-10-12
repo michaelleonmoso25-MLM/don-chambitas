@@ -224,8 +224,15 @@ Pantalla principal para el usuario con rol de trabajador. Despliega la lista de 
 
 ![Wireframe P-18 Mi cuenta](wireframes/P-18-cuenta.png)
 
+> **Corregido por `S2-T11` el 2026-10-11.** El dibujo no se regeneró y difiere
+> del texto en tres puntos; manda el texto:
+> - la tarjeta no lleva municipio, porque `public.usuarios` no lo tiene (`H-15`);
+> - los accesos del trabajador son P-11 y P-14, no P-07 y P-12 (decisión 3);
+> - la edición y el cambio de contraseña se despliegan dentro de la misma
+>   pantalla, y solo se pide la contraseña nueva (decisiones 1 y 2).
+
 ### Objetivo y descripción
-Pantalla compartida para la administración del perfil, seguridad de la cuenta y opciones de sesión. Se adapta visualmente mostrando el rol del usuario ("Cliente" o "Trabajador") y habilitando accesos directos específicos (como ver perfil público o servicios si es trabajador).
+Pantalla compartida para la administración del perfil, seguridad de la cuenta y opciones de sesión. Se adapta visualmente mostrando el rol del usuario ("Cliente" o "Trabajador") y habilitando accesos directos específicos (su perfil profesional y sus postulaciones si es trabajador).
 
 ### Zonas y componentes exactos
 - **Encabezado:** `BarraSuperior` en color `Mostaza` con título "Mi cuenta".
@@ -234,13 +241,13 @@ Pantalla compartida para la administración del perfil, seguridad de la cuenta y
   - Avatar circular con iniciales o foto de perfil (80 dp).
   - Nombre completo del usuario (`cuerpoFuerte` en `Carbon`).
   - Rol de usuario modelado con `EtiquetaEstado` (en color `Advertencia` para Trabajador o `Mostaza` para Cliente).
-  - Correo electrónico, teléfono y municipio en tipografía `secundario` / `pie` en `Cafe`.
+  - Correo electrónico y teléfono en tipografía `secundario` / `pie` en `Cafe`.
 - **Bloque de configuración general:**
   - `BotonSecundario`: "Editar datos personales" (contorno `MostazaOscuro`).
   - `BotonSecundario`: "Cambiar contraseña" (contorno `MostazaOscuro`).
 - **Bloque de accesos directos (si es trabajador):**
-  - `BotonSecundario`: "Ver mi perfil público" (navega a `P-07`).
-  - `BotonSecundario`: "Mis servicios publicados" (navega a `P-12`).
+  - `BotonSecundario`: "Mi perfil profesional" (navega a `P-11`).
+  - `BotonSecundario`: "Mis postulaciones" (navega a `P-14`).
 - **Zona de sesión:**
   - `BotonSecundario` estilizado para "Cerrar sesión" en color `Error` (`#C62828`).
 - **Navegación:** `BarraInferior` fija con la pestaña Cuenta activa (indicador en `Mostaza`).
@@ -248,12 +255,12 @@ Pantalla compartida para la administración del perfil, seguridad de la cuenta y
 ### Elementos tocables y comportamiento
 | Elemento | Componente | Comportamiento al tocar |
 |---|---|---|
-| Avatar / Foto de perfil | Avatar circular | Abre selector de imagen en dispositivo para actualizar foto de perfil. |
-| "Editar datos personales" | `BotonSecundario` | Abre modal o pantalla de edición de nombre, teléfono y ubicación. |
-| "Cambiar contraseña" | `BotonSecundario` | Despliega flujo para ingresar contraseña actual y nueva contraseña. |
-| "Ver mi perfil público" | `BotonSecundario` | Navega a `P-07` mostrando la vista previa pública del trabajador. |
-| "Mis servicios publicados" | `BotonSecundario` | Navega a `P-12` (Lista de servicios con opciones de editar, pausar y eliminar). |
-| "Cerrar sesión" | `BotonSecundario` | Despliega diálogo de confirmación ("¿Deseas cerrar tu sesión?"). Al confirmar, invoca `cerrarSesion()` en el repositorio, limpia las credenciales guardadas y redirige a `P-02` (Iniciar sesión) limpiando la pila de navegación. |
+| Avatar / Foto de perfil | Avatar circular | Sin foto muestra las iniciales. Al tocarlo abre una hoja inferior con "Elegir de la galería" y "Tomar foto"; la imagen se recorta en círculo y se sube con `subirFotoPerfil` (`S2-T13`). Se rechazan, con el motivo, las de más de 5 MB o que no sean JPG, PNG o WebP. |
+| "Editar datos personales" | `BotonSecundario` | La tarjeta se convierte en los campos de nombre, apellidos y teléfono, con "Guardar" y "Cancelar". El teléfono es obligatorio, como en P-03. |
+| "Cambiar contraseña" | `BotonSecundario` | Despliega debajo un solo campo, la contraseña nueva (mínimo 8), con "Guardar" y "Cancelar". Al llegar por el enlace de recuperación ya está desplegado (`DEC-27`). |
+| "Mi perfil profesional" | `BotonSecundario` | Navega a `P-11`. Solo lo ve el trabajador. |
+| "Mis postulaciones" | `BotonSecundario` | Navega a `P-14`. Solo lo ve el trabajador. |
+| "Cerrar sesión" | `BotonSecundario` | Despliega diálogo de confirmación ("¿Deseas cerrar tu sesión?"). Al confirmar, invoca `cerrarSesion()` en el repositorio, limpia las credenciales guardadas y redirige a `P-02` (Iniciar sesión) limpiando la pila de navegación. Sin red avisa "Sin conexión" y la sesión sigue. |
 | Pestaña Inicio | `BarraInferior` | Navega a `P-05` (Cliente) o `P-10` (Trabajador). |
 | Pestaña Solicitudes / Servicios | `BarraInferior` | Navega a `P-09` (Cliente) o `P-12` (Trabajador). |
 | Pestaña Chats | `BarraInferior` | Navega a `P-15` (Bandeja de conversaciones). |

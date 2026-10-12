@@ -11,7 +11,9 @@ import io.github.jan.supabase.SupabaseClient
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import mx.donchambitas.app.datos.remoto.supabase.esEnlaceConSesion
+import mx.donchambitas.app.datos.remoto.supabase.esEnlaceDeRecuperacion
 import mx.donchambitas.app.datos.remoto.supabase.importarSesionDeEnlace
+import mx.donchambitas.app.ui.navegacion.AvisosEnlace
 import mx.donchambitas.app.ui.navegacion.GrafoNavegacion
 import mx.donchambitas.app.ui.tema.DonChambitasTema
 
@@ -22,6 +24,9 @@ class MainActivity : ComponentActivity() {
     // la aplicacion arranca aunque falten las llaves en local.properties.
     @Inject
     lateinit var supabase: Lazy<SupabaseClient>
+
+    @Inject
+    lateinit var avisosEnlace: AvisosEnlace
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,8 +45,9 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Pasos 3 y 4 del recorrido de recuperacion (DEC-27): solo deja la
-     * sesion importada. Llevar al usuario a P-18 es de S2-T11.
+     * Pasos 3 y 4 del recorrido de recuperacion (DEC-27): deja la sesion
+     * importada y, si el enlace es de recuperacion, avisa para que la
+     * navegacion lleve a P-18 (paso 5).
      */
     private fun procesarEnlace(intent: Intent?) {
         val datos = intent?.data ?: return
@@ -49,6 +55,9 @@ class MainActivity : ComponentActivity() {
         if (!esEnlaceConSesion(datos.scheme, datos.host, fragmento) || fragmento == null) return
         // Sin llaves el cliente no se puede crear; un enlace no debe cerrar la aplicacion por eso.
         val cliente = runCatching { supabase.get() }.getOrNull() ?: return
-        lifecycleScope.launch { cliente.importarSesionDeEnlace(fragmento) }
+        lifecycleScope.launch {
+            val importada = cliente.importarSesionDeEnlace(fragmento)
+            if (importada && esEnlaceDeRecuperacion(fragmento)) avisosEnlace.avisarRecuperacion()
+        }
     }
 }
