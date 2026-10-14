@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
@@ -54,12 +55,14 @@ class SesionViewModelTest {
     }
 
     @Test
-    fun debeAvisar_cuandoNoHaySesionAlArrancar() = runTest(reglaCorrutinas.testDispatcher) {
+    fun noDebeAvisar_cuandoNoHaySesionAlArrancar() = runTest(reglaCorrutinas.testDispatcher) {
         responderCon(MutableStateFlow(null))
 
-        val avisos = avisosDe(SesionViewModel(repositorio, avisosEnlace))
+        val viewModel = SesionViewModel(repositorio, avisosEnlace)
+        val avisos = avisosDe(viewModel)
 
-        assertEquals(1, avisos.size)
+        assertEquals(0, avisos.size)
+        assertEquals(EstadoSesion.SIN_SESION, viewModel.estado.value)
     }
 
     @Test
@@ -71,16 +74,65 @@ class SesionViewModelTest {
         sesiones.value = DatosPrueba.crearSesion()
         runCurrent()
 
-        assertEquals(1, avisos.size)
+        assertEquals(0, avisos.size)
     }
 
     @Test
     fun noDebeAvisarNiLanzar_cuandoElFlujoDeSesionLanza() = runTest(reglaCorrutinas.testDispatcher) {
         responderCon(flow { throw IllegalStateException("faltan las llaves de Supabase") })
 
-        val avisos = avisosDe(SesionViewModel(repositorio, avisosEnlace))
+        val viewModel = SesionViewModel(repositorio, avisosEnlace)
+        val avisos = avisosDe(viewModel)
 
         assertEquals(0, avisos.size)
+        assertEquals(EstadoSesion.SIN_SESION, viewModel.estado.value)
+    }
+
+    @Test
+    fun debeArrancarEnVerificando_mientrasAuthNoResponde() = runTest(reglaCorrutinas.testDispatcher) {
+        responderCon(MutableSharedFlow())
+
+        val viewModel = SesionViewModel(repositorio, avisosEnlace)
+        runCurrent()
+
+        assertEquals(EstadoSesion.VERIFICANDO, viewModel.estado.value)
+    }
+
+    @Test
+    fun debeLlevarElRolDeLaSesion() = runTest(reglaCorrutinas.testDispatcher) {
+        val sesiones = MutableStateFlow<Sesion?>(
+            Sesion(DatosPrueba.crearUsuario(rol = RolUsuario.CLIENTE))
+        )
+        responderCon(sesiones)
+        val viewModel = SesionViewModel(repositorio, avisosEnlace)
+        runCurrent()
+        assertEquals(EstadoSesion.CLIENTE, viewModel.estado.value)
+
+        sesiones.value = Sesion(DatosPrueba.crearUsuario(rol = RolUsuario.TRABAJADOR))
+        runCurrent()
+        assertEquals(EstadoSesion.TRABAJADOR, viewModel.estado.value)
+
+        sesiones.value = null
+        runCurrent()
+        assertEquals(EstadoSesion.SIN_SESION, viewModel.estado.value)
+    }
+
+    @Test
+    fun debeAvisar_cuandoQuienEntroConReintentarCierraSesion() = runTest(reglaCorrutinas.testDispatcher) {
+        // Sin red al abrir, Auth no emitió la sesión; el usuario entró desde P-01
+        val sesiones = MutableSharedFlow<Sesion?>()
+        responderCon(sesiones)
+        val viewModel = SesionViewModel(repositorio, avisosEnlace)
+        val avisos = avisosDe(viewModel)
+
+        viewModel.registrarEntrada(RolUsuario.TRABAJADOR)
+        assertEquals(EstadoSesion.TRABAJADOR, viewModel.estado.value)
+
+        sesiones.emit(null)
+        runCurrent()
+
+        assertEquals(1, avisos.size)
+        assertEquals(EstadoSesion.SIN_SESION, viewModel.estado.value)
     }
 
     @Test
@@ -89,7 +141,13 @@ class SesionViewModelTest {
         responderCon(sesiones)
         val viewModel = SesionViewModel(repositorio, avisosEnlace)
         val roles = mutableListOf<RolUsuario>()
-        backgroundScope.launch { viewModel.entradaPorRecuperacion.toList(roles) }
+        val estadoAlLlegar = mutableListOf<EstadoSesion>()
+        backgroundScope.launch {
+            viewModel.entradaPorRecuperacion.collect { rol ->
+                roles += rol
+                estadoAlLlegar += viewModel.estado.value
+            }
+        }
 
         avisosEnlace.avisarRecuperacion()
         runCurrent()
@@ -99,6 +157,7 @@ class SesionViewModelTest {
         runCurrent()
 
         assertEquals(listOf(RolUsuario.TRABAJADOR), roles)
+        assertEquals(listOf(EstadoSesion.TRABAJADOR), estadoAlLlegar)
     }
 
     @Test

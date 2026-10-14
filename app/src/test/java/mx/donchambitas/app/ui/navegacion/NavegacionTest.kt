@@ -10,7 +10,7 @@ import org.junit.Test
 
 /**
  * Pruebas unitarias para el sistema de navegación, rutas, barras inferiores y guardas de acceso.
- * Valida los criterios de aceptación del ticket S1-T12.
+ * Valida los criterios de aceptación de los tickets S1-T12 y S2-T15.
  */
 class NavegacionTest {
 
@@ -112,32 +112,32 @@ class NavegacionTest {
         PANTALLAS_ENCIMA.forEach { ruta ->
             assertFalse(
                 "La pantalla encima ${ruta.idPantalla} no debe mostrar barra para Cliente",
-                debeMostrarBarraInferior(ruta.ruta, EstadoSesionTemporal.CLIENTE)
+                debeMostrarBarraInferior(ruta.ruta, EstadoSesion.CLIENTE)
             )
             assertFalse(
                 "La pantalla encima ${ruta.idPantalla} no debe mostrar barra para Trabajador",
-                debeMostrarBarraInferior(ruta.ruta, EstadoSesionTemporal.TRABAJADOR)
+                debeMostrarBarraInferior(ruta.ruta, EstadoSesion.TRABAJADOR)
             )
         }
 
         // Pantallas con barra inferior para Cliente
-        assertTrue(debeMostrarBarraInferior(Ruta.InicioCliente.ruta, EstadoSesionTemporal.CLIENTE))
-        assertTrue(debeMostrarBarraInferior(Ruta.MisSolicitudes.ruta, EstadoSesionTemporal.CLIENTE))
-        assertTrue(debeMostrarBarraInferior(Ruta.Conversaciones.ruta, EstadoSesionTemporal.CLIENTE))
-        assertTrue(debeMostrarBarraInferior(Ruta.MiCuenta.ruta, EstadoSesionTemporal.CLIENTE))
+        assertTrue(debeMostrarBarraInferior(Ruta.InicioCliente.ruta, EstadoSesion.CLIENTE))
+        assertTrue(debeMostrarBarraInferior(Ruta.MisSolicitudes.ruta, EstadoSesion.CLIENTE))
+        assertTrue(debeMostrarBarraInferior(Ruta.Conversaciones.ruta, EstadoSesion.CLIENTE))
+        assertTrue(debeMostrarBarraInferior(Ruta.MiCuenta.ruta, EstadoSesion.CLIENTE))
 
         // Pantallas con barra inferior para Trabajador
-        assertTrue(debeMostrarBarraInferior(Ruta.InicioTrabajador.ruta, EstadoSesionTemporal.TRABAJADOR))
-        assertTrue(debeMostrarBarraInferior(Ruta.MisServicios.ruta, EstadoSesionTemporal.TRABAJADOR))
-        assertTrue(debeMostrarBarraInferior(Ruta.Conversaciones.ruta, EstadoSesionTemporal.TRABAJADOR))
-        assertTrue(debeMostrarBarraInferior(Ruta.MiCuenta.ruta, EstadoSesionTemporal.TRABAJADOR))
+        assertTrue(debeMostrarBarraInferior(Ruta.InicioTrabajador.ruta, EstadoSesion.TRABAJADOR))
+        assertTrue(debeMostrarBarraInferior(Ruta.MisServicios.ruta, EstadoSesion.TRABAJADOR))
+        assertTrue(debeMostrarBarraInferior(Ruta.Conversaciones.ruta, EstadoSesion.TRABAJADOR))
+        assertTrue(debeMostrarBarraInferior(Ruta.MiCuenta.ruta, EstadoSesion.TRABAJADOR))
     }
 
     @Test
     fun sinSesionCualquierRutaProtegidaLlevaAIniciarSesion() {
         val rutasProtegidas = RUTAS_CLIENTE + RUTAS_TRABAJADOR + RUTAS_COMPARTIDAS
         rutasProtegidas.forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.SIN_SESION)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.SIN_SESION)
             assertEquals(
                 "Sin sesión, ${ruta.idPantalla} debe redirigir a Iniciar sesión",
                 Ruta.IniciarSesion.ruta,
@@ -147,7 +147,7 @@ class NavegacionTest {
 
         // Rutas de autenticación están permitidas sin sesión
         RUTAS_AUTENTICACION.forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.SIN_SESION)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.SIN_SESION)
             assertNull("Ruta de autenticación ${ruta.idPantalla} debe estar permitida sin sesión", redireccion)
         }
     }
@@ -155,7 +155,7 @@ class NavegacionTest {
     @Test
     fun unClienteNoAlcanzaRutaDeTrabajadorYRedirigeAInicioCliente() {
         RUTAS_TRABAJADOR.forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.CLIENTE)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.CLIENTE)
             assertEquals(
                 "Cliente intentando acceder a ${ruta.idPantalla} debe redirigir a InicioCliente",
                 Ruta.InicioCliente.ruta,
@@ -165,7 +165,7 @@ class NavegacionTest {
 
         // Cliente sí puede acceder a sus rutas y compartidas
         (RUTAS_CLIENTE + RUTAS_COMPARTIDAS).forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.CLIENTE)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.CLIENTE)
             assertNull("Cliente debe poder acceder a ${ruta.idPantalla}", redireccion)
         }
     }
@@ -173,7 +173,7 @@ class NavegacionTest {
     @Test
     fun unTrabajadorNoAlcanzaRutaDeClienteYRedirigeAInicioTrabajador() {
         RUTAS_CLIENTE.forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.TRABAJADOR)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.TRABAJADOR)
             assertEquals(
                 "Trabajador intentando acceder a ${ruta.idPantalla} debe redirigir a InicioTrabajador",
                 Ruta.InicioTrabajador.ruta,
@@ -183,8 +183,43 @@ class NavegacionTest {
 
         // Trabajador sí puede acceder a sus rutas y compartidas
         (RUTAS_TRABAJADOR + RUTAS_COMPARTIDAS).forEach { ruta ->
-            val redireccion = resolverGuarda(ruta.ruta, EstadoSesionTemporal.TRABAJADOR)
+            val redireccion = resolverGuarda(ruta.ruta, EstadoSesion.TRABAJADOR)
             assertNull("Trabajador debe poder acceder a ${ruta.idPantalla}", redireccion)
+        }
+    }
+
+    @Test
+    fun conSesionLosFormulariosDeEntradaLlevanAlInicioDelRol() {
+        val formularios = RUTAS_AUTENTICACION - Ruta.Splash
+        formularios.forEach { ruta ->
+            assertEquals(
+                "Con sesión de cliente, ${ruta.idPantalla} debe llevar a InicioCliente",
+                Ruta.InicioCliente.ruta,
+                resolverGuarda(ruta.ruta, EstadoSesion.CLIENTE)
+            )
+            assertEquals(
+                "Con sesión de trabajador, ${ruta.idPantalla} debe llevar a InicioTrabajador",
+                Ruta.InicioTrabajador.ruta,
+                resolverGuarda(ruta.ruta, EstadoSesion.TRABAJADOR)
+            )
+        }
+
+        // P-01 decide el destino, así que siempre pasa
+        assertNull(resolverGuarda(Ruta.Splash.ruta, EstadoSesion.CLIENTE))
+        assertNull(resolverGuarda(Ruta.Splash.ruta, EstadoSesion.TRABAJADOR))
+    }
+
+    @Test
+    fun mientrasSeVerificaLaSesionNingunaGuardaRedirigeNiHayBarra() {
+        TODAS_LAS_RUTAS.forEach { ruta ->
+            assertNull(
+                "Verificando, ${ruta.idPantalla} no debe redirigir",
+                resolverGuarda(ruta.ruta, EstadoSesion.VERIFICANDO)
+            )
+            assertFalse(
+                "Verificando, ${ruta.idPantalla} no debe mostrar barra",
+                debeMostrarBarraInferior(ruta.ruta, EstadoSesion.VERIFICANDO)
+            )
         }
     }
 
