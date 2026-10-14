@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-10-11
+**Última actualización:** 2026-10-14
 
 ---
 
@@ -14,7 +14,7 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 14 |
+| Terminadas | 15 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -78,21 +78,17 @@ _Ninguna._
 
 ## Última tarea terminada
 
-**`S2-T14` — Almacenamiento real de imágenes en Supabase Storage.** 2026-10-11.
-Rama `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`**, pull request **sin abrir todavía**. Orden de integración: `S2-T11`, `S2-T13` y luego esta. Ticket redactado por el agente el mismo día; el líder decidió al pedirla que **la foto anterior se borra**.
+**`S2-T16` — Pruebas del flujo de autenticación con datos falsos.** 2026-10-14.
+Rama `test/S2-T16-pruebas-flujo-autenticacion`, desde `main`, pull request **sin abrir todavía**. **Se tomó con `S2-T15` todavía en su pull request (#18)**: las dos ramas tocan los mismos renglones de los archivos vivos y el segundo en integrarse tiene que resolverlos. Ticket redactado por el agente el mismo día; **se eligió la opción A en las tres decisiones sin el líder disponible**.
 
-- **`RepositorioUsuarioReal.subirFotoPerfil`** real: sube a `perfiles/<uid>/<milisegundos>.jpg`, escribe la URL pública en `usuarios.foto_url` y borra todo lo demás de la carpeta. Si escribir `foto_url` falla, borra lo que subió. Si limpiar falla, sigue siendo éxito y la siguiente subida limpia.
-- **`install(Storage)`** en `ModuloSupabase`, y `traducirErrorStorage` (`ErroresStorage.kt`).
-- `CONTRATOS-API.md` ("`subirFotoPerfil`" a detalle) y `ARQUITECTURA.md` al día.
+- **`FlujoAutenticacionTest`**, 12 pruebas en la JVM con `RepositorioAuthFalso` y sin `mockk`: registro de cliente y de trabajador hasta P-01, cierre de sesión en P-18 y vuelta a entrar, correo duplicado, correo sin cuenta, P-04 exista o no la cuenta, y las filas de 2.4 y 3.5 que faltaban (`SERVIDOR`, `DESCONOCIDO`, `VALIDACION`, `AUTENTICACION` y el reintento tras `RED`).
+- **`app/src/main` no cambió.**
+- **Desvío:** cada prueba empieza sin sesión, porque `FuenteDatosFalsa` arranca con la de `cliente1` y con ella una prueba pasaba por casualidad.
 - Verificación del proyecto:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 212 pruebas unitarias (4 nuevas) y 67 instrumentadas (1 nueva, contra Supabase), 0 fallas.
-  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: subir desde la galería, reabrir, cambiar desde la cámara (queda un solo archivo en la carpeta) y subir sin red ("Sin conexión"). La carpeta de `ana.rls@…` quedó vacía y su `foto_url` en `null`.
-  - **Sin llaves**: la aplicación abre y llega a P-02.
-- **Lo que NO se probó en el dispositivo:** la falla del paso 2 (escribir `foto_url` después de subir); no se puede provocar desde la aplicación.
-- **Dos hallazgos para el líder**, al final de `docs/tareas/S2-T14.md`:
-  - **`H-16` · `ARQUITECTURA.md` le daba a `S2-T14` también las fotos de servicio.** Son de `RepositorioServicios`, real en `S3-T09`; esta tarea hizo solo la de perfil y la tabla ya lo dice.
-  - **`H-17` · Storage no deja saber por qué rechazó un archivo:** todo llega como `400`. Hoy no estorba; con las fotos de servicio, sí.
+  - 224 pruebas unitarias (12 nuevas), 0 fallas. El archivo nuevo, 10 corridas seguidas sin fallas.
+  - Rompiendo a propósito la normalización del correo en `RegistroViewModel`, fallan 3 de las nuevas.
+- **Lo que NO prueba:** la contraseña equivocada, porque el falso no la revisa (decisión 2), ni el enlace de recuperación, porque el falso no manda correos.
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
 
@@ -135,7 +131,9 @@ explicados al final de `MODELO-ER.md`.
 `S2-T15` — Guardas de navegación por sesión y por rol
 (prioridad 300, sprint 2, depende de `S2-T09`, que ya está hecha)
 
-**No tiene ticket.**
+**Ya está hecha en su pull request (#18)**, sin integrar. Al integrarlo, el
+Sprint 2 queda cerrado y lo siguiente es abrir el Sprint 3, que decide el
+líder.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
