@@ -1,8 +1,5 @@
 package mx.donchambitas.app.ui.navegacion
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -199,21 +196,15 @@ sealed class Ruta(
 }
 
 /**
- * Estados temporales de sesión para las guardas de navegación.
- * Desde S2-T09 se mantiene al día con la sesión real de RepositorioAuth;
- * S2-T15 lo retira cuando las guardas lean esa sesión directamente.
+ * Estado de la sesión real que leen las guardas y las barras (S2-T15). Lo
+ * lleva [SesionViewModel]. VERIFICANDO es el arranque, mientras Auth no ha
+ * dicho si hay sesión: ahí ninguna guarda redirige, porque decide P-01.
  */
-enum class EstadoSesionTemporal(val etiqueta: String) {
-    SIN_SESION("Sin sesión"),
-    CLIENTE("Cliente"),
-    TRABAJADOR("Trabajador")
-}
-
-/**
- * Marcador en memoria del estado de sesión para pruebas interactivas de guardas.
- */
-object MarcadorSesionTemporal {
-    var estado: EstadoSesionTemporal by mutableStateOf(EstadoSesionTemporal.SIN_SESION)
+enum class EstadoSesion {
+    VERIFICANDO,
+    SIN_SESION,
+    CLIENTE,
+    TRABAJADOR
 }
 
 /**
@@ -312,42 +303,47 @@ fun encontrarRuta(rutaOUrl: String): Ruta? {
 
 /**
  * Resuelve las guardas de navegación.
+ * - Verificando: no redirige nada, P-01 todavía decide.
  * - Sin sesión: cualquier ruta fuera de autenticación redirige a P-02 (Iniciar sesión).
  * - Con sesión de cliente: las rutas de trabajador redirigen a P-05 (Inicio cliente).
  * - Con sesión de trabajador: las rutas de cliente redirigen a P-10 (Inicio trabajador).
+ * - Con cualquier sesión: P-02, P-03 y P-04 redirigen al inicio del rol, para
+ *   no entrar con otra cuenta encima de la abierta. P-01 siempre pasa.
  *
  * Devuelve la ruta a redirigir, o null si la navegación está permitida.
  */
 fun resolverGuarda(
     rutaDestino: String,
-    estadoSesion: EstadoSesionTemporal
+    estadoSesion: EstadoSesion
 ): String? {
     val ruta = encontrarRuta(rutaDestino) ?: return null
+    val esFormularioDeEntrada = ruta in RUTAS_AUTENTICACION && ruta != Ruta.Splash
     return when (estadoSesion) {
-        EstadoSesionTemporal.SIN_SESION -> {
+        EstadoSesion.VERIFICANDO -> null
+        EstadoSesion.SIN_SESION -> {
             if (RUTAS_AUTENTICACION.contains(ruta)) null else Ruta.IniciarSesion.ruta
         }
-        EstadoSesionTemporal.CLIENTE -> {
-            if (RUTAS_TRABAJADOR.contains(ruta)) Ruta.InicioCliente.ruta else null
+        EstadoSesion.CLIENTE -> {
+            if (esFormularioDeEntrada || RUTAS_TRABAJADOR.contains(ruta)) Ruta.InicioCliente.ruta else null
         }
-        EstadoSesionTemporal.TRABAJADOR -> {
-            if (RUTAS_CLIENTE.contains(ruta)) Ruta.InicioTrabajador.ruta else null
+        EstadoSesion.TRABAJADOR -> {
+            if (esFormularioDeEntrada || RUTAS_CLIENTE.contains(ruta)) Ruta.InicioTrabajador.ruta else null
         }
     }
 }
 
 /**
  * Determina si debe mostrarse la barra inferior para una ruta y estado de sesión dados.
- * - Sin sesión o rutas de autenticación: no muestra barra.
+ * - Verificando, sin sesión o rutas de autenticación: no muestra barra.
  * - Las 8 pantallas que van encima: no muestran barra.
  * - Pantallas principales con sesión activa: muestran su barra correspondiente.
  */
 fun debeMostrarBarraInferior(
     rutaDestino: String?,
-    estadoSesion: EstadoSesionTemporal
+    estadoSesion: EstadoSesion
 ): Boolean {
     if (rutaDestino == null) return false
-    if (estadoSesion == EstadoSesionTemporal.SIN_SESION) return false
+    if (estadoSesion == EstadoSesion.VERIFICANDO || estadoSesion == EstadoSesion.SIN_SESION) return false
     val ruta = encontrarRuta(rutaDestino) ?: return false
     if (PANTALLAS_ENCIMA.contains(ruta)) return false
     if (RUTAS_AUTENTICACION.contains(ruta)) return false

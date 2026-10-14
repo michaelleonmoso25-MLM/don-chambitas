@@ -26,7 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +33,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -73,7 +75,6 @@ import mx.donchambitas.app.ui.tema.DonChambitasTema
 import mx.donchambitas.app.ui.tema.Error
 import mx.donchambitas.app.ui.tema.Exito
 import mx.donchambitas.app.ui.tema.Mostaza
-import mx.donchambitas.app.ui.tema.MostazaOscuro
 import mx.donchambitas.app.ui.tema.Terracota
 import mx.donchambitas.app.ui.tema.cuerpo
 import mx.donchambitas.app.ui.tema.cuerpoFuerte
@@ -95,44 +96,55 @@ fun GrafoNavegacion(
 ) {
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
-    val estadoSesion = MarcadorSesionTemporal.estado
+    val estadoSesion by sesionViewModel.estado.collectAsState()
 
-    // La sesión terminó, porque el usuario la cerró o porque venció: se sale a
-    // P-02 con la pila limpia, para que atrás no regrese a una pantalla de
-    // adentro. Si nadie había entrado (el aviso del arranque), decide P-01.
+    // Quien estaba adentro se quedó sin sesión, porque la cerró o porque
+    // venció: se sale a P-02 con la pila limpia, para que atrás no regrese a
+    // una pantalla de adentro.
     LaunchedEffect(sesionViewModel) {
         sesionViewModel.sinSesion.collect {
-            if (MarcadorSesionTemporal.estado != EstadoSesionTemporal.SIN_SESION) {
-                MarcadorSesionTemporal.estado = EstadoSesionTemporal.SIN_SESION
-                navController.navigate(Ruta.IniciarSesion.ruta) {
-                    popUpTo(0) { inclusive = true }
-                }
+            navController.navigate(Ruta.IniciarSesion.ruta) {
+                popUpTo(0) { inclusive = true }
             }
         }
     }
 
     // Se entró por el enlace de recuperación (DEC-27): P-18 con la pila
-    // limpia, para que atrás cierre la aplicación. El marcador va primero,
-    // porque con SIN_SESION la guarda regresaría a P-02.
+    // limpia, para que atrás cierre la aplicación. El estado ya trae el rol,
+    // así que la guarda deja pasar.
     LaunchedEffect(sesionViewModel) {
-        sesionViewModel.entradaPorRecuperacion.collect { rol ->
-            MarcadorSesionTemporal.estado = when (rol) {
-                RolUsuario.CLIENTE -> EstadoSesionTemporal.CLIENTE
-                RolUsuario.TRABAJADOR -> EstadoSesionTemporal.TRABAJADOR
-            }
+        sesionViewModel.entradaPorRecuperacion.collect {
             navController.navigate(Ruta.MiCuenta.ruta) {
                 popUpTo(0) { inclusive = true }
             }
         }
     }
 
-    // Guarda global de navegación en tiempo real
+    // Guarda global de navegación en tiempo real. Lee el valor vigente y no el
+    // de la composición: quien hace entrar registra el rol justo antes de
+    // navegar, y la composición todavía no lo ha visto.
     LaunchedEffect(rutaActual, estadoSesion) {
         if (rutaActual != null) {
-            val redireccion = resolverGuarda(rutaActual, estadoSesion)
+            val redireccion = resolverGuarda(rutaActual, sesionViewModel.estado.value)
             if (redireccion != null && redireccion != rutaActual) {
+                // Si el destino ya está en la pila se regresa a él: sin esto cada
+                // intento apila otro inicio y atrás recorre copias en vez de
+                // cerrar la aplicación. Si no está, sale la ruta prohibida, y
+                // desde P-02, P-03 o P-04 con sesión sale todo el subgrafo,
+                // para que atrás no regrese al formulario.
+                val destinoEnPila = runCatching { navController.getBackStackEntry(redireccion) }.isSuccess
+                val origen = if (encontrarRuta(rutaActual) in RUTAS_AUTENTICACION) {
+                    Subgrafo.Autenticacion.ruta
+                } else {
+                    rutaActual
+                }
                 navController.navigate(redireccion) {
-                    popUpTo(rutaActual) { inclusive = true }
+                    if (destinoEnPila) {
+                        popUpTo(redireccion)
+                    } else {
+                        popUpTo(origen) { inclusive = true }
+                    }
+                    launchSingleTop = true
                 }
             }
         }
@@ -166,7 +178,7 @@ fun GrafoNavegacion(
         bottomBar = {
             if (debeMostrarBarraInferior(rutaActual, estadoSesion)) {
                 when (estadoSesion) {
-                    EstadoSesionTemporal.CLIENTE -> {
+                    EstadoSesion.CLIENTE -> {
                         BarraInferiorCliente(
                             rutaActual = rutaActual,
                             alSeleccionarRuta = { ruta ->
@@ -180,7 +192,7 @@ fun GrafoNavegacion(
                             }
                         )
                     }
-                    EstadoSesionTemporal.TRABAJADOR -> {
+                    EstadoSesion.TRABAJADOR -> {
                         BarraInferiorTrabajador(
                             rutaActual = rutaActual,
                             alSeleccionarRuta = { ruta ->
@@ -194,14 +206,14 @@ fun GrafoNavegacion(
                             }
                         )
                     }
-                    EstadoSesionTemporal.SIN_SESION -> {
+                    EstadoSesion.VERIFICANDO, EstadoSesion.SIN_SESION -> {
                         // Sin sesión no se muestra barra inferior
                     }
                 }
             }
         },
         floatingActionButton = {
-            if (rutaActual == Ruta.InicioCliente.ruta && estadoSesion == EstadoSesionTemporal.CLIENTE) {
+            if (rutaActual == Ruta.InicioCliente.ruta && estadoSesion == EstadoSesion.CLIENTE) {
                 FloatingActionButton(
                     onClick = {
                         navController.navigate(Ruta.PublicarSolicitud.ruta)
@@ -234,20 +246,29 @@ fun GrafoNavegacion(
             rellenoInterno
         }
 
-        NavHost(
-            navController = navController,
-            startDestination = Subgrafo.Autenticacion.ruta,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(rellenoContenido)
-        ) {
-            subgrafoAutenticacion(navController)
-            subgrafoCliente(navController)
-            subgrafoTrabajador(navController)
-            pantallasCompartidas(navController)
+        CompositionLocalProvider(LocalEstadoSesion provides estadoSesion) {
+            NavHost(
+                navController = navController,
+                startDestination = Subgrafo.Autenticacion.ruta,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(rellenoContenido)
+            ) {
+                subgrafoAutenticacion(navController, sesionViewModel)
+                subgrafoCliente(navController)
+                subgrafoTrabajador(navController)
+                pantallasCompartidas(navController)
+            }
         }
     }
 }
+
+/**
+ * La sesión real para los marcadores, que la muestran en "Pruebas de guardas".
+ * No piden el SesionViewModel con hiltViewModel(): dentro de un destino daría
+ * otra instancia, atada a esa entrada de la pila.
+ */
+private val LocalEstadoSesion = compositionLocalOf { EstadoSesion.VERIFICANDO }
 
 /**
  * Rutas donde el andamio de S1-T12 no debe pintar barra superior, porque la
@@ -276,7 +297,10 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
 /**
  * Subgrafo de autenticación (P-01 a P-04).
  */
-private fun NavGraphBuilder.subgrafoAutenticacion(navController: NavHostController) {
+private fun NavGraphBuilder.subgrafoAutenticacion(
+    navController: NavHostController,
+    sesionViewModel: SesionViewModel
+) {
     navigation(
         startDestination = Ruta.Splash.ruta,
         route = Subgrafo.Autenticacion.ruta
@@ -289,7 +313,7 @@ private fun NavGraphBuilder.subgrafoAutenticacion(navController: NavHostControll
                     if (navController.currentDestination?.route != Ruta.Splash.ruta) {
                         return@SplashPantalla
                     }
-                    marcarSesionSegun(destino)
+                    rolDeInicio(destino)?.let(sesionViewModel::registrarEntrada)
                     navController.navigate(destino.ruta) {
                         popUpTo(Ruta.Splash.ruta) {
                             inclusive = true
@@ -301,7 +325,7 @@ private fun NavGraphBuilder.subgrafoAutenticacion(navController: NavHostControll
 
         composable(Ruta.IniciarSesion.ruta) {
             IniciarSesionPantalla(
-                alEntrar = { destino -> entrarConSesion(navController, destino) },
+                alEntrar = { destino -> entrarConSesion(navController, sesionViewModel, destino) },
                 alIrARegistro = { navController.navigate(Ruta.Registro.ruta) },
                 alIrARecuperarContrasena = {
                     navController.navigate(Ruta.RecuperarContrasena.ruta)
@@ -311,7 +335,7 @@ private fun NavGraphBuilder.subgrafoAutenticacion(navController: NavHostControll
 
         composable(Ruta.Registro.ruta) {
             RegistroPantalla(
-                alEntrar = { destino -> entrarConSesion(navController, destino) },
+                alEntrar = { destino -> entrarConSesion(navController, sesionViewModel, destino) },
                 alRegresar = { navController.popBackStack() },
                 alIrAIniciarSesion = { navController.popBackStack() }
             )
@@ -616,7 +640,7 @@ fun MarcadorPantalla(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    val estadoSesionActual = MarcadorSesionTemporal.estado
+    val estadoSesionActual = LocalEstadoSesion.current
 
     Column(
         modifier = modifier
@@ -683,66 +707,6 @@ fun MarcadorPantalla(
             }
         }
 
-        // Selector de rol de sesión temporal para pruebas de guardas
-        Surface(
-            color = Arena,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Lock,
-                        contentDescription = null,
-                        tint = Carbon,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Text(
-                        text = "Control de sesión temporal (guardas):",
-                        style = DonChambitasTema.tipografia.cuerpoFuerte,
-                        color = Carbon
-                    )
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    EstadoSesionTemporal.entries.forEach { rol ->
-                        val activo = estadoSesionActual == rol
-                        val fondo = if (activo) Mostaza else Crema
-                        val textoColor = if (activo) Carbon else Cafe
-                        val bordeColor = if (activo) MostazaOscuro else Borde
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(fondo)
-                                .border(1.dp, bordeColor, RoundedCornerShape(12.dp))
-                                .clickable {
-                                    MarcadorSesionTemporal.estado = rol
-                                }
-                                .padding(vertical = 10.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = rol.etiqueta,
-                                style = if (activo) DonChambitasTema.tipografia.cuerpoFuerte else DonChambitasTema.tipografia.pie,
-                                color = textoColor
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
         // Acciones sugeridas de navegación para esta pantalla
         if (acciones.isNotEmpty()) {
             Surface(
@@ -798,7 +762,8 @@ fun MarcadorPantalla(
                 }
 
                 when (estadoSesionActual) {
-                    EstadoSesionTemporal.SIN_SESION -> {
+                    EstadoSesion.VERIFICANDO -> Unit
+                    EstadoSesion.SIN_SESION -> {
                         Text(
                             text = "Sin sesión activa: intentar ir a pantallas privadas debe redirigir a P-02.",
                             style = DonChambitasTema.tipografia.pie,
@@ -812,7 +777,7 @@ fun MarcadorPantalla(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                    EstadoSesionTemporal.CLIENTE -> {
+                    EstadoSesion.CLIENTE -> {
                         Text(
                             text = "Como Cliente: intentar ir a rutas de trabajador debe redirigir a P-05.",
                             style = DonChambitasTema.tipografia.pie,
@@ -826,7 +791,7 @@ fun MarcadorPantalla(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
-                    EstadoSesionTemporal.TRABAJADOR -> {
+                    EstadoSesion.TRABAJADOR -> {
                         Text(
                             text = "Como Trabajador: intentar ir a rutas de cliente debe redirigir a P-10.",
                             style = DonChambitasTema.tipografia.pie,
@@ -902,23 +867,28 @@ fun MarcadorPantalla(
  * Entra a la pantalla de inicio del rol desde P-02 o P-03, sacando de la pila
  * todo el subgrafo de autenticacion: despues de entrar, el boton atras no
  * regresa al formulario (seccion 8 de DISENO-AUTENTICACION.md).
+ *
+ * Si la guarda ya llevo al inicio, porque Auth aviso de la sesion antes que el
+ * formulario, no se apila otra vez.
  */
-private fun entrarConSesion(navController: NavHostController, destino: Ruta) {
-    marcarSesionSegun(destino)
+private fun entrarConSesion(
+    navController: NavHostController,
+    sesionViewModel: SesionViewModel,
+    destino: Ruta
+) {
+    rolDeInicio(destino)?.let(sesionViewModel::registrarEntrada)
+    if (navController.currentDestination?.route == destino.ruta) return
     navController.navigate(destino.ruta) {
         popUpTo(Subgrafo.Autenticacion.ruta) { inclusive = true }
     }
 }
 
 /**
- * Las guardas todavia leen el marcador temporal de S1-T12, asi que quien
- * decide un destino (P-01, P-02 o P-03) lo deja con el rol que le corresponde.
- * S2-T15 lo sustituye por la sesion real de RepositorioAuth.
+ * El rol que corresponde a la pantalla de inicio a la que P-01, P-02 o P-03
+ * mandan al usuario. Null si el destino no es un inicio (P-02 sin sesion).
  */
-private fun marcarSesionSegun(destino: Ruta) {
-    MarcadorSesionTemporal.estado = when (destino) {
-        Ruta.InicioCliente -> EstadoSesionTemporal.CLIENTE
-        Ruta.InicioTrabajador -> EstadoSesionTemporal.TRABAJADOR
-        else -> EstadoSesionTemporal.SIN_SESION
-    }
+private fun rolDeInicio(destino: Ruta): RolUsuario? = when (destino) {
+    Ruta.InicioCliente -> RolUsuario.CLIENTE
+    Ruta.InicioTrabajador -> RolUsuario.TRABAJADOR
+    else -> null
 }
