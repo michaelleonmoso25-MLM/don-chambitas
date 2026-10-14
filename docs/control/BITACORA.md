@@ -39,6 +39,7 @@
 | 2026-10-11 | S2-T11 | RRC | feat/S2-T11-perfil-usuario |  | P-18 real: ficha de public.usuarios, edicion de nombre, apellidos y telefono (obligatorio, como P-03), cambio de contrasena solo con la nueva y cierre de sesion con aviso sin red. El enlace de recuperacion aterriza en P-18 con la seccion de contrasena abierta (AvisosEnlace). Opcion A en las cinco decisiones. Se borro SesionViewModel.cerrarSesion. El enlace se probo armado con adb, no con un correo real. H-15: el wireframe pedia municipio |
 | 2026-10-11 | S2-T13 | BCJL | feat/S2-T13-foto-perfil-interfaz |  | Avatar de P-18: hoja con galeria (PickVisualMedia) y camara (TakePicture + FileProvider), validacion de 5 MB y JPG/PNG/WebP, recortador propio en Compose dentro de un Dialog y JPEG de 512 x 512 a subirFotoPerfil. Opcion A en las tres decisiones. Apilada sobre S2-T11. Hasta S2-T14 el repositorio real responde Error del servidor. El zoom con dos dedos no se probo en el dispositivo |
 | 2026-10-11 | S2-T14 | LMM | feat/S2-T14-almacenamiento-imagenes |  | subirFotoPerfil real: sube a perfiles/<uid>/<ms>.jpg, escribe foto_url y borra el resto de la carpeta (la foto anterior no se conserva, por decision del lider). install(Storage) y traducirErrorStorage. Apilada sobre S2-T13. H-16: las fotos de servicio quedan en S3-T09. H-17: Storage responde 400 a todo rechazo |
+| 2026-10-14 | S2-T15 | RRC | feat/S2-T15-guardas-navegacion |  | Las guardas y las barras leen la sesion real: SesionViewModel lleva EstadoSesion y P-01, P-02 y P-03 avisan el rol al entrar (cubre el caso sin red de S2-T09). Sin MarcadorSesionTemporal ni botones de rol en los marcadores; con sesion, P-02 a P-04 llevan al inicio. Opcion A en las tres decisiones **sin el lider disponible**. **Desvio:** la guarda regresa al inicio que ya esta en la pila en vez de apilar otro. Probado en Pixel_8 contra Supabase, incluido el enlace de recuperacion de un correo real hasta P-18 (con la app abierta; en frio no se repitio). **Hallazgos:** el proyecto estaba pausado, y Redirect URLs estaba vacia (el correo mandaba a localhost:3000); se agrego mx.donchambitas.app://auth. 217 unitarias y 67 instrumentadas pasando |
 
 ---
 
@@ -57,6 +58,22 @@ que se descubrió y no estaba previsto. Si no pasó nada, se deja vacía.
 > Lo que cada tarea dejó escrito en `ESTADO.md` como "Última tarea terminada"
 > antes de que la siguiente la relevara. La más reciente va arriba. Se agrega,
 > no se edita.
+
+**`S2-T14` — Almacenamiento real de imágenes en Supabase Storage.** 2026-10-11.
+Rama `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`**, pull request **sin abrir todavía**. Orden de integración: `S2-T11`, `S2-T13` y luego esta. Ticket redactado por el agente el mismo día; el líder decidió al pedirla que **la foto anterior se borra**.
+
+- **`RepositorioUsuarioReal.subirFotoPerfil`** real: sube a `perfiles/<uid>/<milisegundos>.jpg`, escribe la URL pública en `usuarios.foto_url` y borra todo lo demás de la carpeta. Si escribir `foto_url` falla, borra lo que subió. Si limpiar falla, sigue siendo éxito y la siguiente subida limpia.
+- **`install(Storage)`** en `ModuloSupabase`, y `traducirErrorStorage` (`ErroresStorage.kt`).
+- `CONTRATOS-API.md` ("`subirFotoPerfil`" a detalle) y `ARQUITECTURA.md` al día.
+- Verificación del proyecto:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 212 pruebas unitarias (4 nuevas) y 67 instrumentadas (1 nueva, contra Supabase), 0 fallas.
+  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: subir desde la galería, reabrir, cambiar desde la cámara (queda un solo archivo en la carpeta) y subir sin red ("Sin conexión"). La carpeta de `ana.rls@…` quedó vacía y su `foto_url` en `null`.
+  - **Sin llaves**: la aplicación abre y llega a P-02.
+- **Lo que NO se probó en el dispositivo:** la falla del paso 2 (escribir `foto_url` después de subir); no se puede provocar desde la aplicación.
+- **Dos hallazgos para el líder**, al final de `docs/tareas/S2-T14.md`:
+  - **`H-16` · `ARQUITECTURA.md` le daba a `S2-T14` también las fotos de servicio.** Son de `RepositorioServicios`, real en `S3-T09`; esta tarea hizo solo la de perfil y la tabla ya lo dice.
+  - **`H-17` · Storage no deja saber por qué rechazó un archivo:** todo llega como `400`. Hoy no estorba; con las fotos de servicio, sí.
 
 **`S2-T13` — Selección y recorte de la foto de perfil (solo interfaz).** 2026-10-11.
 Rama `feat/S2-T13-foto-perfil-interfaz`, **apilada sobre la de `S2-T11`**, pull request **sin abrir todavía**: se integra después del de `S2-T11`. Ticket redactado por el agente el mismo día; el líder eligió la opción A en las tres decisiones.

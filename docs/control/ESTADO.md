@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-10-11
+**Última actualización:** 2026-10-14
 
 ---
 
@@ -14,7 +14,7 @@
 | Sprint | 2 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 16 |
-| Terminadas | 14 |
+| Terminadas | 15 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -57,8 +57,9 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Pides el enlace con cualquier correo bien escrito | "Revisa tu correo", sin repetir el correo, **exista o no la cuenta** y aunque su correo no pueda recibir | — |
 | Pides el enlace sin red | "Sin conexión" con "Reintentar", y el correo sigue escrito | — |
 | Esperas el correo en una cuenta que no es del equipo | **No llega.** El SMTP de fábrica de Supabase solo entrega a los miembros del equipo de la organización, y muy pocos por hora | `S6-T13` |
-| Abres el enlace del correo | P-18 con la sección de contraseña abierta, con la aplicación abierta o en frío. Atrás cierra la aplicación | — |
-| Cambias de pantalla con los botones "Sin sesión / Cliente / Trabajador" de los marcadores | Las guardas y las barras todavía leen el marcador temporal, no la sesión real. P-01 y el cierre de sesión lo mantienen al día | `S2-T15` |
+| Abres el enlace del correo | P-18 con la sección de contraseña abierta, con la aplicación abierta o en frío. Atrás cierra la aplicación. Con un correo real se probó el 2026-10-14, con la aplicación abierta. **Necesita `mx.donchambitas.app://auth` en "Redirect URLs"**; sin ella, el correo manda a `localhost:3000` | — |
+| Con sesión de cliente, intentas abrir una pantalla de trabajador, o al revés | Regresas al inicio de tu rol. Ya no hay botones "Sin sesión / Cliente / Trabajador": las guardas y las barras leen la sesión real | — |
+| Con sesión abierta, intentas abrir P-02, P-03 o P-04 desde el mapa | Regresas al inicio de tu rol | — |
 
 **El alta ya es real** desde `S2-T07`: la cuenta vive en Supabase Auth y en
 `public.usuarios`, y sobrevive al reinicio. Por `DEC-25` el registro deja
@@ -78,28 +79,29 @@ _Ninguna._
 
 ## Última tarea terminada
 
-**`S2-T14` — Almacenamiento real de imágenes en Supabase Storage.** 2026-10-11.
-Rama `feat/S2-T14-almacenamiento-imagenes`, **apilada sobre la de `S2-T13`**, pull request **sin abrir todavía**. Orden de integración: `S2-T11`, `S2-T13` y luego esta. Ticket redactado por el agente el mismo día; el líder decidió al pedirla que **la foto anterior se borra**.
+**`S2-T15` — Guardas de navegación por sesión y por rol.** 2026-10-14.
+Rama `feat/S2-T15-guardas-navegacion`, desde `main`, pull request **sin abrir todavía**. Ticket redactado por el agente el 2026-10-13; **se eligió la opción A en las tres decisiones sin el líder disponible**, queda para que la confirme en el pull request.
 
-- **`RepositorioUsuarioReal.subirFotoPerfil`** real: sube a `perfiles/<uid>/<milisegundos>.jpg`, escribe la URL pública en `usuarios.foto_url` y borra todo lo demás de la carpeta. Si escribir `foto_url` falla, borra lo que subió. Si limpiar falla, sigue siendo éxito y la siguiente subida limpia.
-- **`install(Storage)`** en `ModuloSupabase`, y `traducirErrorStorage` (`ErroresStorage.kt`).
-- `CONTRATOS-API.md` ("`subirFotoPerfil`" a detalle) y `ARQUITECTURA.md` al día.
+- **`MarcadorSesionTemporal` desapareció.** `SesionViewModel` lleva `EstadoSesion` (`VERIFICANDO`, `SIN_SESION`, `CLIENTE`, `TRABAJADOR`) a partir de `sesionActual()`, y P-01, P-02 y P-03 avisan el rol al hacer entrar (`registrarEntrada`), para el caso sin red de `S2-T09`.
+- **Las guardas leen la sesión real.** Con sesión, P-02, P-03 y P-04 llevan al inicio del rol. Con `VERIFICANDO` nadie redirige.
+- **Los marcadores ya no tienen botones de rol.** "Pruebas de guardas" se queda.
+- **Desvío:** la guarda regresa al inicio que ya está en la pila en vez de apilar otro. Antes, atrás recorría copias de P-05 o P-10.
 - Verificación del proyecto:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 212 pruebas unitarias (4 nuevas) y 67 instrumentadas (1 nueva, contra Supabase), 0 fallas.
-  - **Contra el proyecto de Supabase**, en emulador `Medium_Phone`: subir desde la galería, reabrir, cambiar desde la cámara (queda un solo archivo en la carpeta) y subir sin red ("Sin conexión"). La carpeta de `ana.rls@…` quedó vacía y su `foto_url` en `null`.
-  - **Sin llaves**: la aplicación abre y llega a P-02.
-- **Lo que NO se probó en el dispositivo:** la falla del paso 2 (escribir `foto_url` después de subir); no se puede provocar desde la aplicación.
-- **Dos hallazgos para el líder**, al final de `docs/tareas/S2-T14.md`:
-  - **`H-16` · `ARQUITECTURA.md` le daba a `S2-T14` también las fotos de servicio.** Son de `RepositorioServicios`, real en `S3-T09`; esta tarea hizo solo la de perfil y la tabla ya lo dice.
-  - **`H-17` · Storage no deja saber por qué rechazó un archivo:** todo llega como `400`. Hoy no estorba; con las fotos de servicio, sí.
+  - 217 pruebas unitarias (7 nuevas) y 67 instrumentadas, 0 fallas.
+  - En emulador `Pixel_8` contra Supabase: las guardas por rol con una cuenta de cliente y una de trabajador, P-02 y P-03 con sesión, abrir con sesión guardada, abrir sin red y entrar con "Reintentar", cerrar sesión, y el enlace de recuperación **de un correo real** hasta P-18, por primera vez en el proyecto.
+- **Lo que NO se probó en el dispositivo:** el enlace de recuperación con la aplicación cerrada, por el límite de correos por hora.
+- **Dos hallazgos para el líder**, en "Cómo se verificó" de `docs/tareas/S2-T15.md`:
+  - **El proyecto de Supabase estaba pausado.** Se restauró el 2026-10-14.
+  - **"Redirect URLs" estaba vacía**, y el correo mandaba a `localhost:3000`. Se agregó `mx.donchambitas.app://auth`, como pide `CONTRATOS-API.md`.
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
 
 ## Cuentas de prueba en Supabase
 
-Las de `92_usuarios_prueba.sql` (`S1-T03`) y la de `S2-T07`
-(`s2t07.trabajador@…`) siguen en el proyecto. Borrarlas necesita la
+Las de `92_usuarios_prueba.sql` (`S1-T03`), la de `S2-T07`
+(`s2t07.trabajador@…`) y las dos de `S2-T15` (`cliente.s2t15@donchambitas.test`
+y `trabajador.s2t15@donchambitas.test`) siguen en el proyecto. Borrarlas necesita la
 `service_role`, que no entra al repositorio:
 
 ```sql
@@ -132,8 +134,8 @@ explicados al final de `MODELO-ER.md`.
 
 ## Siguiente en la cola
 
-`S2-T15` — Guardas de navegación por sesión y por rol
-(prioridad 300, sprint 2, depende de `S2-T09`, que ya está hecha)
+`S2-T16` — Pruebas del flujo de autenticación con datos falsos
+(prioridad 250, sprint 2, depende de `S2-T05`, que ya está hecha)
 
 **No tiene ticket.**
 

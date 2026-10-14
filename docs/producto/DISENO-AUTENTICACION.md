@@ -666,8 +666,9 @@ la pila crecería P-02 → P-03 → P-02 y el botón atrás recorrería el formu
 de registro hacia atrás. Es el error clásico de este trío de pantallas.
 
 Las guardas de `S1-T12` ya mandan cualquier ruta privada a P-02 sin sesión, y
-`RUTAS_AUTENTICACION` ya contiene las tres. **Esta tarea no toca `Rutas.kt`**;
-`S2-T15` es la que reemplaza el marcador temporal de sesión por el real.
+`RUTAS_AUTENTICACION` ya contiene las tres. **Esta tarea no toca `Rutas.kt`**.
+Desde `S2-T15` las guardas leen la sesión real en vez del marcador temporal,
+y con sesión abierta P-02, P-03 y P-04 llevan al inicio del rol.
 
 ---
 
