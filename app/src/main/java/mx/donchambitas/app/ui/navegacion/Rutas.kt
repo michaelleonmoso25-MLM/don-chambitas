@@ -248,7 +248,6 @@ val RUTAS_AUTENTICACION: Set<Ruta> = setOf(
 val RUTAS_CLIENTE: Set<Ruta> = setOf(
     Ruta.InicioCliente,
     Ruta.Resultados,
-    Ruta.PerfilTrabajador,
     Ruta.PublicarSolicitud,
     Ruta.MisSolicitudes
 )
@@ -266,8 +265,12 @@ val RUTAS_TRABAJADOR: Set<Ruta> = setOf(
 
 /**
  * Rutas compartidas accesibles por ambos roles.
+ *
+ * P-07 (perfil publico) esta aqui y no en las del cliente porque el trabajador la abre como
+ * vista previa de su propio perfil (HU-08, H-38). Lo que ve cada rol lo decide la pantalla.
  */
 val RUTAS_COMPARTIDAS: Set<Ruta> = setOf(
+    Ruta.PerfilTrabajador,
     Ruta.Conversaciones,
     Ruta.Chat,
     Ruta.DejarResena,

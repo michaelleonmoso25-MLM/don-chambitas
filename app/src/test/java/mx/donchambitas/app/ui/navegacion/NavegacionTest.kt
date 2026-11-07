@@ -189,6 +189,15 @@ class NavegacionTest {
     }
 
     @Test
+    fun unTrabajadorAbreSuPerfilPublicoComoVistaPrevia_yUnClienteTambien() {
+        // HU-08 / H-38: P-07 es compartida, el trabajador la abre desde P-11.
+        val ruta = Ruta.PerfilTrabajador.crearRuta("usr-trab-1")
+        assertNull(resolverGuarda(ruta, EstadoSesion.TRABAJADOR))
+        assertNull(resolverGuarda(ruta, EstadoSesion.CLIENTE))
+        assertEquals(Ruta.IniciarSesion.ruta, resolverGuarda(ruta, EstadoSesion.SIN_SESION))
+    }
+
+    @Test
     fun conSesionLosFormulariosDeEntradaLlevanAlInicioDelRol() {
         val formularios = RUTAS_AUTENTICACION - Ruta.Splash
         formularios.forEach { ruta ->

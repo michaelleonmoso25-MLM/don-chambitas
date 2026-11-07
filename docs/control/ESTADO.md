@@ -14,7 +14,7 @@
 | Sprint | 3 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 14 |
+| Terminadas | 15 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -173,7 +173,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Siguiente: `S3-T14`** (prioridad 400, depende de `S3-T13`, ya `hecha`): es la última del Sprint 3. `S3-T13` quedó `hecha` el 2026-11-07: el botón "Redactar con IA" funciona en P-11 y P-13 contra `RepositorioIaFalso`, con `H-31` resuelto. Sigue pendiente del líder `H-37` (un `TipoError` para "la IA rechazó la entrada"). `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Sprint 3 completo: sus 15 tareas están en `hecha`.** La última, `S3-T14`, quedó el 2026-11-07: la vista previa del perfil público (P-07) abre desde P-11 con los estados vacíos de HU-08, contra Supabase. Hubo que mover P-07 a `RUTAS_COMPARTIDAS` (`H-38`). **Abrir el Sprint 4 lo decide el líder** (`AGENTS.md` §3). Pendientes de él: la confirmación de la IA, `H-37` y `H-38`. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
