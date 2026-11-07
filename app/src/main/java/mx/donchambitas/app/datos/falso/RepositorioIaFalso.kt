@@ -34,11 +34,13 @@ class RepositorioIaFalso @Inject constructor() : RepositorioIa {
         llamadasRestantes--
 
         val textoGenerado = when (funcion) {
+            // H-31: textos fijos que cumplen PROMPT-REDACCION.md (40 a 80 palabras, primera
+            // persona, sin garantias, marcas ni materiales inventados) y no intercalan la entrada cruda.
             FuncionIa.REDACTAR_PERFIL ->
-                "Profesional comprometido con la calidad y la puntualidad. Con amplia experiencia práctica en $entrada, ofreciendo soluciones garantizadas, atención personalizada y presupuestos claros."
+                "Me dedico a mi oficio con cuidado y me gusta explicar lo que voy a hacer antes de empezar. Escucho lo que necesitas y busco una buena forma de resolverlo, con claridad y buen trato. Si tienes un trabajo pendiente, cuéntame de qué se trata y lo revisamos juntos para que sepas qué esperar."
 
             FuncionIa.REDACTAR_SERVICIO ->
-                "Servicio profesional especializado en $entrada. Diagnóstico puntual, uso de materiales de primera calidad, limpieza total al finalizar y garantía por escrito."
+                "Me encargo de este servicio con cuidado y atención a los detalles. Antes de empezar te explico en qué consiste el trabajo y resuelvo tus dudas, para que sepas qué esperar. Si necesitas este servicio, cuéntame tu situación y lo revisamos juntos para encontrar una buena solución."
 
             FuncionIa.CATEGORIZAR ->
                 "Plomería"

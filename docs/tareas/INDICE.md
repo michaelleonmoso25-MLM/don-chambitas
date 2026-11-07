@@ -23,11 +23,11 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 |---|---|---|---|---|---|
 | 1 | 16 | 0 | 0 | 0 | 16 |
 | 2 | 16 | 0 | 0 | 0 | 16 |
-| 3 | 15 | 2 | 0 | 0 | 13 |
+| 3 | 15 | 1 | 0 | 0 | 14 |
 | 4 | 15 | 11 | 2 | 2 | 0 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **38** | **2** | **2** | **45** |
+| **Total** | **87** | **37** | **2** | **2** | **46** |
 
 > **La línea de inteligencia artificial se retomó el 2026-11-07** en el Sprint 3,
 > según el aviso de la persona del equipo: `S3-T12` y `S3-T13` pasan a
@@ -103,7 +103,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S3-T11` | 600 | Diseño del prompt de redacción de perfil y descripción de servicio | GRI | hecha | — |
 | `S3-T10` | 550 | Entrenar el GPT: instrucciones, base de conocimiento y pruebas en ChatGPT | RRC | hecha | S3-T11 |
 | `S3-T12` | 500 | Contrato del proxy de IA (la llave de la API nunca vive dentro de la app) | BCJL | hecha | S3-T11 |
-| `S3-T13` | 450 | Boton 'Redactar con IA' dentro del formulario de servicio (interfaz) | LMM | pendiente | S3-T12 |
+| `S3-T13` | 450 | Boton 'Redactar con IA' dentro del formulario de servicio (interfaz) | LMM | hecha | S3-T12 |
 | `S3-T14` | 400 | Estado vacío y vista previa del perfil público del trabajador | RRC | pendiente | S3-T13 |
 | `S3-T15` | 300 | Pruebas del módulo de perfil y servicios con datos falsos | GRI | hecha | — |
 

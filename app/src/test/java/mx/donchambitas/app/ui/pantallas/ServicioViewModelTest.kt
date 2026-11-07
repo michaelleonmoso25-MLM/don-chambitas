@@ -1,18 +1,27 @@
 package mx.donchambitas.app.ui.pantallas
 
 import androidx.lifecycle.SavedStateHandle
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import java.math.BigDecimal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mx.donchambitas.app.R
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
+import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioServiciosFalso
+import mx.donchambitas.app.dominio.modelo.FuncionIa
+import mx.donchambitas.app.dominio.modelo.ResultadoIa
 import mx.donchambitas.app.dominio.modelo.Sesion
+import mx.donchambitas.app.dominio.repositorio.RepositorioIa
 import mx.donchambitas.app.ui.componentes.obtenerMensajeErrorRes
 import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.ReglaCorrutinas
+import mx.donchambitas.app.util.Resultado
 import mx.donchambitas.app.util.TipoError
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -33,8 +42,13 @@ class ServicioViewModelTest {
     private val repositorioServicios = RepositorioServiciosFalso(fuente).apply { retrasoMs = 0 }
     private val repositorioCatalogos = RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 }
 
-    private fun crearViewModel(servicioId: String? = null, estadoGuardado: SavedStateHandle = handle(servicioId)) =
-        ServicioViewModel(repositorioServicios, repositorioCatalogos, estadoGuardado)
+    private val repositorioIa = RepositorioIaFalso().apply { retrasoMs = 0 }
+
+    private fun crearViewModel(
+        servicioId: String? = null,
+        estadoGuardado: SavedStateHandle = handle(servicioId),
+        ia: RepositorioIa = repositorioIa
+    ) = ServicioViewModel(repositorioServicios, repositorioCatalogos, ia, estadoGuardado)
 
     private fun handle(servicioId: String?) =
         SavedStateHandle(mapOf(Ruta.CrearEditarServicio.ARG_SERVICIO_ID to servicioId))
@@ -341,6 +355,172 @@ class ServicioViewModelTest {
         viewModel.alElegirCategoria(1)
 
         assertNull(viewModel.estado.value.errorCategoria)
+    }
+
+    // Redactar con IA (S3-T13, DISENO-PERFIL-SERVICIOS.md 1.9)
+
+    @Test
+    fun debeLlenarLaDescripcion_cuandoPidesIaConLaDescripcionVacia() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+        viewModel.alElegirCategoria(1)
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertTrue(estado.descripcion.startsWith("Me encargo"))
+        assertNull(estado.propuestaIa)
+        assertEquals(EstadoBotonIa.Disponible(restantesHoy = 7), estado.ia)
+    }
+
+    @Test
+    fun debeProponerYLuegoReemplazarOConservar_cuandoYaHabiaTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+        viewModel.alElegirCategoria(1)
+        viewModel.alCambiarDescripcion("Mi texto")
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+        val propuesta = viewModel.estado.value.propuestaIa
+        assertEquals("Mi texto", viewModel.estado.value.descripcion)
+        assertTrue(propuesta.orEmpty().startsWith("Me encargo"))
+
+        viewModel.alDescartarPropuestaIa()
+        assertEquals("Mi texto", viewModel.estado.value.descripcion)
+        assertNull(viewModel.estado.value.propuestaIa)
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+        viewModel.alAceptarPropuestaIa()
+        assertEquals(propuesta, viewModel.estado.value.descripcion)
+        assertNull(viewModel.estado.value.propuestaIa)
+    }
+
+    @Test
+    fun debeDeshabilitarElBoton_cuandoLlegaElLimiteDiario() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+        viewModel.alElegirCategoria(1)
+        viewModel.alCambiarDescripcion("Mi texto")
+        repositorioIa.errorForzado = TipoError.LIMITE_IA
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(EstadoBotonIa.LimiteAlcanzado, estado.ia)
+        assertNull(estado.aviso)
+        assertEquals("Mi texto", estado.descripcion)
+    }
+
+    @Test
+    fun debeAvisarSinTocarElCampo_cuandoFallaLaIa() = runTest(reglaCorrutinas.testDispatcher) {
+        val esperados = mapOf(
+            TipoError.RED to R.string.ia_aviso_fallo,
+            TipoError.SERVIDOR to R.string.ia_aviso_fallo,
+            TipoError.DESCONOCIDO to R.string.ia_aviso_fallo,
+            TipoError.VALIDACION to R.string.ia_aviso_no_pudo
+        )
+        for ((tipo, aviso) in esperados) {
+            val viewModel = crearViewModel()
+            advanceUntilIdle()
+            viewModel.alCambiarTitulo("Instalacion de boiler")
+            viewModel.alElegirCategoria(1)
+            viewModel.alCambiarDescripcion("Mi texto")
+            repositorioIa.errorForzado = tipo
+
+            viewModel.alPedirIa()
+            advanceUntilIdle()
+
+            val estado = viewModel.estado.value
+            assertEquals(aviso, estado.aviso)
+            assertTrue(estado.ia is EstadoBotonIa.Disponible)
+            assertEquals("Mi texto", estado.descripcion)
+            assertNull(estado.propuestaIa)
+        }
+    }
+
+    @Test
+    fun noDebePegarNoPuedoRedactar_cuandoLlegaComoTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val ia = mockk<RepositorioIa> {
+            coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("NO_PUEDO_REDACTAR"))
+        }
+        val viewModel = crearViewModel(ia = ia)
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+        viewModel.alElegirCategoria(1)
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("", estado.descripcion)
+        assertNull(estado.propuestaIa)
+        assertEquals(R.string.ia_aviso_no_pudo, estado.aviso)
+    }
+
+    @Test
+    fun noDebePedir_sinTituloOSinCategoria() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(8, repositorioIa.llamadasRestantes)
+    }
+
+    @Test
+    fun debeMandarLaEntradaConElFormatoDeLaSeccion2_conElBorradorSiLoHay() = runTest(reglaCorrutinas.testDispatcher) {
+        val ia = mockk<RepositorioIa> {
+            coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("Texto"))
+        }
+        val viewModel = crearViewModel(ia = ia)
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("  Reparacion   de fugas ")
+        viewModel.alElegirCategoria(1)
+
+        viewModel.alPedirIa()
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+        viewModel.alCambiarDescripcion("arreglo fugas en bano")
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            ia.generar(FuncionIa.REDACTAR_SERVICIO, "Servicio: Reparacion de fugas\nCategoría: Plomería")
+        }
+        coVerify(exactly = 1) {
+            ia.generar(
+                FuncionIa.REDACTAR_SERVICIO,
+                "Servicio: Reparacion de fugas\nCategoría: Plomería\nBorrador: arreglo fugas en bano"
+            )
+        }
+    }
+
+    @Test
+    fun debeSeguirEditableLaDescripcion_mientrasPideLaIa() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Instalacion de boiler")
+        viewModel.alElegirCategoria(1)
+        repositorioIa.retrasoMs = 100
+
+        viewModel.alPedirIa()
+        runCurrent()
+        assertEquals(EstadoBotonIa.Pidiendo, viewModel.estado.value.ia)
+        viewModel.alCambiarDescripcion("Lo escribi yo")
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("Lo escribi yo", estado.descripcion)
+        assertTrue(estado.propuestaIa.orEmpty().startsWith("Me encargo"))
     }
 
     private companion object {

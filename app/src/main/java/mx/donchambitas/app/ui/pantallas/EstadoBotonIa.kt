@@ -1,5 +1,9 @@
 package mx.donchambitas.app.ui.pantallas
 
+import androidx.annotation.StringRes
+import mx.donchambitas.app.R
+import mx.donchambitas.app.util.TipoError
+
 /**
  * Estado del boton "Redactar con IA" de P-11 y P-13.
  * Especificado en docs/producto/DISENO-PERFIL-SERVICIOS.md, seccion 1.9.
@@ -29,3 +33,20 @@ fun EstadoBotonIa.recalcular(faltanDatos: Boolean): EstadoBotonIa = when {
     faltanDatos -> EstadoBotonIa.FaltanDatos
     else -> EstadoBotonIa.Disponible((this as? EstadoBotonIa.Disponible)?.restantesHoy)
 }
+
+/**
+ * El aviso cuando la IA no entrega un texto (1.9 y CONTRATOS-API.md). Con el limite
+ * alcanzado no hay aviso: el propio boton ya lo dice. La entrada que el modelo
+ * rechaza llega como VALIDACION (H-37) y tiene su aviso, porque "no respondio"
+ * no es cierto: si respondio, y dijo que no.
+ */
+@StringRes
+internal fun avisoIaDe(tipo: TipoError): Int? = when (tipo) {
+    TipoError.LIMITE_IA -> null
+    TipoError.VALIDACION -> R.string.ia_aviso_no_pudo
+    else -> R.string.ia_aviso_fallo
+}
+
+/** El estado del boton tras un fallo: el limite lo deshabilita; lo demas lo deja como estaba. */
+internal fun estadoIaTrasFallo(tipo: TipoError, antes: EstadoBotonIa.Disponible): EstadoBotonIa =
+    if (tipo == TipoError.LIMITE_IA) EstadoBotonIa.LimiteAlcanzado else antes

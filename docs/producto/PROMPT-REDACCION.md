@@ -266,8 +266,8 @@ caso.
 textos dicen "soluciones garantizadas", "materiales de primera calidad" y
 "garantía por escrito", e intercalan la `entrada` cruda: con el formato de la
 sección 2 saldría "experiencia práctica en Oficio: Plomero…". Mientras el botón
-hable con el falso, eso es lo que se ve. **Le toca a `S3-T13`**, que conecta el
-botón y es quien lo va a notar primero.
+hable con el falso, eso es lo que se ve. **Resuelto en `S3-T13`**: los textos del
+falso ya no inventan nada ni repiten la entrada cruda.
 
 **`H-32` · El texto sale en masculino.** En los casos 2, 3 y 6 de `S3-T10` el modelo escribió "estoy dispuesto". Ninguna regla pide un género neutro, y una trabajadora vería un texto que no concuerda con ella. No viola nada de lo escrito. **Lo decide el líder**: agregar una regla de redacción neutra o dejarlo.
 

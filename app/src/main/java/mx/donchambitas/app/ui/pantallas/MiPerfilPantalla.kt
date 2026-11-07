@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.ArrowDropDown
 import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +73,7 @@ import mx.donchambitas.app.dominio.modelo.Municipio
 import mx.donchambitas.app.ui.componentes.BarraSuperior
 import mx.donchambitas.app.ui.componentes.BotonPrincipal
 import mx.donchambitas.app.ui.componentes.BotonSecundario
+import mx.donchambitas.app.ui.componentes.BotonTexto
 import mx.donchambitas.app.ui.componentes.CampoTexto
 import mx.donchambitas.app.ui.componentes.ChipCategoria
 import mx.donchambitas.app.ui.componentes.ContenedorEstado
@@ -104,8 +106,8 @@ private enum class HojaMiPerfil { ESTADO, MUNICIPIO }
  * Pantalla Mi perfil del trabajador (P-11).
  * Especificada en docs/producto/DISENO-PERFIL-SERVICIOS.md, seccion 2.
  *
- * Conecta [MiPerfilContenido] con [MiPerfilViewModel]. Pedir a la IA todavia
- * no hace nada: es S3-T13.
+ * Conecta [MiPerfilContenido] con [MiPerfilViewModel], incluido el boton
+ * "Redactar con IA" y su dialogo de reemplazo (1.9).
  *
  * @param alRegresar Regresa a P-18 o a P-12, de donde haya venido. Descarta lo no guardado.
  * @param alVerComoCliente Abre P-07 con el identificador del propio trabajador (HU-08).
@@ -132,7 +134,9 @@ fun MiPerfilPantalla(
         alCambiarTelefono = viewModel::alCambiarTelefono,
         alCambiarDisponible = viewModel::alCambiarDisponible,
         alGuardar = viewModel::alGuardar,
-        alPedirIa = {},
+        alPedirIa = viewModel::alPedirIa,
+        alAceptarPropuestaIa = viewModel::alAceptarPropuestaIa,
+        alDescartarPropuestaIa = viewModel::alDescartarPropuestaIa,
         alReintentarCarga = viewModel::alReintentarCarga,
         alReintentar = viewModel::alReintentarGuardado,
         alConsumirAviso = viewModel::alConsumirAviso,
@@ -167,6 +171,8 @@ fun MiPerfilContenido(
     alRegresar: () -> Unit,
     alVerComoCliente: () -> Unit,
     modifier: Modifier = Modifier,
+    alAceptarPropuestaIa: () -> Unit = {},
+    alDescartarPropuestaIa: () -> Unit = {},
     alReintentarCarga: () -> Unit = {},
     alReintentar: (() -> Unit)? = null,
     alConsumirAviso: () -> Unit = {},
@@ -389,6 +395,22 @@ fun MiPerfilContenido(
                 )
             }
         }
+    }
+
+    // 1.9: con la descripcion ya escrita, la IA propone y la persona decide (HU-30).
+    if (estado.propuestaIa != null) {
+        AlertDialog(
+            onDismissRequest = alDescartarPropuestaIa,
+            title = { Text(stringResource(R.string.ia_reemplazar_titulo)) },
+            text = { Text(estado.propuestaIa) },
+            confirmButton = {
+                BotonTexto(texto = stringResource(R.string.ia_reemplazar), onClick = alAceptarPropuestaIa)
+            },
+            dismissButton = {
+                BotonTexto(texto = stringResource(R.string.ia_conservar), onClick = alDescartarPropuestaIa)
+            },
+            containerColor = Crema
+        )
     }
 
     when (hojaAbierta) {

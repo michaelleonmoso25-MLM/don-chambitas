@@ -14,6 +14,7 @@ import mx.donchambitas.app.dominio.modelo.Solicitud
 import mx.donchambitas.app.util.Resultado
 import mx.donchambitas.app.util.TipoError
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -272,5 +273,22 @@ class RepositoriosFalsosTest {
         val resAgotado = repoIa.generar(FuncionIa.SUGERIR, "consulta")
         assertTrue(resAgotado is Resultado.Error)
         assertEquals(TipoError.LIMITE_IA, (resAgotado as Resultado.Error).tipo)
+    }
+
+    @Test
+    fun `11 RepositorioIa no inventa garantias ni repite la entrada cruda (H-31)`() = runBlocking {
+        val entrada = "Oficio: Plomero\nHabilidades: Boilers"
+        for (funcion in listOf(FuncionIa.REDACTAR_PERFIL, FuncionIa.REDACTAR_SERVICIO)) {
+            val texto = ((repoIa.generar(funcion, entrada)) as Resultado.Exito).dato.resultado
+
+            val palabras = texto.trim().split(Regex("\\s+")).size
+            assertTrue("$funcion: $palabras palabras", palabras in 40..80)
+            assertFalse(texto.contains("Oficio:"))
+            assertFalse(texto.contains("Plomero"))
+            for (prohibida in listOf("garant", "primera calidad", "especializado", "presupuesto")) {
+                assertFalse("$funcion dice \"$prohibida\"", texto.contains(prohibida, ignoreCase = true))
+            }
+            assertFalse(texto.any(Char::isDigit))
+        }
     }
 }

@@ -16,8 +16,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mx.donchambitas.app.R
+import mx.donchambitas.app.dominio.ia.EntradaIa
+import mx.donchambitas.app.dominio.modelo.FuncionIa
 import mx.donchambitas.app.dominio.modelo.Servicio
 import mx.donchambitas.app.dominio.repositorio.RepositorioCatalogos
+import mx.donchambitas.app.dominio.repositorio.RepositorioIa
 import mx.donchambitas.app.dominio.repositorio.RepositorioServicios
 import mx.donchambitas.app.dominio.validacion.ValidacionesTrabajador
 import mx.donchambitas.app.ui.componentes.obtenerMensajeErrorRes
@@ -40,6 +43,7 @@ import mx.donchambitas.app.util.TipoError
 class ServicioViewModel @Inject constructor(
     private val repositorioServicios: RepositorioServicios,
     private val repositorioCatalogos: RepositorioCatalogos,
+    private val repositorioIa: RepositorioIa,
     private val estadoGuardado: SavedStateHandle
 ) : ViewModel() {
 
@@ -119,6 +123,53 @@ class ServicioViewModel @Inject constructor(
     fun alCambiarDescripcion(valor: String) {
         tocados = tocados + CampoServicio.DESCRIPCION
         _estado.update { it.copy(descripcion = valor, errorDescripcion = null) }
+    }
+
+    /**
+     * Pide el texto a la IA con titulo y categoria, mas lo que ya haya en la descripcion (1.9).
+     * Solo con el boton disponible. La descripcion no se bloquea, asi que se compara con
+     * lo que haya al llegar la respuesta.
+     */
+    fun alPedirIa() {
+        val actual = _estado.value
+        val antes = actual.ia as? EstadoBotonIa.Disponible ?: return
+        val categoria = actual.categorias.firstOrNull { it.id == actual.categoriaId } ?: return
+        val entrada = EntradaIa.servicio(actual.titulo, categoria.nombre, actual.descripcion)
+        _estado.update { it.copy(ia = EstadoBotonIa.Pidiendo) }
+        viewModelScope.launch {
+            val resultado = repositorioIa.generar(FuncionIa.REDACTAR_SERVICIO, entrada)
+            val texto = (resultado as? Resultado.Exito)?.dato?.resultado?.trim().orEmpty()
+            _estado.update {
+                when {
+                    resultado is Resultado.Error -> it.copy(
+                        ia = estadoIaTrasFallo(resultado.tipo, antes),
+                        aviso = avisoIaDe(resultado.tipo)
+                    )
+                    texto.isEmpty() || texto == EntradaIa.NO_PUEDO_REDACTAR -> it.copy(
+                        ia = antes,
+                        aviso = avisoIaDe(TipoError.VALIDACION)
+                    )
+                    else -> {
+                        val disponible = EstadoBotonIa.Disponible((resultado as Resultado.Exito).dato.llamadasRestantesHoy)
+                        if (it.descripcion.isBlank()) {
+                            it.copy(descripcion = texto, ia = disponible)
+                        } else {
+                            it.copy(propuestaIa = texto, ia = disponible)
+                        }
+                    }
+                }.conIaRecalculada()
+            }
+        }
+    }
+
+    /** "Reemplazar": la propuesta pasa a ser la descripcion (HU-30). */
+    fun alAceptarPropuestaIa() {
+        _estado.update { it.copy(descripcion = it.propuestaIa ?: it.descripcion, propuestaIa = null) }
+    }
+
+    /** "Conservar el mio": se descarta la propuesta y la descripcion no se toca. */
+    fun alDescartarPropuestaIa() {
+        _estado.update { it.copy(propuestaIa = null) }
     }
 
     fun alCambiarPrecioDesde(valor: String) {
