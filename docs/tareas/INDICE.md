@@ -23,15 +23,15 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 |---|---|---|---|---|---|
 | 1 | 16 | 0 | 0 | 0 | 16 |
 | 2 | 16 | 0 | 0 | 0 | 16 |
-| 3 | 15 | 4 | 0 | 0 | 11 |
+| 3 | 15 | 3 | 0 | 0 | 12 |
 | 4 | 15 | 11 | 2 | 2 | 0 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **40** | **2** | **2** | **43** |
+| **Total** | **87** | **39** | **2** | **2** | **44** |
 
 > **La línea de inteligencia artificial se retomó el 2026-11-07** en el Sprint 3,
-> según el aviso de la persona del equipo: `S3-T10`, `S3-T12` y `S3-T13` pasan a
-> `pendiente` y `S3-T11` quedó `hecha`. `S4-T10` y `S4-T11` siguen `bloqueada`
+> según el aviso de la persona del equipo: `S3-T12` y `S3-T13` pasan a
+> `pendiente`, y `S3-T10` y `S3-T11` quedaron `hecha` (`S3-T10` con el caso 13 reportado, `H-33`). `S4-T10` y `S4-T11` siguen `bloqueada`
 > hasta que el líder diga lo contrario: la pausa del 2026-10-25 cubría las
 > seis y el aviso solo nombró el Sprint 3.
 > PEND-01 se resolvió el 2026-09-14 a favor de Supabase (`DEC-16`) y PEND-02 el
@@ -101,7 +101,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S3-T08` | 700 | Contrato de la API de perfil del trabajador y de servicios | BCJL | hecha | — |
 | `S3-T09` | 650 | Persistencia real de perfiles y servicios en Supabase | LMM | hecha | S3-T08 |
 | `S3-T11` | 600 | Diseño del prompt de redacción de perfil y descripción de servicio | GRI | hecha | — |
-| `S3-T10` | 550 | Entrenar el GPT: instrucciones, base de conocimiento y pruebas en ChatGPT | RRC | pendiente | S3-T11 |
+| `S3-T10` | 550 | Entrenar el GPT: instrucciones, base de conocimiento y pruebas en ChatGPT | RRC | hecha | S3-T11 |
 | `S3-T12` | 500 | Contrato del proxy de IA (la llave de la API nunca vive dentro de la app) | BCJL | pendiente | S3-T11 |
 | `S3-T13` | 450 | Boton 'Redactar con IA' dentro del formulario de servicio (interfaz) | LMM | pendiente | S3-T12 |
 | `S3-T14` | 400 | Estado vacío y vista previa del perfil público del trabajador | RRC | pendiente | S3-T13 |
