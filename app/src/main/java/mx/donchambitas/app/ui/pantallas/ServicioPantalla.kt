@@ -476,7 +476,7 @@ private fun TituloBloqueServicio(@StringRes texto: Int, modifier: Modifier = Mod
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SelectorCategoria(
+internal fun SelectorCategoria(
     categorias: List<Categoria>,
     elegida: Int?,
     @StringRes error: Int?,

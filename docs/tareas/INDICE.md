@@ -24,10 +24,10 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | 1 | 16 | 0 | 0 | 0 | 16 |
 | 2 | 16 | 0 | 0 | 0 | 16 |
 | 3 | 15 | 0 | 0 | 0 | 15 |
-| 4 | 15 | 10 | 2 | 2 | 1 |
+| 4 | 15 | 9 | 2 | 2 | 2 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **35** | **2** | **2** | **48** |
+| **Total** | **87** | **34** | **2** | **2** | **49** |
 
 > **La línea de inteligencia artificial se retomó el 2026-11-07** en el Sprint 3,
 > según el aviso de la persona del equipo: `S3-T12` y `S3-T13` pasan a
@@ -114,7 +114,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | ID | Prio | Tarea | Resp. | Estado | Depende de |
 |---|---|---|---|---|---|
 | `S4-T01` | 1000 | Diseño de las pantallas de solicitud, búsqueda y resultados | RRC | hecha | — |
-| `S4-T02` | 970 | Pantalla de publicación de una solicitud de trabajo | GRI | pendiente | S3-T02 |
+| `S4-T02` | 970 | Pantalla de publicación de una solicitud de trabajo | GRI | hecha | S3-T02 |
 | `S4-T03` | 950 | Listado de resultados y perfil público del trabajador | BCJL | pendiente | S1-T10 |
 | `S4-T04` | 900 | Buscador simple por texto | LMM | pendiente | — |
 | `S4-T05` | 850 | Filtros de búsqueda (categoría, estado, municipio, precio, calificación) | RRC | pendiente | — |

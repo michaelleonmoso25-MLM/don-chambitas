@@ -65,6 +65,7 @@ import mx.donchambitas.app.ui.pantallas.PerfilPublicoPantalla
 import mx.donchambitas.app.ui.pantallas.RecuperarContrasenaPantalla
 import mx.donchambitas.app.ui.pantallas.RegistroPantalla
 import mx.donchambitas.app.ui.pantallas.ServicioPantalla
+import mx.donchambitas.app.ui.pantallas.SolicitudNuevaPantalla
 import mx.donchambitas.app.ui.pantallas.SplashPantalla
 import mx.donchambitas.app.ui.componentes.BotonDestacado
 import mx.donchambitas.app.ui.componentes.BotonPrincipal
@@ -298,6 +299,8 @@ private const val CLAVE_CAMBIOS_GUARDADOS = "cambios_guardados"
  *   Servicios activa, sigue aquí.
  * - P-07 trae su BarraSuperior "Perfil del trabajador" (S3-T14). Se abre encima,
  *   sin barra inferior.
+ * - P-08 trae su BarraSuperior "Publicar solicitud" (S4-T02). Se abre encima,
+ *   sin barra inferior.
  *
  * Sin esto salen dos barras encimadas, con dos títulos y dos flechas de
  * regreso. El andamio nació cuando los 19 destinos eran MarcadorPantalla y su
@@ -315,7 +318,8 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
     Ruta.MiPerfil.ruta,
     Ruta.CrearEditarServicio.ruta,
     Ruta.MisServicios.ruta,
-    Ruta.PerfilTrabajador.ruta
+    Ruta.PerfilTrabajador.ruta,
+    Ruta.PublicarSolicitud.ruta
 )
 
 /**
@@ -428,15 +432,14 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
         }
 
         composable(Ruta.PublicarSolicitud.ruta) {
-            MarcadorPantalla(
-                ruta = Ruta.PublicarSolicitud,
-                descripcion = "Título, descripción, categoría, presupuesto y ubicación. Botón de redactar con IA. Pantalla encima (sin barra).",
-                navController = navController,
-                acciones = listOf(
-                    AccionNavegacion("Guardar e ir a Mis solicitudes (P-09)") {
-                        navController.navigate(Ruta.MisSolicitudes.ruta)
+            SolicitudNuevaPantalla(
+                alRegresar = { navController.popBackStack() },
+                alPublicada = {
+                    // 4.5: P-08 sale de la pila; atras desde P-09 no vuelve al formulario.
+                    navController.navigate(Ruta.MisSolicitudes.ruta) {
+                        popUpTo(Ruta.PublicarSolicitud.ruta) { inclusive = true }
                     }
-                )
+                }
             )
         }
 

@@ -537,7 +537,7 @@ private fun ChipHabilidad(habilidad: String, alQuitar: () -> Unit) {
  * abre la hoja.
  */
 @Composable
-private fun Selector(
+internal fun Selector(
     etiqueta: String,
     valor: String,
     habilitado: Boolean,
@@ -599,7 +599,7 @@ private fun SelectorDisponibilidad(disponible: Boolean, habilitado: Boolean, alC
 /** Hoja con la lista de estados o de municipios; el elegido lleva una palomita. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HojaLista(
+internal fun HojaLista(
     titulo: String,
     opciones: List<Pair<Int, String>>,
     elegido: Int?,
