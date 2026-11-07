@@ -107,8 +107,11 @@ POST /ia/generar
 }
 ```
 
-Respuestas: `200` con el resultado, `429` cuando se alcanzó el tope diario,
-`503` cuando OpenAI no responde. La aplicación trata `429` y `503` como
+Respuestas: `200` con el resultado, `422` cuando la entrada no sirve (el título
+no es un servicio o el modelo contesta `NO_PUEDO_REDACTAR`), `429` cuando se
+alcanzó el tope diario, `503` cuando OpenAI no responde. `400` y `401` son
+peticiones mal formadas o sin sesión. El detalle, con el orden de pasos, está en
+`CONTRATOS-API.md`. La aplicación trata `429` y `503` como
 situaciones normales con mensaje al usuario, nunca como una caída.
 
 ## Dónde vive el proxy

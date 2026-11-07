@@ -1127,6 +1127,140 @@ cualquiera de los tres primeros resuelve, no se paga nada.
 aviso y deja al usuario escribir a mano. Una pantalla que se rompe con un 429
 está mal hecha.
 
+### Detalle de `generar` (`S3-T12`)
+
+Escrito a detalle en `S3-T12`, contra `basedatos/01_esquema.sql` y contra
+`PROMPT-REDACCION.md`. **Lo construye `S4-T10`.** Hasta entonces `generar` lo
+resuelve `RepositorioIaFalso`.
+
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `generar(funcion, entrada)` | `POST functions/v1/ia-generar` | `Resultado<ResultadoIa>` |
+
+`ResultadoIa` ya existe en `ModelosRepositorio.kt`: `resultado`, `desdeCache` y
+`llamadasRestantesHoy`.
+
+**La aplicación solo manda `funcion` y `entrada`.** El usuario sale del JWT de
+la sesión de `supabase-kt`, nunca del cuerpo. Sin sesión, `AUTENTICACION` sin
+ir a la red.
+
+#### La petición
+
+```
+POST functions/v1/ia-generar
+Authorization: Bearer <JWT de la sesión>
+{ "funcion": "redactar_perfil" | "redactar_servicio" | "categorizar" | "sugerir",
+  "entrada": "Oficio: Plomero\nAños de experiencia: 10\nHabilidades: Boilers; Fugas" }
+```
+
+- `funcion` toma los mismos valores que el enum `funcion_ia` de la base. Cualquier
+  otro valor es un `400`.
+- `entrada` es una sola cadena. Para `redactar_perfil` y `redactar_servicio` la
+  arma la aplicación con el formato de `PROMPT-REDACCION.md`, sección 2: renglones
+  `Etiqueta: valor`, siempre en el mismo orden. `categorizar` y `sugerir` no
+  tienen formato todavía: son F2 y F3.
+- **Tope de largo: 1000 caracteres** (propuesta, `H-35`). Más que eso es un `400`.
+
+#### Qué hace la función, en este orden
+
+Los pasos 1 a 6 **no pagan nada**. Solo el paso 7 le pega a OpenAI.
+
+1. **Valida la sesión.** Sin JWT válido, `401`.
+2. **Valida la forma.** `funcion` conocida, `entrada` no vacía después de
+   `trim()`, no más larga que el tope, y los renglones obligatorios de la función:
+   `Oficio` en `redactar_perfil`; `Servicio` y `Categoría` en `redactar_servicio`.
+   Si falla, `400`: la aplicación ya valida esto, así que un `400` es un bug nuestro.
+3. **Normaliza la entrada** igual que `PROMPT-REDACCION.md` sección 2 (`trim()` y
+   espacios colapsados) y calcula el SHA-256. La llave de la caché es
+   `(funcion, entrada_hash)`, como en `ia_cache`.
+4. **Valida el título** (`H-33`). Si el valor de `Oficio` o de `Servicio` no es un
+   trabajo de oficio que alguien ofrece (una orden, una pregunta, un texto sin
+   sentido, algo ilegal), responde `422` con el código `ENTRADA_NO_VALIDA`. **No
+   consulta la caché, no cuenta para el tope y no se guarda.** Con qué mecanismo
+   se decide lo elige `S4-T10`; se prueba con los casos 7, 8 y 13 de
+   `RESULTADOS-GPT.md`, que deben terminar aquí.
+5. **Consulta `ia_cache`.** Si está, responde `200` con `desde_cache: true` y sin
+   pagar ni contar nada. Si lo guardado es `NO_PUEDO_REDACTAR`, responde el `422`
+   del paso 8.
+6. **Registra la llamada** con `fn_ia_registrar_llamada(uid, funcion, 0)`. Si
+   devuelve `-1`, responde `429`.
+7. **Llama a OpenAI** con la instrucción de `PROMPT-REDACCION.md` sección 3 como
+   *system prompt* y la `entrada` como mensaje del usuario, con los parámetros de
+   la sección 4. Si no responde a tiempo o falla, `503`.
+8. **Revisa la respuesta.** Con `trim()`, si es exactamente `NO_PUEDO_REDACTAR`,
+   la guarda en `ia_cache` y responde `422` con `ENTRADA_NO_VALIDA`. Si no, la
+   guarda en `ia_cache` y responde `200` con `desde_cache: false`.
+
+#### Las respuestas
+
+```
+200 → { "resultado": "...", "desde_cache": false, "llamadas_restantes_hoy": 7 }
+400 → { "error": { "codigo": "PETICION_INVALIDA", "mensaje": "..." } }
+401 → { "error": { "codigo": "NO_AUTENTICADO", "mensaje": "..." } }
+422 → { "error": { "codigo": "ENTRADA_NO_VALIDA", "mensaje": "..." } }
+429 → { "error": { "codigo": "LIMITE_DIARIO_IA", "mensaje": "Alcanzaste el límite de hoy" } }
+503 → { "error": { "codigo": "IA_NO_DISPONIBLE", "mensaje": "..." } }
+```
+
+| Respuesta | `TipoError` | Qué ve el usuario |
+|---|---|---|
+| `200` | no hay error | El texto, pegado en el campo |
+| `400` | `DESCONOCIDO` | "Algo salió mal, intenta de nuevo". **Es un bug nuestro: no se tapa con un mensaje bonito** |
+| `401` | `AUTENTICACION` | La sesión venció: la aplicación sigue el camino normal de `AUTENTICACION` |
+| `422` | `VALIDACION` provisional (`H-37`) | "La IA no pudo redactar con esos datos, escríbelo tú" |
+| `429` | `LIMITE_IA` | "Alcanzaste el límite de hoy" |
+| `503` | `SERVIDOR` | "Algo falló de nuestro lado, intenta más tarde" |
+| Sin red, tiempo agotado | `RED` | "Revisa tu conexión e intenta de nuevo" |
+
+**`NO_PUEDO_REDACTAR` nunca llega a la pantalla como texto** (`H-30`, resuelto
+aquí). La función la convierte en `422`, y el repositorio, por si acaso, trata
+también un `200` cuyo `resultado` sea exactamente esa cadena como el mismo error.
+La mentira de "La IA no respondió, puedes escribirlo tú" no aplica en este caso:
+sí respondió, y dijo que no.
+
+**Qué cuenta para el tope, qué se guarda y qué no:**
+
+| Caso | Cuenta para el tope | Se guarda en `ia_cache` |
+|---|---|---|
+| Rechazo del paso 4 (título) | No | No |
+| Acierto de caché (paso 5) | No | Ya estaba |
+| `NO_PUEDO_REDACTAR` del modelo (paso 8) | **Sí**: se pagó | **Sí**, para no pagarlo otra vez |
+| Texto normal (paso 8) | Sí | Sí |
+| `503` de OpenAI | Sí: el paso 6 ya registró | No |
+
+**El tope sigue siendo de 10 llamadas por usuario al día en total** (`DEC-18`), no
+por función. En un acierto de caché, `llamadas_restantes_hoy` lo calcula la
+función leyendo `ia_consumo` con la `service_role` (`H-36`).
+
+**La llave de OpenAI vive solo en las variables de entorno de la función.** Ni
+este contrato, ni la aplicación, ni el repositorio la llevan.
+
+#### Hallazgos de `S3-T12`
+
+Salen de escribir este contrato. **Ninguno se resolvió aquí**: los decide el líder
+o la tarea que se nombra.
+
+**`H-35` · Nada limita el largo del borrador que se manda a la IA.**
+`perfiles_trabajador.descripcion` y `servicios.descripcion` son `text` sin tope en
+el esquema, y `ValidacionesTrabajador` solo acota títulos y habilidades. Un
+borrador largo encarece cada llamada. Este contrato pone un tope de **1000
+caracteres** en la `entrada`, como propuesta. **Lo confirma el líder**, o el
+tope se mueve a los campos de origen.
+
+**`H-36` · La función no tiene cómo saber lo que queda ni cuántos tokens gastó.**
+`fn_ia_registrar_llamada` solo registra y devuelve lo que queda *después* de
+registrar, y recibe los tokens **antes** de llamar a OpenAI, cuando aún no se
+conocen. Con un acierto de caché no hay función que consulte lo que queda: hay
+que sumar `ia_consumo` a mano y repetir el `10` que ya vive en SQL. Y la columna
+`tokens` queda siempre en `0`. **Le toca a `S4-T10` o al líder**: una función
+SQL de consulta y una forma de sumar los tokens después.
+
+**`H-37` · `TipoError` no tiene un valor para "la IA rechazó la entrada".** Hoy se
+traduce a `VALIDACION`, pero `VALIDACION` pinta el mensaje del trigger, que aquí
+no existe. Hace falta un `TipoError` nuevo y su mensaje en `strings.xml`, como se
+hizo con `CORREO_DUPLICADO` (`DEC-28`). **Lo decide el líder y lo aplica
+`S3-T13`.**
+
 ---
 
 ## Errores
@@ -1143,6 +1277,7 @@ Supabase y devuelve `Resultado.Error(tipo, mensaje)`.
 | Correo ya registrado en el alta de Supabase Auth | `CORREO_DUPLICADO` | "El correo ya está registrado, inicia sesión" (`H-11`) |
 | 409, otra llave duplicada | `VALIDACION` | El mensaje del trigger, ya está escrito en español |
 | 429 de la Edge Function | `LIMITE_IA` | "Alcanzaste el límite de hoy" |
+| 422 de la Edge Function (`ENTRADA_NO_VALIDA`) | `VALIDACION` provisional (`H-37`) | "La IA no pudo redactar con esos datos, escríbelo tú" |
 | 5xx, 503 de la Edge Function | `SERVIDOR` | "Algo falló de nuestro lado, intenta más tarde" |
 | Cualquier otra cosa | `DESCONOCIDO` | "Algo salió mal, intenta de nuevo" |
 
@@ -1160,7 +1295,7 @@ Y todos viven en `strings.xml`.
 Las traducciones concretas de arriba son **el contrato**, no la
 implementación. Cada tarea de contrato detalla su módulo con los nombres de
 columna exactos y los DTO: S2-T06 autenticación, S2-T12 perfil de usuario y S3-T08 trabajador y
-servicios (ya escritos, arriba), S3-T12 la Edge Function de IA, S4-T08 solicitudes
+servicios (ya escritos, arriba), S3-T12 la Edge Function de IA (ya escrito, arriba), S4-T08 solicitudes
 y búsqueda, S5-T06 mensajería y postulaciones.
 
 Mientras esas tareas no lleguen, la implementación activa de todos estos
