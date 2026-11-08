@@ -8,6 +8,10 @@ const val ARG_TRABAJADOR_ID: String = "trabajadorId"
 const val ARG_SERVICIO_ID: String = "servicioId"
 const val ARG_CONVERSACION_ID: String = "conversacionId"
 const val ARG_SOLICITUD_ID: String = "solicitudId"
+const val ARG_CATEGORIA_ID: String = "categoriaId"
+
+/** Lo que llega en [ARG_CATEGORIA_ID] cuando P-06 se abre sin categoria. */
+const val CATEGORIA_NINGUNA: Int = -1
 
 /**
  * Subgrafos de navegación definidos según ARQUITECTURA.md.
@@ -60,11 +64,27 @@ sealed class Ruta(
         titulo = "Inicio cliente"
     )
 
+    /**
+     * P-06. La categoria es opcional (H-45): sin ella lista todos los trabajadores.
+     * Se navega con [crearRuta], nunca con la plantilla de [ruta].
+     */
     data object Resultados : Ruta(
-        ruta = "resultados",
+        ruta = "resultados?$ARG_CATEGORIA_ID={$ARG_CATEGORIA_ID}",
         idPantalla = "P-06",
-        titulo = "Resultados"
-    )
+        titulo = "Resultados",
+        argumentos = listOf(
+            navArgument(ARG_CATEGORIA_ID) {
+                type = NavType.IntType
+                defaultValue = CATEGORIA_NINGUNA
+            }
+        )
+    ) {
+        const val ARG_CATEGORIA_ID = mx.donchambitas.app.ui.navegacion.ARG_CATEGORIA_ID
+        const val SIN_CATEGORIA = CATEGORIA_NINGUNA
+        const val RUTA_BASE = "resultados"
+        fun crearRuta(categoriaId: Int? = null): String =
+            if (categoriaId == null) RUTA_BASE else "$RUTA_BASE?$ARG_CATEGORIA_ID=$categoriaId"
+    }
 
     data object PerfilTrabajador : Ruta(
         ruta = "perfil_trabajador/{$ARG_TRABAJADOR_ID}",

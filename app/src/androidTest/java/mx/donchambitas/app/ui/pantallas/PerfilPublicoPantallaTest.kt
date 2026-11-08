@@ -17,7 +17,7 @@ import mx.donchambitas.app.util.TipoError
 import org.junit.Rule
 import org.junit.Test
 
-/** P-07 como vista previa del trabajador (S3-T14, DISENO-PERFIL-SERVICIOS.md 11). */
+/** P-07: vista previa del trabajador (S3-T14) y perfil del cliente (S4-T03, H-39). */
 class PerfilPublicoPantallaTest {
 
     @get:Rule
@@ -61,7 +61,7 @@ class PerfilPublicoPantallaTest {
 
     @Test
     fun perfilSinNada_muestraUnVacioQueExplicaQueHacerEnCadaSeccion() {
-        montar(EstadoPerfilPublico(cargando = false, perfil = vacio))
+        montar(EstadoPerfilPublico(cargando = false, perfil = vacio, esVistaPrevia = true))
 
         composeTestRule.onNodeWithText("Pedro Ramirez").assertIsDisplayed()
         composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_calificacion)).assertIsDisplayed()
@@ -86,6 +86,33 @@ class PerfilPublicoPantallaTest {
         composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_experiencia_varios, 5)).assertIsDisplayed()
         composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_servicios)).assertDoesNotExist()
         composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_resenas)).assertDoesNotExist()
+    }
+
+    @Test
+    fun vistaPrevia_muestraElAvisoYNoElBotonDeContactar() {
+        montar(EstadoPerfilPublico(cargando = false, perfil = completo, esVistaPrevia = true))
+
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_aviso_vista_previa)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_contactar)).assertDoesNotExist()
+    }
+
+    @Test
+    fun cliente_ocultaLoVacioQueNoPuedeArreglarYUsaSusTextos() {
+        montar(EstadoPerfilPublico(cargando = false, perfil = vacio))
+
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_aviso_vista_previa)).assertDoesNotExist()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sobre_mi)).assertDoesNotExist()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_habilidades)).assertDoesNotExist()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_servicios_cliente)).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_resenas_cliente)).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_sin_servicios)).assertDoesNotExist()
+    }
+
+    @Test
+    fun cliente_veElBotonDeContactar() {
+        montar(EstadoPerfilPublico(cargando = false, perfil = completo))
+
+        composeTestRule.onNodeWithText(texto(mx.donchambitas.app.R.string.perfil_publico_contactar)).assertIsDisplayed()
     }
 
     @Test

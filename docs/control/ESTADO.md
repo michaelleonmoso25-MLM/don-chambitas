@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 2 |
+| Terminadas | 3 |
 | En curso | 0 |
 | Bloqueadas | 2 |
 
@@ -178,7 +178,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Siguiente: `S4-T03`** (prioridad 950, depende de `S1-T10`, `hecha`), y después el resto del Sprint 4 por prioridad. `S4-T02` quedó `hecha` el 2026-11-07: P-08 publica una solicitud con validación y la deja `abierta`, pero **contra el servidor falso**: se guarda en memoria y se pierde al cerrar la app hasta `S4-T09`. P-09 sigue siendo un andamio (`S4-T06`). El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Siguiente: `S4-T04`** (prioridad 900, sin dependencias), y después el resto del Sprint 4 por prioridad. `S4-T03` quedó `hecha` el 2026-11-07: P-06 lista la primera página de trabajadores (de una categoría o de todos) y P-07 tiene su modo cliente, pero **la lista sale del servidor falso y P-07 lee de Supabase**: tocar un trabajador de la lista da "Datos incorrectos" hasta `S4-T09`. "Contactar" está puesto y sin acción hasta `S5-T06`. El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de

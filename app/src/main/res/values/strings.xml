@@ -185,6 +185,13 @@
     <string name="perfil_publico_sin_habilidades">Aún no agregas habilidades. Agrégalas en Mi perfil para aparecer en más búsquedas.</string>
     <string name="perfil_publico_sin_servicios">Aún no tienes servicios publicados. Publica uno en Mis servicios para que los clientes te encuentren.</string>
     <string name="perfil_publico_sin_resenas">Todavía no tienes reseñas. Aparecen cuando un cliente califica un trabajo terminado.</string>
+    <string name="perfil_publico_aviso_vista_previa">Así te ven los clientes</string>
+    <string name="perfil_publico_sin_servicios_cliente">Este trabajador todavía no publica servicios.</string>
+    <string name="perfil_publico_sin_resenas_cliente">Todavía no tiene reseñas.</string>
+    <string name="perfil_publico_contactar">Contactar</string>
+    <string name="resultados_titulo">Resultados</string>
+    <string name="resultados_vacio_titulo">No encontramos trabajadores</string>
+    <string name="resultados_vacio_mensaje">Prueba quitando filtros o revisa la ubicación</string>
 
     <!-- P-08 Publicar solicitud (S4-T02, DISENO-SOLICITUDES-BUSQUEDA.md 4 y 7) -->
     <string name="solicitud_titulo">Publicar solicitud</string>

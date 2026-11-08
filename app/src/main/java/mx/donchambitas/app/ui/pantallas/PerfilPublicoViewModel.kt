@@ -8,8 +8,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import mx.donchambitas.app.dominio.repositorio.RepositorioAuth
 import mx.donchambitas.app.dominio.repositorio.RepositorioTrabajador
 import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.Resultado
@@ -19,12 +21,13 @@ import mx.donchambitas.app.util.Resultado
  * Especificado en docs/producto/DISENO-PERFIL-SERVICIOS.md, seccion 11.
  *
  * El id del trabajador sale del argumento de la ruta y se pide con
- * RepositorioTrabajador.obtenerPerfilPublico. Hoy solo lo abre el propio trabajador
- * desde P-11, como vista previa; el resto de P-07 lo construye S4-T03.
+ * RepositorioTrabajador.obtenerPerfilPublico. La pantalla tiene dos modos (H-39): si el
+ * perfil es el de la sesion es la vista previa del trabajador; si no, es lo que ve el cliente.
  */
 @HiltViewModel
 class PerfilPublicoViewModel @Inject constructor(
     private val repositorioTrabajador: RepositorioTrabajador,
+    private val repositorioAuth: RepositorioAuth,
     estadoGuardado: SavedStateHandle
 ) : ViewModel() {
 
@@ -46,8 +49,15 @@ class PerfilPublicoViewModel @Inject constructor(
         _estado.update { it.copy(cargando = true, errorCarga = null) }
         viewModelScope.launch {
             when (val resultado = repositorioTrabajador.obtenerPerfilPublico(trabajadorId)) {
-                is Resultado.Exito -> _estado.update {
-                    it.copy(cargando = false, perfil = resultado.dato)
+                is Resultado.Exito -> {
+                    val usuarioId = repositorioAuth.sesionActual().first()?.usuario?.id
+                    _estado.update {
+                        it.copy(
+                            cargando = false,
+                            perfil = resultado.dato,
+                            esVistaPrevia = usuarioId != null && usuarioId == trabajadorId
+                        )
+                    }
                 }
                 is Resultado.Error -> _estado.update {
                     it.copy(cargando = false, perfil = null, errorCarga = resultado.tipo)

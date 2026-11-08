@@ -35,6 +35,7 @@ import mx.donchambitas.app.dominio.modelo.PerfilPublicoTrabajador
 import mx.donchambitas.app.dominio.modelo.ResenaPublica
 import mx.donchambitas.app.dominio.modelo.ServicioPublico
 import mx.donchambitas.app.ui.componentes.BarraSuperior
+import mx.donchambitas.app.ui.componentes.BotonPrincipal
 import mx.donchambitas.app.ui.componentes.ContenedorEstado
 import mx.donchambitas.app.ui.componentes.EtiquetaEstado
 import mx.donchambitas.app.ui.componentes.Estrellas
@@ -59,19 +60,22 @@ import mx.donchambitas.app.ui.tema.subtitulo
 import mx.donchambitas.app.ui.tema.titulo
 
 /**
- * Perfil publico del trabajador (P-07), en su uso como vista previa de HU-08.
- * Especificada en docs/producto/DISENO-PERFIL-SERVICIOS.md, seccion 11.
+ * Perfil publico del trabajador (P-07), HU-08.
+ * Especificada en docs/producto/DISENO-PERFIL-SERVICIOS.md, seccion 11 y en
+ * docs/producto/DISENO-SOLICITUDES-BUSQUEDA.md, seccion 6 (H-39).
  *
- * Conecta [PerfilPublicoContenido] con [PerfilPublicoViewModel]. Los estados vacios
- * le hablan al trabajador que se ve a si mismo; la version para el cliente, con el
- * boton de contactar, es de S4-T03.
+ * Conecta [PerfilPublicoContenido] con [PerfilPublicoViewModel]. Tiene dos modos: la vista
+ * previa del trabajador (sus vacios le hablan a el) y la del cliente (oculta lo vacio que
+ * no puede arreglar y trae el boton de contactar).
  *
- * @param alRegresar Regresa a P-11, de donde vino.
+ * @param alRegresar Regresa a la pantalla de donde vino.
+ * @param alContactar Abre la conversacion con el trabajador; hoy no esta enlazado (S5-T06).
  */
 @Composable
 fun PerfilPublicoPantalla(
     alRegresar: () -> Unit,
     modifier: Modifier = Modifier,
+    alContactar: () -> Unit = {},
     viewModel: PerfilPublicoViewModel = hiltViewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
@@ -80,6 +84,7 @@ fun PerfilPublicoPantalla(
         estado = estado,
         alRegresar = alRegresar,
         alReintentarCarga = viewModel::alReintentarCarga,
+        alContactar = alContactar,
         modifier = modifier
     )
 }
@@ -90,14 +95,32 @@ fun PerfilPublicoContenido(
     estado: EstadoPerfilPublico,
     alRegresar: () -> Unit,
     modifier: Modifier = Modifier,
-    alReintentarCarga: () -> Unit = {}
+    alReintentarCarga: () -> Unit = {},
+    alContactar: () -> Unit = {}
 ) {
+    // "Contactar" solo sale cuando ya hay perfil y quien lo mira es el cliente (6 del diseno).
+    val mostrarContactar = estado.perfil != null && !estado.esVistaPrevia
     Scaffold(
         topBar = {
             BarraSuperior(
                 titulo = stringResource(R.string.perfil_publico_titulo),
                 alRegresar = alRegresar
             )
+        },
+        bottomBar = {
+            if (mostrarContactar) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Crema)
+                        .padding(horizontal = Espaciado.margenPantalla, vertical = Espaciado.dp12)
+                ) {
+                    BotonPrincipal(
+                        texto = stringResource(R.string.perfil_publico_contactar),
+                        onClick = alContactar
+                    )
+                }
+            }
         },
         containerColor = Crema,
         modifier = modifier.fillMaxSize()
@@ -108,55 +131,88 @@ fun PerfilPublicoContenido(
             alReintentar = alReintentarCarga,
             modifier = Modifier.padding(relleno)
         ) {
-            estado.perfil?.let { PerfilPublicoLista(it) }
+            estado.perfil?.let { PerfilPublicoLista(it, esVistaPrevia = estado.esVistaPrevia) }
         }
     }
 }
 
 @Composable
-private fun PerfilPublicoLista(perfil: PerfilPublicoTrabajador) {
+private fun PerfilPublicoLista(perfil: PerfilPublicoTrabajador, esVistaPrevia: Boolean) {
     LazyColumn(
         contentPadding = PaddingValues(Espaciado.margenPantalla),
         verticalArrangement = Arrangement.spacedBy(Espaciado.dp16),
         modifier = Modifier.fillMaxSize()
     ) {
+        if (esVistaPrevia) {
+            item { AvisoVistaPrevia() }
+        }
         item { Encabezado(perfil) }
         item { Calificacion(perfil) }
 
-        item {
-            Seccion(R.string.perfil_publico_sobre_mi) {
-                if (perfil.descripcion.isNullOrBlank()) {
-                    Vacio(R.string.perfil_publico_sin_descripcion)
-                } else {
-                    Text(text = perfil.descripcion, style = DonChambitasTema.tipografia.cuerpo, color = Carbon)
+        // Al cliente le sobra una seccion vacia: no puede arreglarla, asi que se oculta.
+        if (esVistaPrevia || !perfil.descripcion.isNullOrBlank()) {
+            item {
+                Seccion(R.string.perfil_publico_sobre_mi) {
+                    if (perfil.descripcion.isNullOrBlank()) {
+                        Vacio(R.string.perfil_publico_sin_descripcion)
+                    } else {
+                        Text(text = perfil.descripcion, style = DonChambitasTema.tipografia.cuerpo, color = Carbon)
+                    }
                 }
             }
         }
 
-        item {
-            Seccion(R.string.perfil_publico_habilidades) {
-                if (perfil.habilidades.isEmpty()) {
-                    Vacio(R.string.perfil_publico_sin_habilidades)
-                } else {
-                    Habilidades(perfil.habilidades)
+        if (esVistaPrevia || perfil.habilidades.isNotEmpty()) {
+            item {
+                Seccion(R.string.perfil_publico_habilidades) {
+                    if (perfil.habilidades.isEmpty()) {
+                        Vacio(R.string.perfil_publico_sin_habilidades)
+                    } else {
+                        Habilidades(perfil.habilidades)
+                    }
                 }
             }
         }
 
         item { TituloSeccion(R.string.perfil_publico_servicios) }
         if (perfil.servicios.isEmpty()) {
-            item { Vacio(R.string.perfil_publico_sin_servicios) }
+            item {
+                Vacio(
+                    if (esVistaPrevia) R.string.perfil_publico_sin_servicios
+                    else R.string.perfil_publico_sin_servicios_cliente
+                )
+            }
         } else {
             items(perfil.servicios.size) { posicion -> TarjetaDeServicio(perfil.servicios[posicion]) }
         }
 
         item { TituloSeccion(R.string.perfil_publico_resenas) }
         if (perfil.resenas.isEmpty()) {
-            item { Vacio(R.string.perfil_publico_sin_resenas) }
+            item {
+                Vacio(
+                    if (esVistaPrevia) R.string.perfil_publico_sin_resenas
+                    else R.string.perfil_publico_sin_resenas_cliente
+                )
+            }
         } else {
             items(perfil.resenas.size) { posicion -> TarjetaDeResena(perfil.resenas[posicion]) }
         }
     }
+}
+
+/** Le recuerda al trabajador que lo que ve es lo que ven los clientes (6 del diseno). */
+@Composable
+private fun AvisoVistaPrevia() {
+    Text(
+        text = stringResource(R.string.perfil_publico_aviso_vista_previa),
+        style = DonChambitasTema.tipografia.cuerpoFuerte,
+        color = Carbon,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(FormaTarjeta)
+            .background(Mostaza.copy(alpha = 0.25f))
+            .padding(Espaciado.rellenoTarjeta)
+    )
 }
 
 @Composable
