@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 8 |
+| Terminadas | 9 |
 | En curso | 0 |
 | Bloqueadas | 2 |
 
@@ -178,7 +178,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`), y después `S4-T14` y `S4-T15` (las demás dependen de tareas bloqueadas o son opcionales). `S4-T08` quedó `hecha` el 2026-11-07: el contrato de búsqueda y solicitudes está en `CONTRATOS-API.md`, **sin verificar contra el proyecto**. **`S4-T09` no debería empezar sin que el líder decida `H-40`, `H-42` y `H-48`**: cambian la base y la forma de la vista. Hallazgos nuevos: `H-46`, `H-47`, `H-48`; `H-13` sigue abierto (nadie hace real `RepositorioSolicitudes`). El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`), **pero no debería empezar sin que el líder decida `H-40`, `H-42` y `H-48`**; las demás del Sprint 4 están bloqueadas (`S4-T10`, `S4-T11`, `S4-T14`) u opcionales (`S4-T12`, `S4-T13`). `S4-T15` quedó `hecha` el 2026-11-07: `FlujoClienteTest` (recorridos y filas de error de P-06, P-08 y P-09 con los falsos) y la prueba de Compose de P-08; **sin defectos en `main`**. Con falsos todo es consistente: esas pruebas no ven el desajuste de municipios ni que P-07 lea de Supabase lo que P-06 saca del falso (`S4-T09`). El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
