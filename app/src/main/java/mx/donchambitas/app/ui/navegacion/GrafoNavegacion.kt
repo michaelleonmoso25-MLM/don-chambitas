@@ -61,6 +61,7 @@ import mx.donchambitas.app.ui.pantallas.IniciarSesionPantalla
 import mx.donchambitas.app.ui.pantallas.MiCuentaPantalla
 import mx.donchambitas.app.ui.pantallas.MiPerfilPantalla
 import mx.donchambitas.app.ui.pantallas.MisServiciosPantalla
+import mx.donchambitas.app.ui.pantallas.MisSolicitudesPantalla
 import mx.donchambitas.app.ui.pantallas.PerfilPublicoPantalla
 import mx.donchambitas.app.ui.pantallas.RecuperarContrasenaPantalla
 import mx.donchambitas.app.ui.pantallas.RegistroPantalla
@@ -284,6 +285,9 @@ private val LocalEstadoSesion = compositionLocalOf { EstadoSesion.VERIFICANDO }
  */
 private const val CLAVE_CAMBIOS_GUARDADOS = "cambios_guardados"
 
+/** La marca que P-08 deja en la entrada de P-09 para que P-09 muestre "Solicitud publicada". */
+private const val CLAVE_SOLICITUD_PUBLICADA = "solicitud_publicada"
+
 /**
  * Rutas donde el andamio de S1-T12 no debe pintar barra superior, porque la
  * pantalla real ya resuelve su propia parte de arriba:
@@ -304,6 +308,8 @@ private const val CLAVE_CAMBIOS_GUARDADOS = "cambios_guardados"
  *   sin barra inferior.
  * - P-08 trae su BarraSuperior "Publicar solicitud" (S4-T02). Se abre encima,
  *   sin barra inferior.
+ * - P-09 trae su BarraSuperior "Mis solicitudes" (S4-T06), sin flecha: es una
+ *   pestana. Conserva la barra inferior.
  *
  * Sin esto salen dos barras encimadas, con dos títulos y dos flechas de
  * regreso. El andamio nació cuando los 19 destinos eran MarcadorPantalla y su
@@ -323,7 +329,8 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
     Ruta.MisServicios.ruta,
     Ruta.Resultados.ruta,
     Ruta.PerfilTrabajador.ruta,
-    Ruta.PublicarSolicitud.ruta
+    Ruta.PublicarSolicitud.ruta,
+    Ruta.MisSolicitudes.ruta
 )
 
 /**
@@ -438,24 +445,27 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
             SolicitudNuevaPantalla(
                 alRegresar = { navController.popBackStack() },
                 alPublicada = {
-                    // 4.5: P-08 sale de la pila; atras desde P-09 no vuelve al formulario.
-                    navController.navigate(Ruta.MisSolicitudes.ruta) {
-                        popUpTo(Ruta.PublicarSolicitud.ruta) { inclusive = true }
+                    // 4.5: P-08 sale de la pila; atras desde P-09 no vuelve al formulario. Si P-09 ya
+                    // estaba en la pila (se llego a P-08 desde su boton +), se vuelve a ella en vez de
+                    // apilar otra; si no, se navega a una nueva sacando P-08.
+                    val yaEstaba = navController.popBackStack(Ruta.MisSolicitudes.ruta, inclusive = false)
+                    if (!yaEstaba) {
+                        navController.navigate(Ruta.MisSolicitudes.ruta) {
+                            popUpTo(Ruta.PublicarSolicitud.ruta) { inclusive = true }
+                        }
                     }
+                    // El aviso lo da P-09, que es a donde se llega (4.5).
+                    navController.currentBackStackEntry?.savedStateHandle?.set(CLAVE_SOLICITUD_PUBLICADA, true)
                 }
             )
         }
 
-        composable(Ruta.MisSolicitudes.ruta) {
-            MarcadorPantalla(
-                ruta = Ruta.MisSolicitudes,
-                descripcion = "Lista de las solicitudes del cliente con su estado.",
-                navController = navController,
-                acciones = listOf(
-                    AccionNavegacion("Ver detalle de solicitud (P-19)") {
-                        navController.navigate(Ruta.DetalleSolicitud.crearRuta("solicitud-demo-01"))
-                    }
-                )
+        composable(Ruta.MisSolicitudes.ruta) { entrada ->
+            MisSolicitudesPantalla(
+                alPublicar = { navController.navigate(Ruta.PublicarSolicitud.ruta) },
+                // P-19 es de Sprint 5: hoy es un andamio, pero la ruta ya esta declarada.
+                alAbrirSolicitud = { id -> navController.navigate(Ruta.DetalleSolicitud.crearRuta(id)) },
+                tomarSolicitudPublicada = { entrada.savedStateHandle.remove<Boolean>(CLAVE_SOLICITUD_PUBLICADA) == true }
             )
         }
     }
