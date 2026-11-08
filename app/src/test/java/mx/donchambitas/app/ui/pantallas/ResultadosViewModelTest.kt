@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/** P-06 contra el buscador falso, sin retraso (S4-T03, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
+/** P-06 contra el buscador falso, sin retraso (S4-T03 y S4-T04, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResultadosViewModelTest {
 
@@ -115,5 +115,156 @@ class ResultadosViewModelTest {
         val estado = viewModel.estado.value
         assertNull(estado.errorCarga)
         assertTrue(estado.trabajadores.isNotEmpty())
+    }
+
+    @Test
+    fun noDebeBuscar_alEscribir_soloActualizaElCampo() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        val total = viewModel.estado.value.trabajadores.size
+
+        viewModel.alCambiarTexto("pedro")
+
+        val estado = viewModel.estado.value
+        assertEquals("pedro", estado.texto)
+        assertFalse(estado.cargando)
+        assertEquals(total, estado.trabajadores.size)
+    }
+
+    @Test
+    fun debeBuscarElTextoEscrito_alPulsarBuscar() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        val total = viewModel.estado.value.trabajadores.size
+
+        viewModel.alCambiarTexto("pedro")
+        viewModel.alBuscar()
+        assertTrue(viewModel.estado.value.cargando)
+        advanceUntilIdle()
+
+        val trabajadores = viewModel.estado.value.trabajadores
+        assertTrue(trabajadores.isNotEmpty())
+        assertTrue(trabajadores.size < total)
+        assertTrue(trabajadores.all { "${it.nombre} ${it.apellidos} ${it.titulo}".contains("pedro", ignoreCase = true) })
+    }
+
+    @Test
+    fun debeQuitarLosEspaciosDeLosExtremos_alBuscar() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTexto("pedro")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+        val esperado = viewModel.estado.value.trabajadores.map { it.trabajadorId }
+
+        viewModel.alCambiarTexto("   pedro  ")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        assertEquals(esperado, viewModel.estado.value.trabajadores.map { it.trabajadorId })
+    }
+
+    @Test
+    fun debeBuscarComoSinTexto_cuandoElTextoEstaEnBlanco() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alCambiarTexto("    ")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        assertEquals(fuente.perfilesTrabajador.size, viewModel.estado.value.trabajadores.size)
+    }
+
+    @Test
+    fun debeVaciarElCampo_yVolverALaListaCompleta_alBorrarElTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTexto("pedro")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        viewModel.alBorrarTexto()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("", estado.texto)
+        assertEquals(fuente.perfilesTrabajador.size, estado.trabajadores.size)
+    }
+
+    @Test
+    fun debeMostrarElVacio_cuandoNadieCoincideConElTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alCambiarTexto("zzzzz")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertTrue(estado.trabajadores.isEmpty())
+        assertTrue(estado.vacio)
+    }
+
+    @Test
+    fun debeReintentarLaBusquedaAplicada_noLoEscritoSinBuscar() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTexto("pedro")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+        val esperado = viewModel.estado.value.trabajadores.map { it.trabajadorId }
+
+        viewModel.alCambiarTexto("zzzzz")
+        repositorioCatalogos.errorForzado = TipoError.RED
+        viewModel.alReintentarCarga()
+        advanceUntilIdle()
+        assertEquals(TipoError.RED, viewModel.estado.value.errorCarga)
+
+        repositorioCatalogos.errorForzado = null
+        viewModel.alReintentarCarga()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(esperado, estado.trabajadores.map { it.trabajadorId })
+        assertEquals("zzzzz", estado.texto)
+    }
+
+    @Test
+    fun debeCombinarElTextoConLaCategoriaDeLaRuta() = runTest(reglaCorrutinas.testDispatcher) {
+        val categoria = fuente.servicios.first { it.activo }.categoriaId
+        val viewModel = crearViewModel(categoria)
+        advanceUntilIdle()
+        val nombre = viewModel.estado.value.trabajadores.first().nombre
+
+        viewModel.alCambiarTexto(nombre)
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        val trabajadores = viewModel.estado.value.trabajadores
+        assertTrue(trabajadores.isNotEmpty())
+        assertTrue(trabajadores.all { categoria in it.categorias && it.nombre.contains(nombre, ignoreCase = true) })
+
+        viewModel.alCambiarTexto("zzzzz")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.estado.value.vacio)
+    }
+
+    @Test
+    fun noDebeDejarQueUnaRespuestaTardia_pisaALaBusquedaNueva() = runTest(reglaCorrutinas.testDispatcher) {
+        // La carga inicial tarda; la busqueda nueva, no. Sin cancelar la vieja, llegaria despues y la pisaria.
+        repositorioCatalogos.retrasoMs = 1_000
+        val viewModel = crearViewModel()
+        repositorioCatalogos.retrasoMs = 0
+
+        viewModel.alCambiarTexto("zzzzz")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertTrue(estado.vacio)
+        assertTrue(estado.trabajadores.isEmpty())
     }
 }
