@@ -984,67 +984,365 @@ Los precios llegan exactos: `350.50` se guarda y se lee como `350.50`.
 
 ## Búsqueda y catálogos · `RepositorioCatalogos`
 
-| Operación | Con qué |
+Escrito a detalle en `S4-T08`. **`buscarTrabajadores` lo implementa `S4-T09`**; los tres
+catálogos ya son reales desde `S3-T09`. **Nada de lo que sigue se verificó contra el
+proyecto de Supabase**: es un contrato, y su verificación es de `S4-T09`. Lo que depende
+de una decisión del líder va marcado **(propuesta)** y se cierra en "Hallazgos de
+`S4-T08`", al final del documento. Los nombres de los métodos de `supabase-kt` se
+comprobaron en el código fuente de la 3.0.3.
+
+### Resumen
+
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `buscarTrabajadores(filtros, pagina)` | `select` sobre la vista `vw_busqueda_trabajadores`, con filtros, orden y `range` | `Resultado<List<ResumenTrabajadorBusqueda>>`, a lo más 20 |
+| `obtenerCategorias()` | `select` de `categorias`, `activa = true`, por `orden` | `Resultado<List<Categoria>>` |
+| `obtenerEstados()` | `select` de `estados`, por `nombre` | `Resultado<List<Estado>>` |
+| `obtenerMunicipios(estadoId)` | `select` de `municipios`, `estado_id = estadoId`, por `nombre` | `Resultado<List<Municipio>>` |
+
+Los catálogos se guardan en memoria después de la primera lectura buena y son de lectura
+pública, incluso sin sesión. **La búsqueda no:** la vista tiene `grant select` solo para
+`authenticated`, así que sin sesión falla con `401` o `403` (`AUTENTICACION`).
+
+### La vista `vw_busqueda_trabajadores`
+
+Una fila por trabajador: `trabajador_id`, `nombre`, `apellidos`, `foto_url`, `titulo`,
+`disponible`, `estado_id`, `municipio_id`, `estado`, `municipio`, `promedio`,
+`total_resenas`, `servicios_activos`, `precio_desde`, `categorias` y `creado_en`.
+
+- Es `security_invoker`: respeta las políticas de las tablas de abajo.
+- **Solo trae cuentas activas** (`u.activo`). **No filtra `disponible`**: un trabajador que
+  no toma trabajos sale igual, con `disponible = false` (`H-43`).
+- **`categorias` es un arreglo** de las categorías de sus servicios activos, porque un
+  trabajador ofrece varios oficios. El filtro va con contención, `categorias=cs.{3}`.
+- `precio_desde` es el mínimo de sus servicios activos, y es `null` si no tiene ninguno.
+- `promedio` es 0 sin reseñas, con dos decimales. `creado_en` es el del **perfil**.
+- Los cuatro campos de ubicación pueden venir `null`: ver `H-48`.
+
+### `buscarTrabajadores`
+
+```kotlin
+from("vw_busqueda_trabajadores").select {
+    filter {
+        palabras(filtros.texto).forEach { ilike("texto_busqueda", "%$it%") }   // (propuesta, H-40)
+        filtros.categoriaId?.let { contains("categorias", listOf(it)) }
+        filtros.estadoId?.let { eq("estado_id", it) }
+        filtros.municipioId?.let { eq("municipio_id", it) }
+        filtros.precioDesdeMax?.let { lte("precio_desde", it.toPlainString()) }
+        filtros.promedioMin?.let { gte("promedio", it) }
+    }
+    ordenar(filtros.orden ?: OrdenBusqueda.PROMEDIO)
+    range((pagina - 1) * 20L, pagina * 20L - 1)
+}.decodeList<ResumenTrabajadorDto>()
+```
+
+**Los filtros** son todos opcionales y se combinan con `Y`: un trabajador sale solo si
+cumple los que vengan.
+
+| Filtro | Columna y operador | Notas |
+|---|---|---|
+| `texto` | `texto_busqueda ilike %palabra%`, una vez por palabra | Ver "El texto" |
+| `categoriaId` | `categorias cs {id}` | No es `categoria_id`: no existe en la vista |
+| `estadoId` | `estado_id = id` | |
+| `municipioId` | `municipio_id = id` | Los ids son los de la base: por eso los catálogos ya son reales |
+| `precioDesdeMax` | `precio_desde <= valor` | Como texto con punto, sin pasar por `Double`. **Excluye a quien no tiene precio** (`null`), igual que el falso |
+| `promedioMin` | `promedio >= valor` | Quien no tiene reseñas tiene 0: con cualquier mínimo mayor que 0 no sale |
+
+**El texto.** Hoy el contrato decía "contra `titulo`"; el falso busca en `titulo`, `nombre` y
+`apellidos`, que es lo que promete el campo de P-06 ("Busca por nombre u oficio"). El
+contrato queda así: el texto se compara con **nombre, apellidos y título**.
+- Se recorta con `trim()` y, si queda vacío, no es un filtro.
+- Se parte por espacios y **cada palabra tiene que aparecer** ("pedro plomero" encuentra a
+  Pedro Ramírez, plomero, aunque el título diga "plomero" antes que el nombre). El falso
+  hoy busca la frase entera; `S4-T09` lo alinea.
+- Se escapan `\`, `%` y `_` antes de armar el patrón, para que "50%" no sea comodín.
+- **(propuesta, `H-40`)** La comparación ignora mayúsculas **y acentos**, que es lo que pide
+  HU-17. `ilike` solo ignora mayúsculas, así que hace falta una columna nueva en la vista,
+  `texto_busqueda`, con nombre, apellidos y título ya sin acentos y en minúsculas, y la
+  aplicación quita los acentos de lo que se escribe antes de buscar. Quitarlos solo del
+  texto escrito **no sirve**: el dato guardado sigue con acento. Ver el SQL en `H-40`.
+- Sin esa decisión, el contrato cae al de antes: solo `titulo`, con `ilike`, y el criterio
+  de acentos de HU-17 no se cumple.
+
+**El orden.** Siempre lleva un desempate fijo: sin él, con tantos trabajadores en 0 de
+promedio, las páginas pueden repetir o saltarse filas, porque el orden entre iguales no está
+definido.
+
+| `OrdenBusqueda` | Orden (cada `order` se agrega al anterior) |
 |---|---|
-| `buscarTrabajadores(filtros, pagina)` | Vista `vw_busqueda_trabajadores` con filtros de postgrest |
-| `obtenerCategorias()` / `obtenerEstados()` / `obtenerMunicipios(estadoId)` | Catálogos. Se cachean localmente |
+| `PROMEDIO` (por omisión) | `promedio` descendente, `creado_en` descendente, `trabajador_id` |
+| `CREADO_EN` | `creado_en` descendente, `trabajador_id` |
+| `PRECIO_DESDE` | `precio_desde` ascendente **con los nulos al final**, `creado_en` descendente, `trabajador_id` |
 
-Filtros, todos opcionales: texto libre contra `titulo` (`ilike`), `estado_id`,
-`municipio_id`, `precio_desde` máximo, `promedio` mínimo. Orden por `promedio`,
-`creado_en` o `precio_desde`. Paginación de 20 con `range()`.
+`order(columna, Order.X, nullsFirst = false)` escribe `nullslast` siempre, y es lo que se
+quiere en los tres. El falso hoy no tiene desempate (conserva el orden en que nacieron los
+datos); `S4-T09` lo alinea.
 
-**El filtro por categoría va contra `categorias`, que es un arreglo**, no contra
-un `categoria_id` suelto: un trabajador ofrece varios oficios a la vez. Desde
-postgrest se usa el operador de contención: `categorias=cs.{3}`.
+**La página.** Son **20**, con `range(desde, hasta)`. En `supabase-kt` 3.0.3 `range` manda
+`offset` y `limit` como parámetros de la consulta, **no** la cabecera `Range`: una página más
+allá del final devuelve `200` con una lista vacía, no `416`. Una página con menos de 20 filas es
+la última. La paginación por `offset` puede repetir una fila si alguien se da de alta entre dos
+páginas; el ViewModel ya descarta los repetidos por `trabajador_id` (`S4-T07`). `pagina` menor
+que 1 es un error de quien llama: se trata como 1.
 
-La vista devuelve por renglón: `trabajador_id`, `nombre`, `apellidos`,
-`foto_url`, `titulo`, `disponible`, `estado_id`, `municipio_id`, `estado`,
-`municipio`, `promedio`, `total_resenas`, `servicios_activos`, `precio_desde`,
-`categorias` y `creado_en`.
+**Sin resultados no es un error.** Devuelve `Exito` con lista vacía; es el vacío de HU-17.
 
-Los catálogos son de lectura pública, incluso sin sesión.
+**El DTO.** `ResumenTrabajadorDto`, con `@SerialName` de cada columna:
+- `promedio` llega como número, a `Double`. `total_resenas` y `servicios_activos` a `Int`.
+- `precio_desde` a `BigDecimal` con `SerializadorBigDecimal`, desde el texto del JSON.
+- `categorias` a `List<Int>`. `creado_en` a `Instant`.
+- `foto_url`, `precio_desde` y los cuatro de ubicación son nulos. **El modelo
+  `ResumenTrabajadorBusqueda` hoy declara `estadoId`, `municipioId`, `estado` y `municipio` no
+  nulos**: un solo trabajador sin ubicación haría fallar la página entera. Ver `H-48`.
 
-**Los tres catálogos ya son reales desde `S3-T09`**, en
-`RepositorioCatalogosReal`, por decisión del líder del 2026-10-19. Los ids de
-municipio del catálogo falso no coinciden con los de la base: el falso numera
-Cholula como 19, y en la base el 19 es Naucalpan. Con el perfil real y el
-catálogo falso, P-11 habría guardado el municipio equivocado, y la base no lo
-rechaza porque no revisa que el municipio sea del estado. Las tres son un
-`select` de la tabla:
+**Errores.** Los de la tabla de `RepositorioTrabajador` y `RepositorioServicios`: sin red es `RED`;
+`401` y `403`, `AUTENTICACION`; `5xx`, `SERVIDOR`. Un texto con caracteres raros no produce `400`
+porque se escapa antes. Solo hay lectura: no hay `409` ni `VALIDACION` propios.
 
-| Operación | Filtro y orden |
-|---|---|
-| `obtenerCategorias()` | `activa = true`, por `orden` |
-| `obtenerEstados()` | Todos, por `nombre` |
-| `obtenerMunicipios(estadoId)` | `estado_id = estadoId`, por `nombre` |
+### Catálogos
 
-Se guardan en memoria después de la primera lectura buena: no cambian
-mientras la aplicación está abierta. **`buscarTrabajadores` sigue en el
-falso** hasta `S4-T09`; `RepositorioCatalogosReal` se lo pasa al falso tal cual.
+Las tres operaciones son un `select` de la tabla y **ya son reales desde `S3-T09`**, en
+`RepositorioCatalogosReal`, por decisión del líder del 2026-10-19. Los ids de municipio del
+catálogo falso no coinciden con los de la base: el falso numera Cholula como 19, y en la base el
+19 es Naucalpan. Con el perfil real y el catálogo falso, P-11 habría guardado el municipio
+equivocado, y la base no lo rechaza porque no revisa que el municipio sea del estado.
+
+Es **la misma razón por la que, mientras `buscarTrabajadores` siga en el falso, el filtro de
+municipio de P-06 no encuentra a nadie**: el id que sale del catálogo real no es el del trabajador
+de prueba. Se arregla con `S4-T09`, no con otro cambio.
+
+`RepositorioCatalogosReal` hoy se lo pasa al falso tal cual; `S4-T09` reemplaza solo ese método.
+
+### Qué no se verificó
+
+1. Que `ilike` con `%` codificado en la URL llegue como se espera, y con las palabras escapadas.
+2. Que `contains("categorias", listOf(3))` arme `cs.{3}` sobre una columna `smallint[]`.
+3. Que `order` encadenado con `nullslast` respete el desempate.
+4. Que una página fuera de rango devuelva `200` vacío.
+5. **El tiempo de la consulta:** la vista agrupa y une cinco tablas. Con pocos trabajadores no se
+   nota; con miles, hay que medirlo. Los índices trigrama que existen son de las tablas, no de
+   la vista.
+
+---
 
 ## Solicitudes · `RepositorioSolicitudes`
 
-| Operación | Con qué |
-|---|---|
-| `obtenerMisSolicitudes()` | `solicitudes` where `cliente_id = auth.uid()` |
-| `obtenerAbiertas(categoriaId?)` | `solicitudes` where `estatus = 'abierta'` |
-| `obtenerDetalle(id)` | `solicitudes` con sus `postulaciones` |
-| `crear(solicitud)` / `actualizar(solicitud)` / `cancelar(id)` | `solicitudes` |
-| `cerrar(id)` | RPC `fn_cerrar_solicitud(id)` |
+Escrito a detalle en `S4-T08`. **Hoy ninguna tarea lo vuelve real** (`H-13`, que sigue abierto):
+`S4-T09` es solo la búsqueda. P-08, P-09 y P-19 dependen de él y, mientras tanto, usan el falso.
+**Nada de lo que sigue se verificó contra el proyecto.**
 
-Estados válidos de `estatus`: `abierta`, `asignada`, `cerrada`, `cancelada`.
+### Resumen
 
-**Pasar a `asignada` no se hace a mano**: es consecuencia de aceptar una
-postulación. **Cerrar es RPC** porque exige trabajador asignado y sella
-`cerrada_en`.
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `obtenerMisSolicitudes()` | `select` de `solicitudes`, `cliente_id = <uid>`, por `creado_en` descendente | `Resultado<List<Solicitud>>` |
+| `obtenerAbiertas(categoriaId?)` | `select` de `solicitudes`, `estatus = 'abierta'`, y `categoria_id` si viene | `Resultado<List<Solicitud>>` |
+| `obtenerDetalle(id)` | `select` de `solicitudes` con `postulaciones` embebidas | `Resultado<DetalleSolicitud>` |
+| `crear(solicitud)` | `insert` en `solicitudes` | `Resultado<Solicitud>`, con el `id` nuevo |
+| `actualizar(solicitud)` | `update` en `solicitudes`, solo si sigue `abierta` | `Resultado<Solicitud>` |
+| `cancelar(id)` | `update estatus = 'cancelada'`, solo si está `abierta` | `Resultado<Solicitud>` |
+| `cerrar(id)` | RPC `fn_cerrar_solicitud(p_solicitud_id)` y vuelve a leer la fila | `Resultado<Solicitud>` |
 
-Ojo con el primero: eso es **regla de este contrato, no de la base** (DEC-21).
-La base deja que el cliente lleve su propia solicitud a `asignada` con un
-`update` suelto. Nadie te va a detener; simplemente no se hace, y un `update` a
-`estatus` que no sea `cancelada` es un bug en revisión de código.
+Los estados de `estatus` son `abierta`, `asignada`, `cerrada` y `cancelada`. **`estatus` no es
+`estado_id`**: el primero es el flujo, el segundo la entidad federativa.
 
-> Ojo: la columna del flujo se llama `estatus`. `estado_id` es la entidad
-> federativa. Son cosas distintas.
+**El uid** sale de `auth.currentUserOrNull()?.id`, como en "Perfil del trabajador". Sin sesión,
+`AUTENTICACION`.
+
+**Quién ve qué** (políticas de `02_politicas_rls.sql`):
+
+| Quién | Lee | Escribe |
+|---|---|---|
+| El cliente | Sus solicitudes, en cualquier estado | `insert` con `cliente_id = uid`; `update` y `delete` de las suyas |
+| Cualquier usuario con sesión | Las solicitudes `abiertas` de todos (**`H-46`**) | Nada |
+| Un trabajador | Además, aquellas en las que participa (`trabajador_id` o se postuló) | Nada |
+
+**Regla del contrato, no de la base (DEC-21):** la base deja que el cliente cambie cualquier
+columna de su solicitud con un `update` suelto, incluido `estatus` y `trabajador_id`. Aquí **solo se
+cambia `estatus` a `cancelada`** (con `cancelar`) y **a `cerrada` por la RPC**. Pasar a `asignada`
+es consecuencia de aceptar una postulación. Un `update` que toque `estatus` o `trabajador_id` por
+otro camino es un defecto en revisión de código.
+
+### `obtenerMisSolicitudes`
+
+```kotlin
+from("solicitudes")
+    .select {
+        filter { eq("cliente_id", uid) }
+        order("creado_en", Order.DESCENDING)
+    }
+    .decodeList<SolicitudDto>()
+    .map { it.aSolicitud() }
+```
+
+- Trae todos los estados. P-09 las reordena con `ordenarMisSolicitudes` (activas primero).
+- Sin solicitudes devuelve lista vacía: es el vacío de P-09, no un error.
+- **Sin paginar**: P-09 no tiene páginas. Con un cliente muy activo habrá que agregarlas; sería una
+  operación nueva y se reporta.
+- **(propuesta, `H-42`)** El número de postulaciones sin revisar de cada solicitud. Dos formas,
+  y las dos exigen extender `Solicitud` o su tarjeta, que son del líder:
+  - **A, recomendada:** una vista `vw_mis_solicitudes` con las columnas de `solicitudes` más
+    `postulaciones_sin_revisar`, el conteo de las `enviada`. P-09 leería de ella. Es el mismo patrón
+    que `vw_busqueda_trabajadores` y no depende de la configuración de PostgREST.
+  - **B:** `select("*, postulaciones(count)")` con el filtro `postulaciones.estatus = enviada`, sin
+    tocar la base. Depende de que PostgREST tenga habilitadas las funciones de agregación, y **no se
+    verificó**. Si funciona, `S4-T09` puede preferirla.
+
+### `obtenerAbiertas`
+
+```kotlin
+from("solicitudes")
+    .select {
+        filter {
+            eq("estatus", "abierta")
+            categoriaId?.let { eq("categoria_id", it) }
+        }
+        order("creado_en", Order.DESCENDING)
+    }
+    .decodeList<SolicitudDto>()
+```
+
+Es para P-10, el inicio del trabajador. **Sin paginar**: la interfaz no tiene `pagina`, y la tarea que
+construya P-10 decide si la necesita (una operación nueva, que se reporta). Llamada por un cliente,
+devuelve también las abiertas ajenas por `H-46`; ninguna pantalla de cliente la usa.
+
+### `obtenerDetalle`
+
+```kotlin
+from("solicitudes")
+    .select(Columns.raw("*, postulaciones(*)")) {
+        filter { eq("id", id) }
+        order("creado_en", Order.DESCENDING, referencedTable = "postulaciones")
+    }
+    .decodeList<SolicitudConPostulacionesDto>()
+    .firstOrNull()
+```
+
+- **`decodeList` y primer elemento, no `single()`**: `single()` con cero filas responde `406`, que
+  `traducirErrorDatos` no conoce y manda a `DESCONOCIDO`. Cero filas es **`VALIDACION`**, como en
+  `actualizar` de servicios: la solicitud no existe o RLS no deja verla, y no se distinguen.
+- **Lo que viene en `postulaciones` lo decide RLS**: el cliente dueño ve todas las de su
+  solicitud; un trabajador ve **solo la suya**, nunca las de sus competidores.
+- Cada postulación trae `id`, `solicitud_id`, `trabajador_id`, `mensaje`, `precio_propuesto`
+  (`BigDecimal`, nulo), `estatus` (`enviada`, `aceptada`, `rechazada`, `retirada`), `creado_en` y
+  `actualizado_en`.
+
+### `crear`
+
+```kotlin
+from("solicitudes")
+    .insert(
+        SolicitudEscrituraDto(
+            clienteId = uid,
+            categoriaId = solicitud.categoriaId,
+            titulo = solicitud.titulo,
+            descripcion = solicitud.descripcion,
+            presupuesto = solicitud.presupuesto,
+            estadoId = solicitud.estadoId,
+            municipioId = solicitud.municipioId
+        )
+    ) { select() }
+    .decodeSingle<SolicitudDto>()
+```
+
+- **Manda siete columnas.** No manda `id` (`gen_random_uuid()`), `estatus` (`abierta`),
+  `trabajador_id`, `categorizada_por_ia` (`false`; lo cambiará `S4-T12`) ni las fechas.
+  `solicitud.id`, `clienteId` y `estatus` se ignoran: P-08 los manda vacíos.
+- `rol_cliente` no se manda: su valor por omisión es `cliente`, y la llave
+  `(cliente_id, rol_cliente)` hacia `usuarios` **rechaza con `409` a quien no es cliente**
+  (HU-12, "regla de la base").
+- El presupuesto viaja como texto con punto y dos decimales (`SerializadorBigDecimal`); `null` viaja
+  como `null`. Por eso `SolicitudEscrituraDto` no tiene valores por omisión, como los de servicios.
+- **Límites que impone la base:** `titulo` hasta 120, `presupuesto` mayor o igual a 0 y menor que
+  100 millones. Coinciden con `ValidacionesSolicitud`. **La descripción no tiene tope** (`H-44`) y
+  **estado y municipio pueden ir vacíos** (`H-41`): la pantalla los exige, la base no.
+- Devuelve la solicitud con su `id`; P-08 no lo usa, pero P-09 lo lee al recargar.
+
+### `actualizar`
+
+```kotlin
+from("solicitudes")
+    .update({
+        set("categoria_id", solicitud.categoriaId)
+        set("titulo", solicitud.titulo)
+        set("descripcion", solicitud.descripcion)
+        set("presupuesto", solicitud.presupuesto?.toPlainString())
+        set("estado_id", solicitud.estadoId)
+        set("municipio_id", solicitud.municipioId)
+    }) {
+        filter {
+            eq("id", solicitud.id)
+            eq("estatus", "abierta")
+        }
+        select()
+    }
+    .decodeList<SolicitudDto>()
+```
+
+- **Manda seis columnas y ninguna más**: nunca `estatus`, `trabajador_id` ni `cliente_id`.
+- **Solo una solicitud `abierta` se edita.** La base no lo impide; el filtro `estatus = abierta` lo
+  hace el contrato. Cero filas es `VALIDACION`: ya no es editable, o se borró, o no es suya.
+- Ninguna pantalla de Sprint 4 la usa; está aquí para que `S5` no la invente.
+
+### `cancelar`
+
+```kotlin
+from("solicitudes")
+    .update({ set("estatus", "cancelada") }) {
+        filter {
+            eq("id", id)
+            eq("estatus", "abierta")
+        }
+        select()
+    }
+    .decodeList<SolicitudDto>()
+```
+
+- **Solo se cancela una `abierta` (`H-47`, propuesta).** HU-14 habla de la solicitud abierta. Una
+  `asignada` ya tiene trabajador, y qué pasa con él no está definido. Cero filas es `VALIDACION`.
+- Una cancelada deja de recibir postulaciones: lo garantiza `fn_validar_postulacion`, que rechaza
+  postularse a una solicitud que no está abierta.
+
+### `cerrar`
+
+```kotlin
+supabase.postgrest.rpc("fn_cerrar_solicitud", buildJsonObject { put("p_solicitud_id", id) })
+// y después, para devolver la solicitud:
+from("solicitudes").select { filter { eq("id", id) } }.decodeList<SolicitudDto>().firstOrNull()
+```
+
+- **La RPC devuelve `void`**, así que se vuelve a leer la fila para tener `cerrada_en`, que sella el
+  trigger `tg_solicitudes_transicion`.
+- La función exige que quien llama sea el cliente dueño y que la solicitud esté `asignada`. Si no,
+  hace `RAISE EXCEPTION`, que PostgREST devuelve como **`400`**, y se traduce a `VALIDACION`; **no
+  llega como `403`**, aunque el motivo sea de permisos.
+- Cerrar habilita la reseña (P-17): el trigger de reseñas exige la solicitud cerrada.
+
+### Errores de `RepositorioSolicitudes`
+
+Los de "Errores de `RepositorioTrabajador` y `RepositorioServicios`" (`traducirErrorDatos`), con
+estos casos propios:
+
+| Qué llega | Cuándo pasa aquí | `TipoError` |
+|---|---|---|
+| `400` en `crear` o `actualizar` | Título de más de 120, presupuesto negativo o de 100 millones o más | `VALIDACION` |
+| `409` en `crear` | Categoría, estado o municipio inexistentes, o la cuenta no es de cliente | `VALIDACION` |
+| `400` en `cerrar` | La solicitud no existe, no es del cliente o no está `asignada` | `VALIDACION` |
+| Cero filas en `obtenerDetalle`, `actualizar` o `cancelar` | No existe, no es suya, o ya no está `abierta` | `VALIDACION` |
+| `403` | RLS rechaza una escritura ajena. **Es un defecto nuestro** | `AUTENTICACION` |
+
+**Estos `VALIDACION` no traen un texto en español utilizable**: los `RAISE EXCEPTION` de las
+funciones sí están en español, pero P-08, P-09 y P-19 pintan siempre el mensaje genérico de
+`VALIDACION`, como las demás pantallas.
+
+### Qué no se verificó
+
+1. Todo lo de arriba: ninguna operación se probó contra el proyecto.
+2. Que `update` con `eq("estatus", "abierta")` en el filtro y `select()` devuelva cero filas, y no un
+   error, cuando la condición no se cumple.
+3. Que `rpc` con `p_solicitud_id` como cadena convierta a `uuid`.
+4. El conteo embebido de la opción B de `H-42`.
+5. Que un trabajador solo reciba su postulación al leer `obtenerDetalle`.
 
 ## Postulaciones · `RepositorioPostulaciones`
 
@@ -1296,7 +1594,7 @@ Las traducciones concretas de arriba son **el contrato**, no la
 implementación. Cada tarea de contrato detalla su módulo con los nombres de
 columna exactos y los DTO: S2-T06 autenticación, S2-T12 perfil de usuario y S3-T08 trabajador y
 servicios (ya escritos, arriba), S3-T12 la Edge Function de IA (ya escrito, arriba), S4-T08 solicitudes
-y búsqueda, S5-T06 mensajería y postulaciones.
+y búsqueda (ya escrito, arriba; sin verificar contra el proyecto), S5-T06 mensajería y postulaciones.
 
 Mientras esas tareas no lleguen, la implementación activa de todos estos
 repositorios es la falsa, en memoria. Ver `AGENTS.md` §6.
@@ -1444,3 +1742,106 @@ perfil.**
 - Salidas posibles: P-12 o P-13 piden guardar primero el perfil, o
   `guardarMiPerfil` se llama solo con un título mínimo. Cualquiera de las dos
   cambia el diseño de P-12 o P-13. **Lo decide el líder.**
+
+
+---
+
+## Hallazgos de `S4-T08`
+
+Salen de escribir el contrato de solicitudes y búsqueda. **Ninguno se resolvió aquí**, conforme
+a `AGENTS.md` §9: lo que sigue son **propuestas**, y el SQL no se aplicó a `basedatos/`. Cada
+uno nombra quién decide.
+
+**`H-40` · La búsqueda por texto no ignora acentos, y HU-17 lo exige.** `ilike` ignora
+mayúsculas, no acentos: "plomeria" no encuentra "plomería". Opciones:
+
+1. **Columna normalizada en la vista (recomendada).** Cambia `basedatos/01_esquema.sql`:
+   ```sql
+   create extension if not exists unaccent with schema extensions;
+
+   -- unaccent no es inmutable; el envoltorio sí, y es lo que permite usarla en un índice.
+   create or replace function public.fn_normalizar(p_texto text)
+   returns text language sql immutable parallel safe as
+   $$ select lower(extensions.unaccent('extensions.unaccent', coalesce(p_texto, ''))) $$;
+   ```
+   y a `vw_busqueda_trabajadores`, una columna
+   `public.fn_normalizar(p.titulo || ' ' || u.nombre || ' ' || u.apellidos) as texto_busqueda`.
+   La aplicación quita los acentos de lo que se escribe (`java.text.Normalizer`, forma `NFD`) y
+   busca por palabras. **Costo:** la columna de la vista no usa los índices trigrama de las
+   tablas; con pocos miles de trabajadores no importa, y si importa se agrega un índice de
+   expresión sobre la misma fórmula.
+2. **Quitar acentos solo del texto que se escribe:** no sirve. El dato guardado conserva el
+   acento y "plomeria" sigue sin coincidir con "plomería".
+3. **Una RPC `fn_buscar_trabajadores(...)`** que haga todo en SQL (texto, filtros, orden y
+   página). Más control y una sola llamada, pero deja de ser un `select` con filtros y cambia la
+   forma del contrato.
+4. **No hacerlo.** La búsqueda queda contra `titulo` y el criterio de acentos de HU-17 sigue sin
+   cumplirse. Hay que decirlo en `HISTORIAS.md`.
+
+**Le toca a `S4-T09` implementarlo, y al líder decidirlo porque cambia la base.**
+
+**`H-41` · La ubicación de una solicitud es obligatoria en HU-12 y opcional en la base.**
+`estado_id` y `municipio_id` aceptan `null`, y la base **tampoco revisa que el municipio sea del
+estado**. Propuesta: un trigger solo en `insert`, con mensaje en español:
+```sql
+create or replace function public.fn_validar_ubicacion_solicitud() returns trigger
+language plpgsql as $$
+begin
+    if new.estado_id is null or new.municipio_id is null then
+        raise exception 'La solicitud necesita estado y municipio';
+    end if;
+    if not exists (select 1 from public.municipios
+                    where id = new.municipio_id and estado_id = new.estado_id) then
+        raise exception 'El municipio no es del estado elegido';
+    end if;
+    return new;
+end; $$;
+```
+**No** un `CHECK` sobre la fila: `estado_id` y `municipio_id` son `on delete set null`, y un
+`CHECK` contradiría esas llaves. Solo en `insert` para no invalidar solicitudes antiguas. **Lo
+decide el líder**: esto o dejarlo en la pantalla.
+
+**`H-42` · No hay cómo mostrar las postulaciones sin revisar en P-09.** Dos opciones, en
+`obtenerMisSolicitudes`: la vista `vw_mis_solicitudes` con `postulaciones_sin_revisar` (A,
+recomendada) o el conteo embebido `postulaciones(count)` (B, sin cambio de base pero sin
+verificar). Las dos piden extender `Solicitud` y `TarjetaSolicitud`, que son del líder, como se
+hizo con `TarjetaServicio` (`H-21`). **Le toca a `S4-T09` implementarlo, y al líder decidir.**
+
+**`H-43` · `TarjetaTrabajador` no muestra el precio ni si está disponible.** **No cambia el
+contrato**: la vista ya trae `precio_desde` y `disponible`, y la vista **no filtra `disponible`**.
+Falta decidir si la tarjeta los muestra y si un trabajador no disponible sale en la lista con su
+etiqueta o se oculta (en cuyo caso el filtro iría en la vista o en la consulta). **Lo decide el
+líder.**
+
+**`H-44` · La descripción de una solicitud no tiene tope en la base.** Si el líder confirma las
+1,000 posiciones de la pantalla: `alter table public.solicitudes add constraint
+ck_solicitud_descripcion check (char_length(descripcion) <= 1000);`. Las solicitudes de
+`04_datos_semilla.sql` caben. **Lo confirma el líder.**
+
+**`H-45` · CERRADO por `S4-T03`:** `Ruta.Resultados` recibe la categoría opcional. Queda sin
+hacer el texto que vendría de P-05, porque P-05 sigue siendo un andamio.
+
+**`H-46` · Cualquier usuario con sesión, incluido un cliente, lee las solicitudes abiertas de
+todos.** La política "trabajador ve las solicitudes abiertas" es `using (estatus = 'abierta')` y no
+mira el rol. Lo que se ve es título, descripción, presupuesto, categoría y ubicación, no datos de
+contacto. Puede ser lo que se quiere en un mercado abierto, pero el nombre de la política dice otra
+cosa. Si se quiere solo para trabajadores hace falta una función que consulte el rol. **Lo decide
+el líder.**
+
+**`H-47` · Cancelar una solicitud `asignada` no está definido.** HU-14 solo habla de la abierta, y
+`cancelar` del contrato actúa solo sobre `abierta`. Qué pasa con el trabajador ya asignado, y si el
+cliente puede arrepentirse, no está escrito. **Lo decide el líder.**
+
+**`H-48` · Un trabajador sin ubicación rompe la página de resultados.** `p.estado_id` y
+`p.municipio_id` son nulos hasta que el trabajador guarda su perfil con ubicación, y la vista los
+une con `left join`. `ResumenTrabajadorBusqueda` los declara no nulos: la deserialización de una
+sola fila hace fallar la página **entera**. El falso lo oculta con `?: 0` y `?: ""`. Es el mismo
+problema que `H-25` en el perfil público. Salidas: volver nulos los cuatro campos del modelo (y que
+la tarjeta pinte sin ubicación), o filtrar la vista con `where p.estado_id is not null and
+p.municipio_id is not null`, lo que deja fuera de la búsqueda a quien no la puso. **Lo decide el
+líder; hay que cerrarlo antes de `S4-T09`.**
+
+**`H-13` sigue abierto, y ahora es concreto.** `S4-T09` es solo la búsqueda. Ninguna tarea vuelve
+real a `RepositorioSolicitudes`, y P-08, P-09 y el detalle P-19 ya dependen de él: lo publicado se
+pierde al cerrar la aplicación. Hace falta asignarlo (ampliar `S4-T09` o una tarea nueva).
+**Lo decide el líder.**
