@@ -192,6 +192,21 @@
     <string name="resultados_titulo">Resultados</string>
     <string name="resultados_buscador_marcador">Busca por nombre u oficio</string>
     <string name="resultados_buscador_borrar">Borrar texto</string>
+    <string name="filtros_boton">Filtros</string>
+    <string name="filtros_boton_n">Filtros (%1$d)</string>
+    <string name="filtros_titulo">Filtros</string>
+    <string name="filtros_aplicar">Aplicar</string>
+    <string name="filtros_quitar">Quitar filtros</string>
+    <string name="filtros_categoria">Categoría</string>
+    <string name="filtros_estado">Estado</string>
+    <string name="filtros_municipio">Municipio</string>
+    <string name="filtros_hoja_estado">Elige un estado</string>
+    <string name="filtros_hoja_municipio">Elige un municipio</string>
+    <string name="filtros_precio_maximo">Precio máximo</string>
+    <string name="filtros_chip_precio">Hasta $%1$s</string>
+    <string name="filtros_calificacion_minima">Calificación mínima</string>
+    <string name="filtros_calificacion_cualquiera">Cualquiera</string>
+    <string name="filtros_calificacion_n">%1$s o más</string>
     <string name="resultados_vacio_titulo">No encontramos trabajadores</string>
     <string name="resultados_vacio_mensaje">Prueba quitando filtros o revisa la ubicación</string>
 

@@ -8,11 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,15 +27,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.hilt.navigation.compose.hiltViewModel
 import mx.donchambitas.app.R
+import mx.donchambitas.app.dominio.modelo.FiltrosBusquedaTrabajadores
 import mx.donchambitas.app.ui.componentes.BarraSuperior
 import mx.donchambitas.app.ui.componentes.CampoTexto
+import mx.donchambitas.app.ui.componentes.ChipCategoria
 import mx.donchambitas.app.ui.componentes.ContenedorEstado
 import mx.donchambitas.app.ui.componentes.TarjetaTrabajador
 import mx.donchambitas.app.ui.tema.Crema
 import mx.donchambitas.app.ui.tema.Espaciado
 
 /**
- * Resultados (P-06), HU-16 y HU-17.
+ * Resultados (P-06), HU-16, HU-17 y HU-18.
  * Especificada en docs/producto/DISENO-SOLICITUDES-BUSQUEDA.md, seccion 3.
  *
  * Conecta [ResultadosContenido] con [ResultadosViewModel].
@@ -58,6 +62,12 @@ fun ResultadosPantalla(
         alCambiarTexto = viewModel::alCambiarTexto,
         alBuscar = viewModel::alBuscar,
         alBorrarTexto = viewModel::alBorrarTexto,
+        alAbrirFiltros = viewModel::alAbrirFiltros,
+        alCerrarFiltros = viewModel::alCerrarFiltros,
+        alAplicarFiltros = viewModel::alAplicarFiltros,
+        alQuitarFiltro = viewModel::alQuitarFiltro,
+        alQuitarTodosLosFiltros = viewModel::alQuitarTodosLosFiltros,
+        alElegirEstadoEnFiltros = viewModel::alElegirEstadoEnFiltros,
         modifier = modifier
     )
 }
@@ -72,7 +82,13 @@ fun ResultadosContenido(
     alReintentarCarga: () -> Unit = {},
     alCambiarTexto: (String) -> Unit = {},
     alBuscar: () -> Unit = {},
-    alBorrarTexto: () -> Unit = {}
+    alBorrarTexto: () -> Unit = {},
+    alAbrirFiltros: () -> Unit = {},
+    alCerrarFiltros: () -> Unit = {},
+    alAplicarFiltros: (FiltrosBusquedaTrabajadores) -> Unit = {},
+    alQuitarFiltro: (FiltroResultados) -> Unit = {},
+    alQuitarTodosLosFiltros: () -> Unit = {},
+    alElegirEstadoEnFiltros: (Int?) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
@@ -93,6 +109,7 @@ fun ResultadosContenido(
                 alBuscar = alBuscar,
                 alBorrarTexto = alBorrarTexto
             )
+            FilaFiltros(estado = estado, alAbrirFiltros = alAbrirFiltros, alQuitarFiltro = alQuitarFiltro)
             ContenedorEstado(
                 cargando = estado.cargando,
                 error = estado.errorCarga,
@@ -100,6 +117,9 @@ fun ResultadosContenido(
                 alReintentar = alReintentarCarga,
                 tituloVacio = stringResource(R.string.resultados_vacio_titulo),
                 mensajeVacio = stringResource(R.string.resultados_vacio_mensaje),
+                // HU-17: con filtros puestos, el vacio ofrece quitarlos.
+                textoBotonVacio = if (estado.hayFiltros) stringResource(R.string.filtros_quitar) else null,
+                alHacerClickBotonVacio = if (estado.hayFiltros) alQuitarTodosLosFiltros else null,
                 modifier = Modifier.weight(1f)
             ) {
                 LazyColumn(
@@ -120,6 +140,20 @@ fun ResultadosContenido(
                     }
                 }
             }
+        }
+
+        if (estado.hojaFiltrosAbierta) {
+            HojaFiltros(
+                aplicados = estado.filtros,
+                categorias = estado.categorias,
+                estados = estado.estados,
+                municipios = estado.municipios,
+                errorCatalogos = estado.errorCatalogos,
+                alElegirEstado = alElegirEstadoEnFiltros,
+                alAplicar = alAplicarFiltros,
+                alQuitarTodos = alQuitarTodosLosFiltros,
+                alCerrar = alCerrarFiltros
+            )
         }
     }
 }
@@ -156,4 +190,75 @@ private fun Buscador(
             .fillMaxWidth()
             .padding(horizontal = Espaciado.margenPantalla, vertical = Espaciado.dp12)
     )
+}
+
+/**
+ * La fila de 3.1 del diseno: el boton "Filtros (n)" y un chip con X por cada filtro activo,
+ * para quitar uno sin abrir la hoja.
+ */
+@Composable
+private fun FilaFiltros(
+    estado: EstadoResultados,
+    alAbrirFiltros: () -> Unit,
+    alQuitarFiltro: (FiltroResultados) -> Unit
+) {
+    val filtros = estado.filtros
+    val activos = buildList {
+        filtros.categoriaId?.let { id ->
+            add(FiltroResultados.CATEGORIA to (
+                estado.categorias.firstOrNull { it.id == id }?.nombre
+                    ?: stringResource(R.string.filtros_categoria)
+                ))
+        }
+        filtros.estadoId?.let { id ->
+            add(FiltroResultados.ESTADO to (
+                estado.estados.firstOrNull { it.id == id }?.nombre
+                    ?: stringResource(R.string.filtros_estado)
+                ))
+        }
+        filtros.municipioId?.let { id ->
+            add(FiltroResultados.MUNICIPIO to (
+                estado.municipios.firstOrNull { it.id == id }?.nombre
+                    ?: stringResource(R.string.filtros_municipio)
+                ))
+        }
+        filtros.precioDesdeMax?.let { precio ->
+            add(FiltroResultados.PRECIO to stringResource(
+                R.string.filtros_chip_precio,
+                precio.stripTrailingZeros().toPlainString()
+            ))
+        }
+        filtros.promedioMin?.let { minimo ->
+            add(FiltroResultados.CALIFICACION to stringResource(
+                R.string.filtros_calificacion_n,
+                textoCalificacion(minimo)
+            ))
+        }
+    }
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = Espaciado.margenPantalla),
+        horizontalArrangement = Arrangement.spacedBy(Espaciado.dp8)
+    ) {
+        item {
+            ChipCategoria(
+                texto = if (estado.hayFiltros) {
+                    stringResource(R.string.filtros_boton_n, estado.filtrosActivos)
+                } else {
+                    stringResource(R.string.filtros_boton)
+                },
+                seleccionado = estado.hayFiltros,
+                alSeleccionar = alAbrirFiltros,
+                icono = Icons.Outlined.FilterList
+            )
+        }
+        items(activos, key = { it.first }) { (cual, texto) ->
+            ChipCategoria(
+                texto = texto,
+                seleccionado = true,
+                alSeleccionar = { alQuitarFiltro(cual) },
+                icono = Icons.Outlined.Close
+            )
+        }
+    }
 }
