@@ -19,15 +19,17 @@ import mx.donchambitas.app.R
 import mx.donchambitas.app.dominio.modelo.Categoria
 import mx.donchambitas.app.dominio.modelo.Estado
 import mx.donchambitas.app.dominio.modelo.FiltrosBusquedaTrabajadores
+import mx.donchambitas.app.dominio.modelo.OrdenBusqueda
 import mx.donchambitas.app.dominio.modelo.ResumenTrabajadorBusqueda
 import mx.donchambitas.app.ui.tema.DonChambitasTema
 import java.math.BigDecimal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/** P-06 y su buscador (S4-T03 a S4-T05, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
+/** P-06 y su buscador (S4-T03 a S4-T07, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
 class ResultadosPantallaTest {
 
     @get:Rule
@@ -62,6 +64,9 @@ class ResultadosPantallaTest {
         var aplicado: FiltrosBusquedaTrabajadores? = null
         var quitado: FiltroResultados? = null
         var quitoTodos = 0
+        var ordenElegido: OrdenBusqueda? = null
+        var pidioMas = 0
+        var reintentoMas = 0
     }
 
     private fun montar(estado: EstadoResultados, eventos: Eventos = Eventos()) {
@@ -77,7 +82,10 @@ class ResultadosPantallaTest {
                     alAbrirFiltros = { eventos.abrioFiltros++ },
                     alAplicarFiltros = { eventos.aplicado = it },
                     alQuitarFiltro = { eventos.quitado = it },
-                    alQuitarTodosLosFiltros = { eventos.quitoTodos++ }
+                    alQuitarTodosLosFiltros = { eventos.quitoTodos++ },
+                    alElegirOrden = { eventos.ordenElegido = it },
+                    alLlegarAlFinal = { eventos.pidioMas++ },
+                    alReintentarMas = { eventos.reintentoMas++ }
                 )
             }
         }
@@ -336,5 +344,81 @@ class ResultadosPantallaTest {
         )
 
         composeTestRule.onNodeWithText(texto(R.string.filtros_municipio)).performScrollTo().assertIsNotEnabled()
+    }
+
+    // ---- S4-T07: orden y paginas ----
+
+    @Test
+    fun laFilaDeOrden_diceElOrdenActual() {
+        montar(
+            EstadoResultados(
+                cargando = false,
+                trabajadores = listOf(pedro),
+                filtros = FiltrosBusquedaTrabajadores(orden = OrdenBusqueda.CREADO_EN)
+            )
+        )
+
+        composeTestRule.onNodeWithText("Ordenar por: Más recientes").assertIsDisplayed()
+    }
+
+    @Test
+    fun sinOrdenElegido_laFilaDiceMejorCalificados() {
+        montar(EstadoResultados(cargando = false, trabajadores = listOf(pedro)))
+
+        composeTestRule.onNodeWithText("Ordenar por: Mejor calificados").assertIsDisplayed()
+    }
+
+    @Test
+    fun alTocarLaFilaDeOrden_salenLasTresOpciones_yElegirUnaLaAvisa() {
+        val eventos = Eventos()
+        montar(EstadoResultados(cargando = false, trabajadores = listOf(pedro)), eventos)
+
+        composeTestRule.onNodeWithText("Ordenar por: Mejor calificados").performClick()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_orden_calificacion)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_orden_recientes)).assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_orden_precio)).performClick()
+
+        assertEquals(OrdenBusqueda.PRECIO_DESDE, eventos.ordenElegido)
+    }
+
+    @Test
+    fun alAcercarseAlFinal_pideLaPaginaSiguiente() {
+        val eventos = Eventos()
+        montar(EstadoResultados(cargando = false, trabajadores = listOf(pedro)), eventos)
+
+        composeTestRule.waitForIdle()
+
+        assertTrue(eventos.pidioMas >= 1)
+    }
+
+    @Test
+    fun mientrasLlegaUnaPagina_elPieMuestraElIndicador() {
+        montar(EstadoResultados(cargando = false, trabajadores = listOf(pedro), cargandoMas = true))
+
+        composeTestRule.onNodeWithContentDescription(texto(R.string.cargando)).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_mas_error)).assertDoesNotExist()
+    }
+
+    @Test
+    fun sinPaginaEnCamino_elPieNoMuestraNada() {
+        montar(EstadoResultados(cargando = false, trabajadores = listOf(pedro), hayMas = false))
+
+        composeTestRule.onNodeWithContentDescription(texto(R.string.cargando)).assertDoesNotExist()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_mas_error)).assertDoesNotExist()
+    }
+
+    @Test
+    fun siFalloLaPagina_laListaSeQueda_yElPieOfreceReintentar() {
+        val eventos = Eventos()
+        montar(
+            EstadoResultados(cargando = false, trabajadores = listOf(pedro), errorAlCargarMas = true),
+            eventos
+        )
+
+        composeTestRule.onNodeWithText("Pedro Ramirez").assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.resultados_mas_error)).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText(texto(R.string.reintentar)).performScrollTo().performClick()
+
+        assertEquals(1, eventos.reintentoMas)
     }
 }
