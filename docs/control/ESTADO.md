@@ -13,14 +13,15 @@
 |---|---|
 | Sprint | 4 |
 | Fechas | PENDIENTE |
-| Tareas del sprint | 16 |
+| Tareas del sprint | 11 |
 | Terminadas | 9 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
-> **Sprint 4 abierto el 2026-11-07**, confirmado por el líder en `DEC-34`. El
-> 2026-11-09 `S4-T10` y `S4-T11` se desbloquearon (`DEC-33`) y entró `S4-T16`
-> (`DEC-38`), así que el sprint pasó a 16 tareas sin ninguna bloqueada.
+> **Sprint 4 abierto el 2026-11-07**, confirmado por el líder en `DEC-34`, **cierra
+> el 2026-11-10**. El 2026-11-09 entró `S4-T16` (`DEC-38`) y toda la IA, `S4-T10`
+> a `S4-T14`, pasó al Sprint 5 (`DEC-44`): quedan 11 tareas, 9 hechas y dos
+> pendientes, `S4-T09` y `S4-T16`, que se pueden hacer en paralelo.
 >
 > Sprint 3 cerrado con sus 15 tareas en `hecha` (PR #46 a #50), abierto el 2026-10-18
 > por autorización del líder. Sus tickets se
@@ -136,13 +137,14 @@ where email like '%@prueba.donchambitas.mx'
 
 **Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`). Ya no
 espera nada: el líder decidió `H-40`, `H-43` y `H-48` en `DEC-36`, y eso es lo
-que la tarea aplica. Después vienen `S4-T10` (600), `S4-T11` (550), `S4-T14`
-(400, cuando `S4-T11` esté `hecha`) y `S4-T16` (250). `S4-T12` y `S4-T13` son
-opcionales.
+que la tarea aplica. **La otra es `S4-T16`** (250, depende de `S4-T08`), con lo
+de `DEC-37`. Son independientes: con `S4-T09` en curso, la regla de
+`AGENTS.md` §3 da `S4-T16`, y dos personas las hacen en paralelo. Con las dos
+`hecha` cierra el Sprint 4.
 
 **La IA se reanudó entera el 2026-11-09** (`DEC-33`, cierra `PEND-03`). `S3-T10`
 se queda `hecha` con 12 de 13 casos (`DEC-35`). Lo que `S4-T10` y `S4-T11` tienen
-que aplicar está en `DEC-39`.
+que aplicar está en `DEC-39`. **Toda la IA es del Sprint 5** (`DEC-44`).
 
 **Antes conviene que el líder vuelva a correr `04_datos_semilla.sql`**: con
 los catálogos reales, la app ya muestra las categorías sin acentos.
@@ -199,7 +201,8 @@ no queda ninguno abierto.**
 (`PEND-03`), confirma el Sprint 4, cierra `S3-T10` con 12 de 13 casos, agrega
 `S4-T16` para las solicitudes reales y amplía `S5-T02` con P-14. El resumen,
 en "Huecos: todos decididos el 2026-11-09". Ese mismo día `DEC-43` repartió lo
-que había quedado sin tarea y agregó `S5-T13`.
+que había quedado sin tarea y agregó `S5-T13`, y `DEC-44` pasó la IA al
+Sprint 5 para cerrar el 4 con `S4-T09` y `S4-T16`.
 
 **2026-09-27 · Se integra la versión de `S2-T05` a `S2-T07` hecha hoy, no la de
 Ricardo5690.** Ricardo5690 implementó las mismas tres tareas entre el 23 y el
