@@ -22,6 +22,13 @@
     <string name="navegacion_chats">Chats</string>
     <string name="navegacion_cuenta">Cuenta</string>
     <string name="boton_publicar_solicitud">Publicar solicitud</string>
+    <string name="mis_solicitudes_titulo">Mis solicitudes</string>
+    <string name="mis_solicitudes_vacio_titulo">Aún no has publicado solicitudes</string>
+    <string name="mis_solicitudes_vacio_mensaje">Cuéntanos qué necesitas y los trabajadores se acercan a ti</string>
+    <string name="mis_solicitudes_vacio_accion">Publicar mi primera solicitud</string>
+    <string name="mis_solicitudes_presupuesto">$%1$s</string>
+    <string name="mis_solicitudes_a_convenir">A convenir</string>
+    <string name="solicitud_publicada_aviso">Solicitud publicada</string>
 
     <!-- Estados de solicitud -->
     <string name="estado_abierta">Abierta</string>
