@@ -186,6 +186,30 @@
     <string name="perfil_publico_sin_servicios">Aún no tienes servicios publicados. Publica uno en Mis servicios para que los clientes te encuentren.</string>
     <string name="perfil_publico_sin_resenas">Todavía no tienes reseñas. Aparecen cuando un cliente califica un trabajo terminado.</string>
 
+    <!-- P-08 Publicar solicitud (S4-T02, DISENO-SOLICITUDES-BUSQUEDA.md 4 y 7) -->
+    <string name="solicitud_titulo">Publicar solicitud</string>
+    <string name="solicitud_campo_titulo">¿Qué necesitas?</string>
+    <string name="solicitud_campo_descripcion">Cuéntanos con detalle</string>
+    <string name="solicitud_bloque_presupuesto">Presupuesto</string>
+    <string name="solicitud_campo_presupuesto">Presupuesto</string>
+    <string name="solicitud_presupuesto_ayuda">Opcional. Si lo dejas vacío, se acuerda con el trabajador.</string>
+    <string name="solicitud_bloque_donde">Dónde</string>
+    <string name="solicitud_estado">Estado</string>
+    <string name="solicitud_municipio">Municipio</string>
+    <string name="solicitud_municipio_primero">Elige primero el estado</string>
+    <string name="solicitud_hoja_estado">Elige tu estado</string>
+    <string name="solicitud_hoja_municipio">Elige tu municipio</string>
+    <string name="solicitud_publicar">Publicar solicitud</string>
+    <string name="validacion_solicitud_titulo_vacio">Escribe qué necesitas</string>
+    <string name="validacion_solicitud_titulo_largo">El título es demasiado largo (máximo 120 caracteres)</string>
+    <string name="validacion_solicitud_categoria_sin_elegir">Elige la categoría del trabajo</string>
+    <string name="validacion_solicitud_descripcion_vacia">Cuéntanos con detalle qué necesitas</string>
+    <string name="validacion_solicitud_descripcion_larga">La descripción es demasiado larga (máximo 1000 caracteres)</string>
+    <string name="validacion_solicitud_presupuesto_formato">Escribe una cantidad, por ejemplo 350 o 350.50</string>
+    <string name="validacion_solicitud_presupuesto_grande">La cantidad es demasiado grande</string>
+    <string name="validacion_solicitud_estado_sin_elegir">Elige tu estado</string>
+    <string name="validacion_solicitud_municipio_sin_elegir">Elige tu municipio</string>
+
     <!-- P-11 Mi perfil (S3-T03) -->
     <string name="mi_perfil_titulo">Mi perfil profesional</string>
     <string name="mi_perfil_incompleto_titulo">Te falta completar tu perfil</string>
