@@ -64,6 +64,7 @@ import mx.donchambitas.app.ui.pantallas.MisServiciosPantalla
 import mx.donchambitas.app.ui.pantallas.PerfilPublicoPantalla
 import mx.donchambitas.app.ui.pantallas.RecuperarContrasenaPantalla
 import mx.donchambitas.app.ui.pantallas.RegistroPantalla
+import mx.donchambitas.app.ui.pantallas.ResultadosPantalla
 import mx.donchambitas.app.ui.pantallas.ServicioPantalla
 import mx.donchambitas.app.ui.pantallas.SolicitudNuevaPantalla
 import mx.donchambitas.app.ui.pantallas.SplashPantalla
@@ -297,6 +298,8 @@ private const val CLAVE_CAMBIOS_GUARDADOS = "cambios_guardados"
  *   (S3-T04). No lleva barra inferior: se abre encima.
  * - P-12 trae su BarraSuperior "Mis servicios" (S3-T05). La inferior, con
  *   Servicios activa, sigue aquí.
+ * - P-06 trae su BarraSuperior "Resultados" (S4-T03). Se abre encima, sin barra
+ *   inferior.
  * - P-07 trae su BarraSuperior "Perfil del trabajador" (S3-T14). Se abre encima,
  *   sin barra inferior.
  * - P-08 trae su BarraSuperior "Publicar solicitud" (S4-T02). Se abre encima,
@@ -318,6 +321,7 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
     Ruta.MiPerfil.ruta,
     Ruta.CrearEditarServicio.ruta,
     Ruta.MisServicios.ruta,
+    Ruta.Resultados.ruta,
     Ruta.PerfilTrabajador.ruta,
     Ruta.PublicarSolicitud.ruta
 )
@@ -394,7 +398,7 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
                 navController = navController,
                 acciones = listOf(
                     AccionNavegacion("Ver resultados de búsqueda (P-06)") {
-                        navController.navigate(Ruta.Resultados.ruta)
+                        navController.navigate(Ruta.Resultados.crearRuta())
                     },
                     AccionNavegacion("Ver perfil público del trabajador (P-07)") {
                         navController.navigate(Ruta.PerfilTrabajador.crearRuta("usr-trab-1"))
@@ -409,16 +413,15 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
             )
         }
 
-        composable(Ruta.Resultados.ruta) {
-            MarcadorPantalla(
-                ruta = Ruta.Resultados,
-                descripcion = "Lista de trabajadores con filtros de categoría, estado, municipio, precio y calificación. Pantalla encima (sin barra).",
-                navController = navController,
-                acciones = listOf(
-                    AccionNavegacion("Ver perfil público de un trabajador (P-07)") {
-                        navController.navigate(Ruta.PerfilTrabajador.crearRuta("usr-trab-2"))
-                    }
-                )
+        composable(
+            route = Ruta.Resultados.ruta,
+            arguments = Ruta.Resultados.argumentos
+        ) {
+            // S4-T03: la lista de la primera pagina. El texto, los filtros y las paginas
+            // son de S4-T04, S4-T05 y S4-T07.
+            ResultadosPantalla(
+                alRegresar = { navController.popBackStack() },
+                alAbrirPerfil = { id -> navController.navigate(Ruta.PerfilTrabajador.crearRuta(id)) }
             )
         }
 
@@ -426,8 +429,8 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
             route = Ruta.PerfilTrabajador.ruta,
             arguments = Ruta.PerfilTrabajador.argumentos
         ) {
-            // S3-T14: hoy es la vista previa del trabajador (HU-08). El boton de contactar
-            // y la version para el cliente son de S4-T03 y S5.
+            // Vista previa del trabajador o perfil del cliente, segun la sesion (S4-T03).
+            // "Contactar" sale pero no esta enlazado: la conversacion es de S5-T06.
             PerfilPublicoPantalla(alRegresar = { navController.popBackStack() })
         }
 
@@ -839,6 +842,7 @@ fun MarcadorPantalla(
                                 .border(1.dp, if (esActual) Terracota else Borde, RoundedCornerShape(8.dp))
                                 .clickable {
                                     val rutaDestino = when (destino) {
+                                        Ruta.Resultados -> Ruta.Resultados.crearRuta()
                                         Ruta.PerfilTrabajador -> Ruta.PerfilTrabajador.crearRuta("demo-trabajador")
                                         Ruta.CrearEditarServicio -> Ruta.CrearEditarServicio.crearRuta("demo-servicio")
                                         Ruta.Chat -> Ruta.Chat.crearRuta("demo-chat")

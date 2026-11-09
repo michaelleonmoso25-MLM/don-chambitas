@@ -5,7 +5,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
+import mx.donchambitas.app.datos.falso.RepositorioAuthFalso
 import mx.donchambitas.app.datos.falso.RepositorioTrabajadorFalso
+import mx.donchambitas.app.dominio.modelo.Sesion
 import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.ReglaCorrutinas
 import mx.donchambitas.app.util.TipoError
@@ -17,17 +19,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/** P-07 como vista previa del trabajador (S3-T14, DISENO-PERFIL-SERVICIOS.md 11). */
+/** P-07: vista previa del trabajador (S3-T14) y perfil del cliente (S4-T03, H-39). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PerfilPublicoViewModelTest {
 
     @get:Rule
     val reglaCorrutinas = ReglaCorrutinas()
 
-    private val repositorioTrabajador = RepositorioTrabajadorFalso(FuenteDatosFalsa()).apply { retrasoMs = 0 }
+    private val fuente = FuenteDatosFalsa()
+    private val repositorioTrabajador = RepositorioTrabajadorFalso(fuente).apply { retrasoMs = 0 }
+
+    private fun iniciarSesionComo(usuarioId: String) {
+        fuente.fijarSesionActiva(Sesion(fuente.usuarios.first { it.id == usuarioId }))
+    }
 
     private fun crearViewModel(trabajadorId: String) = PerfilPublicoViewModel(
         repositorioTrabajador,
+        RepositorioAuthFalso(fuente),
         SavedStateHandle(mapOf(Ruta.PerfilTrabajador.ARG_TRABAJADOR_ID to trabajadorId))
     )
 
@@ -75,13 +83,9 @@ class PerfilPublicoViewModelTest {
 
     @Test
     fun debeTraerLasListasVacias_cuandoNoHayServiciosNiResenas() = runTest(reglaCorrutinas.testDispatcher) {
-        val fuente = FuenteDatosFalsa()
         fuente.servicios.removeAll { it.perfilId == "usr-trab-1" }
         fuente.resenas.removeAll { it.trabajadorId == "usr-trab-1" }
-        val viewModel = PerfilPublicoViewModel(
-            RepositorioTrabajadorFalso(fuente).apply { retrasoMs = 0 },
-            SavedStateHandle(mapOf(Ruta.PerfilTrabajador.ARG_TRABAJADOR_ID to "usr-trab-1"))
-        )
+        val viewModel = crearViewModel("usr-trab-1")
 
         advanceUntilIdle()
 
@@ -90,5 +94,36 @@ class PerfilPublicoViewModelTest {
         assertTrue(perfil!!.servicios.isEmpty())
         assertTrue(perfil.resenas.isEmpty())
         assertEquals(0, perfil.calificacion.totalResenas)
+    }
+
+    @Test
+    fun debeSerVistaPrevia_cuandoElPerfilEsElDeLaSesion() = runTest(reglaCorrutinas.testDispatcher) {
+        iniciarSesionComo("usr-trab-1")
+        val viewModel = crearViewModel("usr-trab-1")
+
+        advanceUntilIdle()
+
+        assertTrue(viewModel.estado.value.esVistaPrevia)
+    }
+
+    @Test
+    fun noDebeSerVistaPrevia_cuandoLoAbreUnCliente() = runTest(reglaCorrutinas.testDispatcher) {
+        iniciarSesionComo("usr-cli-1")
+        val viewModel = crearViewModel("usr-trab-1")
+
+        advanceUntilIdle()
+
+        assertFalse(viewModel.estado.value.esVistaPrevia)
+        assertNotNull(viewModel.estado.value.perfil)
+    }
+
+    @Test
+    fun noDebeSerVistaPrevia_cuandoElTrabajadorAbreElPerfilDeOtro() = runTest(reglaCorrutinas.testDispatcher) {
+        iniciarSesionComo("usr-trab-1")
+        val viewModel = crearViewModel("usr-trab-2")
+
+        advanceUntilIdle()
+
+        assertFalse(viewModel.estado.value.esVistaPrevia)
     }
 }

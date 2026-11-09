@@ -46,6 +46,37 @@ class NavegacionTest {
     }
 
     @Test
+    fun resultadosRecibeLaCategoriaComoArgumentoOpcional() {
+        // P-06 Resultados (H-45)
+        assertEquals(1, Ruta.Resultados.argumentos.size)
+        val argCategoria = Ruta.Resultados.argumentos.first()
+        assertEquals(Ruta.Resultados.ARG_CATEGORIA_ID, argCategoria.name)
+        assertEquals(NavType.IntType, argCategoria.argument.type)
+        assertTrue(argCategoria.argument.isDefaultValuePresent)
+        assertEquals(Ruta.Resultados.SIN_CATEGORIA, argCategoria.argument.defaultValue)
+    }
+
+    @Test
+    fun resultadosArmaSuRutaConOSinCategoria() {
+        assertEquals("resultados", Ruta.Resultados.crearRuta())
+        assertEquals("resultados", Ruta.Resultados.crearRuta(null))
+        assertEquals("resultados?categoriaId=3", Ruta.Resultados.crearRuta(3))
+    }
+
+    @Test
+    fun resultadosSeEncuentraConYSinCategoria() {
+        assertEquals(Ruta.Resultados, encontrarRuta(Ruta.Resultados.crearRuta()))
+        assertEquals(Ruta.Resultados, encontrarRuta(Ruta.Resultados.crearRuta(3)))
+        assertEquals(Ruta.Resultados, encontrarRuta(Ruta.Resultados.ruta))
+    }
+
+    @Test
+    fun elClienteEntraAResultadosConYSinCategoria() {
+        assertNull(resolverGuarda(Ruta.Resultados.crearRuta(), EstadoSesion.CLIENTE))
+        assertNull(resolverGuarda(Ruta.Resultados.crearRuta(3), EstadoSesion.CLIENTE))
+    }
+
+    @Test
     fun rutasConArgumentosDeclaranTiposCorrectamente() {
         // P-07 PerfilTrabajador
         assertEquals(1, Ruta.PerfilTrabajador.argumentos.size)
