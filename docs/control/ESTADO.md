@@ -14,7 +14,7 @@
 | Sprint | 3 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 11 |
+| Terminadas | 12 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -173,8 +173,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Siguiente: `S3-T10`** (prioridad 550, depende de `S3-T11`, ya `hecha`), y
-después `S3-T12`, `S3-T13` y `S3-T14`, en ese orden.
+**Siguiente: `S3-T12`** (prioridad 500, depende de `S3-T11`, `hecha`), y después `S3-T13` y `S3-T14`, en ese orden. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
