@@ -190,6 +190,8 @@
     <string name="perfil_publico_sin_resenas_cliente">Todavía no tiene reseñas.</string>
     <string name="perfil_publico_contactar">Contactar</string>
     <string name="resultados_titulo">Resultados</string>
+    <string name="resultados_buscador_marcador">Busca por nombre u oficio</string>
+    <string name="resultados_buscador_borrar">Borrar texto</string>
     <string name="resultados_vacio_titulo">No encontramos trabajadores</string>
     <string name="resultados_vacio_mensaje">Prueba quitando filtros o revisa la ubicación</string>
 
