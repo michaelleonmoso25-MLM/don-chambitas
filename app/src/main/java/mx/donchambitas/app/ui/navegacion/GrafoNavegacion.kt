@@ -61,6 +61,7 @@ import mx.donchambitas.app.ui.pantallas.IniciarSesionPantalla
 import mx.donchambitas.app.ui.pantallas.MiCuentaPantalla
 import mx.donchambitas.app.ui.pantallas.MiPerfilPantalla
 import mx.donchambitas.app.ui.pantallas.MisServiciosPantalla
+import mx.donchambitas.app.ui.pantallas.PerfilPublicoPantalla
 import mx.donchambitas.app.ui.pantallas.RecuperarContrasenaPantalla
 import mx.donchambitas.app.ui.pantallas.RegistroPantalla
 import mx.donchambitas.app.ui.pantallas.ServicioPantalla
@@ -295,6 +296,8 @@ private const val CLAVE_CAMBIOS_GUARDADOS = "cambios_guardados"
  *   (S3-T04). No lleva barra inferior: se abre encima.
  * - P-12 trae su BarraSuperior "Mis servicios" (S3-T05). La inferior, con
  *   Servicios activa, sigue aquí.
+ * - P-07 trae su BarraSuperior "Perfil del trabajador" (S3-T14). Se abre encima,
+ *   sin barra inferior.
  *
  * Sin esto salen dos barras encimadas, con dos títulos y dos flechas de
  * regreso. El andamio nació cuando los 19 destinos eran MarcadorPantalla y su
@@ -311,7 +314,8 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
     Ruta.MiCuenta.ruta,
     Ruta.MiPerfil.ruta,
     Ruta.CrearEditarServicio.ruta,
-    Ruta.MisServicios.ruta
+    Ruta.MisServicios.ruta,
+    Ruta.PerfilTrabajador.ruta
 )
 
 /**
@@ -389,7 +393,7 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
                         navController.navigate(Ruta.Resultados.ruta)
                     },
                     AccionNavegacion("Ver perfil público del trabajador (P-07)") {
-                        navController.navigate(Ruta.PerfilTrabajador.crearRuta("trabajador-demo-01"))
+                        navController.navigate(Ruta.PerfilTrabajador.crearRuta("usr-trab-1"))
                     },
                     AccionNavegacion("Publicar solicitud (P-08)") {
                         navController.navigate(Ruta.PublicarSolicitud.ruta)
@@ -408,7 +412,7 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
                 navController = navController,
                 acciones = listOf(
                     AccionNavegacion("Ver perfil público de un trabajador (P-07)") {
-                        navController.navigate(Ruta.PerfilTrabajador.crearRuta("trabajador-demo-02"))
+                        navController.navigate(Ruta.PerfilTrabajador.crearRuta("usr-trab-2"))
                     }
                 )
             )
@@ -417,19 +421,10 @@ private fun NavGraphBuilder.subgrafoCliente(navController: NavHostController) {
         composable(
             route = Ruta.PerfilTrabajador.ruta,
             arguments = Ruta.PerfilTrabajador.argumentos
-        ) { backStackEntry ->
-            val trabajadorId = backStackEntry.arguments?.getString(Ruta.PerfilTrabajador.ARG_TRABAJADOR_ID)
-            MarcadorPantalla(
-                ruta = Ruta.PerfilTrabajador,
-                descripcion = "Datos, habilidades, servicios, reseñas y botón de contactar. Pantalla encima (sin barra).",
-                argumentos = mapOf(Ruta.PerfilTrabajador.ARG_TRABAJADOR_ID to trabajadorId),
-                navController = navController,
-                acciones = listOf(
-                    AccionNavegacion("Contactar trabajador -> Chat (P-16)") {
-                        navController.navigate(Ruta.Chat.crearRuta("conv-demo-01"))
-                    }
-                )
-            )
+        ) {
+            // S3-T14: hoy es la vista previa del trabajador (HU-08). El boton de contactar
+            // y la version para el cliente son de S4-T03 y S5.
+            PerfilPublicoPantalla(alRegresar = { navController.popBackStack() })
         }
 
         composable(Ruta.PublicarSolicitud.ruta) {

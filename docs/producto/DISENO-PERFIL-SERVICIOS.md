@@ -1083,3 +1083,68 @@ pantalla.
 pertenezca al estado elegido. Las dos son llaves foráneas sueltas. La
 interfaz lo cuida (2.6), pero una carga por otra vía puede dejar a un trabajador
 de Puebla en un municipio de Jalisco. No urge.
+
+
+---
+
+## 11. P-07 como vista previa: los estados vacíos (`S3-T14`)
+
+`S3-T01` dejó fuera "el estado vacío de la vista previa" de HU-08 y lo mandó a
+`S3-T14`. Este apartado lo diseña y fija cómo se ve P-07 cuando el trabajador la
+abre desde P-11. **No diseña P-07 completa para el cliente**: eso es de `S4-T01`
+y `S4-T03`.
+
+### 11.1 Quién la ve y qué cambia
+
+Hoy P-07 solo la abre el propio trabajador, desde "Ver mi perfil como cliente"
+(P-11), con su identificador (8). Por eso los textos vacíos **le hablan a él**:
+dicen qué le falta y dónde se arregla. La versión para el cliente, que no debe
+decir "tu perfil", y el botón de contactar son de `S4-T03`.
+
+### 11.2 Anatomía, de arriba hacia abajo
+
+| Bloque | Qué lleva | Si no hay datos |
+|---|---|---|
+| Encabezado | Foto o inicial sobre `Mostaza`, nombre y apellidos, título, "municipio, estado", años de experiencia si son más de 0 y la etiqueta "Disponible" o "No disponible" | No aplica: nombre, título, estado y municipio siempre vienen (`H-25`) |
+| Calificación | `Estrellas` con el promedio y el total de reseñas | "Aún sin calificaciones" |
+| Sobre mí | La descripción | Vacío 11.3 |
+| Habilidades | Las habilidades como etiquetas | Vacío 11.3 |
+| Servicios | Un `TarjetaServicio` por servicio activo, con la foto de la posición 1 | Vacío 11.3 |
+| Reseñas | Estrellas, nombre del cliente y comentario si lo hay | Vacío 11.3 |
+
+El contenedor es `ContenedorEstado`: cargando, error con "Reintentar" y contenido.
+Un `404` o una fila que no existe sale como `VALIDACION`, como en el resto.
+
+### 11.3 Los cuatro vacíos
+
+Cada sección vacía es un recuadro `Arena` con borde `Borde` y un texto en `Cafe`,
+sin botón: dice qué falta y en qué pantalla se arregla (HU-08: "no una lista en
+blanco").
+
+| Sección | Clave en `strings.xml` | Texto |
+|---|---|---|
+| Sobre mí | `perfil_publico_sin_descripcion` | Aún no escribes tu descripción. Agrégala en Mi perfil para que los clientes sepan quién eres. |
+| Habilidades | `perfil_publico_sin_habilidades` | Aún no agregas habilidades. Agrégalas en Mi perfil para aparecer en más búsquedas. |
+| Servicios | `perfil_publico_sin_servicios` | Aún no tienes servicios publicados. Publica uno en Mis servicios para que los clientes te encuentren. |
+| Reseñas | `perfil_publico_sin_resenas` | Todavía no tienes reseñas. Aparecen cuando un cliente califica un trabajo terminado. |
+
+Las demás cadenas de la pantalla (`perfil_publico_titulo`, `_disponible`,
+`_no_disponible`, `_ubicacion`, `_experiencia_uno`, `_experiencia_varios`,
+`_sin_calificacion` y los cuatro títulos de sección) están en `strings.xml`.
+
+### 11.4 Qué NO hace
+
+- **El botón de contactar y la reseña.** Son de `S4-T03` y de `S5`.
+- **Sin servicios activos no se listan los pausados.** P-07 lee lo que devuelve
+  `obtenerPerfilPublico`, que ya filtra por `activo`.
+- **Un perfil sin estado o sin municipio.** La RPC lo manda `null` y el modelo lo
+  pide no nulo: la vista previa falla con el error de carga (`H-25`). No se
+  resolvió aquí.
+
+### 11.5 Hallazgos de `S3-T14`
+
+**`H-38` · La guarda de roles no dejaba al trabajador abrir P-07, y HU-08 se lo pide.** `Ruta.PerfilTrabajador` estaba en `RUTAS_CLIENTE` ("exclusivas del cliente") y `NavegacionTest` fijaba que el trabajador no entra a ninguna de ellas, así que "Ver mi perfil como cliente" lo devolvía a P-10. **Aplicado en `S3-T14`:** P-07 pasó a `RUTAS_COMPARTIDAS`, con su propia barra superior, y se agregó una prueba que fija que el trabajador y el cliente la abren y que sin sesión se va a iniciar sesión. **El líder tiene que confirmarlo**: es un cambio de quién puede ver qué.
+
+**`H-39` · Los textos vacíos de P-07 le hablan al trabajador.** Dicen "tu
+descripción" y "tus servicios". Cuando `S4-T03` abra P-07 a los clientes, esos
+vacíos tienen que cambiar o ocultarse según quién mira. **Lo decide `S4-T01`.**
