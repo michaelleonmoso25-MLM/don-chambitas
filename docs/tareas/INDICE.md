@@ -23,16 +23,17 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 |---|---|---|---|---|---|
 | 1 | 16 | 0 | 0 | 0 | 16 |
 | 2 | 16 | 0 | 0 | 0 | 16 |
-| 3 | 15 | 1 | 4 | 0 | 10 |
+| 3 | 15 | 4 | 0 | 0 | 11 |
 | 4 | 15 | 11 | 2 | 2 | 0 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **37** | **6** | **2** | **42** |
+| **Total** | **87** | **40** | **2** | **2** | **43** |
 
-> **La línea de inteligencia artificial está en pausa desde el 2026-10-25**, por
-> indicación del equipo: `S3-T10`, `S3-T11`, `S3-T12`, `S3-T13`, `S4-T10` y
-> `S4-T11` quedan `bloqueada` hasta que el líder la retome. `S3-T14` y `S4-T14`
-> siguen `pendiente`, pero dependen de una de ellas y no se pueden tomar.
+> **La línea de inteligencia artificial se retomó el 2026-11-07** en el Sprint 3,
+> según el aviso de la persona del equipo: `S3-T10`, `S3-T12` y `S3-T13` pasan a
+> `pendiente` y `S3-T11` quedó `hecha`. `S4-T10` y `S4-T11` siguen `bloqueada`
+> hasta que el líder diga lo contrario: la pausa del 2026-10-25 cubría las
+> seis y el aviso solo nombró el Sprint 3.
 > PEND-01 se resolvió el 2026-09-14 a favor de Supabase (`DEC-16`) y PEND-02 el
 > 2026-09-22 a favor de los 26 municipios sembrados (`DEC-26`).
 
@@ -99,10 +100,10 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S3-T07` | 750 | Validaciones y reglas de negocio de la publicación de servicios | GRI | hecha | S1-T13 |
 | `S3-T08` | 700 | Contrato de la API de perfil del trabajador y de servicios | BCJL | hecha | — |
 | `S3-T09` | 650 | Persistencia real de perfiles y servicios en Supabase | LMM | hecha | S3-T08 |
-| `S3-T11` | 600 | Diseño del prompt de redacción de perfil y descripción de servicio | GRI | bloqueada | — |
-| `S3-T10` | 550 | Entrenar el GPT: instrucciones, base de conocimiento y pruebas en ChatGPT | RRC | bloqueada | S3-T11 |
-| `S3-T12` | 500 | Contrato del proxy de IA (la llave de la API nunca vive dentro de la app) | BCJL | bloqueada | S3-T11 |
-| `S3-T13` | 450 | Boton 'Redactar con IA' dentro del formulario de servicio (interfaz) | LMM | bloqueada | S3-T12 |
+| `S3-T11` | 600 | Diseño del prompt de redacción de perfil y descripción de servicio | GRI | hecha | — |
+| `S3-T10` | 550 | Entrenar el GPT: instrucciones, base de conocimiento y pruebas en ChatGPT | RRC | pendiente | S3-T11 |
+| `S3-T12` | 500 | Contrato del proxy de IA (la llave de la API nunca vive dentro de la app) | BCJL | pendiente | S3-T11 |
+| `S3-T13` | 450 | Boton 'Redactar con IA' dentro del formulario de servicio (interfaz) | LMM | pendiente | S3-T12 |
 | `S3-T14` | 400 | Estado vacío y vista previa del perfil público del trabajador | RRC | pendiente | S3-T13 |
 | `S3-T15` | 300 | Pruebas del módulo de perfil y servicios con datos falsos | GRI | hecha | — |
 

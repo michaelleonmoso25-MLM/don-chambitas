@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-10-21
+**Última actualización:** 2026-11-07
 
 ---
 
@@ -14,9 +14,9 @@
 | Sprint | 3 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 10 |
+| Terminadas | 11 |
 | En curso | 0 |
-| Bloqueadas | 4 |
+| Bloqueadas | 0 |
 
 > Sprint 3 abierto el 2026-10-18 por autorización del líder. Sus tickets se
 > redactan uno por uno al tomar cada tarea, como en el Sprint 2.
@@ -173,16 +173,14 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Ninguna tarea del Sprint 3 se puede tomar.** Las cinco abiertas son de la IA
-o dependen de ella. Abrir el Sprint 4 lo decide el líder (`AGENTS.md` §3).
+**Siguiente: `S3-T10`** (prioridad 550, depende de `S3-T11`, ya `hecha`), y
+después `S3-T12`, `S3-T13` y `S3-T14`, en ese orden.
 
-**La IA quedó en pausa el 2026-10-25**, por indicación del equipo: `S3-T10`,
-`S3-T11`, `S3-T12` y `S3-T13` (y `S4-T10` y `S4-T11`) están `bloqueada`. El
-diseño del prompt que se había hecho para `S3-T11` se revirtió; queda en el
-historial de git (`df37851`) y su ticket sigue en `docs/tareas/S3-T11.md`.
-`S3-T14` depende de `S3-T13`, así que tampoco se puede tomar. **El líder tiene
-que registrar la pausa en `PENDIENTES.md` y decidir si `S3-T14` se desliga de
-`S3-T13`.**
+**La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
+del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
+git (`df37851`, revertida el 2026-10-25) y queda `hecha`. `S4-T10` y `S4-T11`
+siguen `bloqueada`: el aviso solo nombró el Sprint 3. **El líder tiene que
+confirmarlo en `PENDIENTES.md` y decir si desbloquea las del Sprint 4.**
 
 **Antes conviene que el líder vuelva a correr `04_datos_semilla.sql`**: con
 los catálogos reales, la app ya muestra las categorías sin acentos.

@@ -230,8 +230,8 @@ Al llegar la respuesta:
 - Si es `LIMITE_IA`, el botón pasa a "Límite alcanzado" y el campo se queda
   como estaba.
 
-Qué se manda como entrada lo decide `S3-T11`, que diseña el prompt. Este
-documento solo fija **de qué campos sale**: título, años de experiencia y
+Qué se manda como entrada lo decidió `S3-T11`: ver
+`docs/producto/PROMPT-REDACCION.md`, sección 2. Este documento solo fija **de qué campos sale**: título, años de experiencia y
 habilidades en P-11; título y categoría, más la descripción si ya hay algo, en
 P-13.
 
