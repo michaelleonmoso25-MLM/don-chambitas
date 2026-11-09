@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 6 |
+| Terminadas | 7 |
 | En curso | 0 |
 | Bloqueadas | 2 |
 
@@ -178,7 +178,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Siguiente: `S4-T07`** (prioridad 750, sin dependencias), y después el resto del Sprint 4 por prioridad. `S4-T06` quedó `hecha` el 2026-11-07: P-09 lista las solicitudes del cliente con su estado y muestra "Solicitud publicada" al volver de P-08. **Contra el servidor falso:** lo publicado desaparece al cerrar la app hasta `S4-T09`. `H-42` (postulaciones sin revisar) sigue abierto. P-19 es todavía un andamio (Sprint 5). El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Siguiente: `S4-T08`** (prioridad 700, depende de `S4-T03`, `hecha`), y después el resto del Sprint 4 por prioridad. `S4-T07` quedó `hecha` el 2026-11-07: P-06 tiene "Ordenar por" (mejor calificados, precio más bajo, más recientes) y páginas de 20 con "cargando más" y reintento. **Las páginas se probaron solo con pruebas** (8 trabajadores de prueba, una página son 20); la paginación real es de `S4-T09`. `H-43` (precio en la tarjeta) y `H-40` (acentos) siguen abiertos. El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de

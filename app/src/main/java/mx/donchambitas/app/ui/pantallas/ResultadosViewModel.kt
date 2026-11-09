@@ -21,9 +21,9 @@ import mx.donchambitas.app.util.Resultado
  * ViewModel de Resultados (P-06), HU-16, HU-17 y HU-18.
  * Especificado en docs/producto/DISENO-SOLICITUDES-BUSQUEDA.md, seccion 3.
  *
- * Pide la primera pagina de RepositorioCatalogos.buscarTrabajadores, ordenada por calificacion,
- * con el texto del buscador (S4-T04) y los filtros (S4-T05). La categoria opcional de la ruta
- * (H-45) entra como un filtro mas: se ve como chip y se puede quitar.
+ * Pide paginas de RepositorioCatalogos.buscarTrabajadores con el texto del buscador (S4-T04), los
+ * filtros (S4-T05) y el orden y las paginas de [TAMANO_PAGINA] (S4-T07). La categoria opcional de la
+ * ruta (H-45) entra como un filtro mas: se ve como chip y se puede quitar.
  *
  * El texto se manda tal cual: que ignore acentos es H-40 y es de la base (S4-T08 y S4-T09).
  * Hoy el repositorio es el falso: la busqueda real es S4-T09.
@@ -39,7 +39,9 @@ class ResultadosViewModel @Inject constructor(
             filtros = FiltrosBusquedaTrabajadores(
                 // Nulo cuando la ruta no trae categoria: se listan todos los trabajadores.
                 categoriaId = estadoGuardado.get<Int>(Ruta.Resultados.ARG_CATEGORIA_ID)
-                    ?.takeIf { it != Ruta.Resultados.SIN_CATEGORIA }
+                    ?.takeIf { it != Ruta.Resultados.SIN_CATEGORIA },
+                // Por omision, los mejor calificados (3.3 del diseno).
+                orden = OrdenBusqueda.PROMEDIO
             )
         )
     )
@@ -48,7 +50,11 @@ class ResultadosViewModel @Inject constructor(
     /** El texto con el que se hizo la ultima busqueda; no cambia mientras se escribe. */
     private var textoAplicado: String = ""
 
+    /** La ultima pagina que ya esta en la lista; la siguiente es esta mas uno. */
+    private var paginaActual: Int = 1
+
     private var busqueda: Job? = null
+    private var cargaMas: Job? = null
     private var cargaCatalogos: Job? = null
     private var cargaMunicipios: Job? = null
 
@@ -78,6 +84,30 @@ class ResultadosViewModel @Inject constructor(
     /** Repite la busqueda aplicada, no lo que se haya escrito despues sin buscar. */
     fun alReintentarCarga() {
         cargar()
+    }
+
+    /** Cambia el orden y conserva los filtros y el texto; vuelve a la primera pagina (3.3 del diseno). */
+    fun alElegirOrden(orden: OrdenBusqueda) {
+        _estado.update { it.copy(filtros = it.filtros.copy(orden = orden)) }
+        cargar()
+    }
+
+    /**
+     * La lista llego cerca del final: pide la pagina siguiente si hay mas y no hay otra en camino.
+     * Si la anterior fallo no se pide sola: eso es de [alReintentarMas], para no insistir en bucle.
+     */
+    fun alLlegarAlFinal() {
+        val actual = _estado.value
+        if (!actual.hayMas || actual.cargando || actual.cargandoMas) return
+        if (actual.errorCarga != null || actual.errorAlCargarMas) return
+        cargarMas()
+    }
+
+    /** Repite la pagina que fallo; la lista no se vacia. */
+    fun alReintentarMas() {
+        val actual = _estado.value
+        if (!actual.errorAlCargarMas || actual.cargandoMas) return
+        cargarMas()
     }
 
     /** Abre la hoja; trae los catalogos si faltan y los municipios del estado aplicado. */
@@ -116,9 +146,14 @@ class ResultadosViewModel @Inject constructor(
         cargar()
     }
 
-    /** Quita los cinco, incluida la categoria que trajo la ruta. */
+    /** Quita los cinco, incluida la categoria que trajo la ruta; el orden no es un filtro y se queda. */
     fun alQuitarTodosLosFiltros() {
-        _estado.update { it.copy(filtros = FiltrosBusquedaTrabajadores(), hojaFiltrosAbierta = false) }
+        _estado.update {
+            it.copy(
+                filtros = FiltrosBusquedaTrabajadores(orden = it.filtros.orden),
+                hojaFiltrosAbierta = false
+            )
+        }
         cargar()
     }
 
@@ -127,18 +162,28 @@ class ResultadosViewModel @Inject constructor(
         cargarMunicipios(estadoId)
     }
 
+    /** La primera pagina. Cancela la busqueda anterior y cualquier pagina en vuelo, para que no la pisen. */
     private fun cargar() {
-        // Una busqueda nueva cancela la anterior para que una respuesta tardia no la pise.
         busqueda?.cancel()
-        _estado.update { it.copy(cargando = true, errorCarga = null) }
-        busqueda = viewModelScope.launch {
-            val filtros = _estado.value.filtros.copy(
-                texto = textoAplicado.ifBlank { null },
-                orden = OrdenBusqueda.PROMEDIO
+        cargaMas?.cancel()
+        paginaActual = 1
+        _estado.update {
+            it.copy(
+                cargando = true,
+                errorCarga = null,
+                cargandoMas = false,
+                errorAlCargarMas = false,
+                hayMas = true
             )
-            when (val resultado = repositorioCatalogos.buscarTrabajadores(filtros, pagina = 1)) {
+        }
+        busqueda = viewModelScope.launch {
+            when (val resultado = repositorioCatalogos.buscarTrabajadores(filtrosDeLaBusqueda(), pagina = 1)) {
                 is Resultado.Exito -> _estado.update {
-                    it.copy(cargando = false, trabajadores = resultado.dato)
+                    it.copy(
+                        cargando = false,
+                        trabajadores = resultado.dato,
+                        hayMas = resultado.dato.size >= TAMANO_PAGINA
+                    )
                 }
                 is Resultado.Error -> _estado.update {
                     it.copy(cargando = false, trabajadores = emptyList(), errorCarga = resultado.tipo)
@@ -146,6 +191,32 @@ class ResultadosViewModel @Inject constructor(
             }
         }
     }
+
+    /** La pagina siguiente se agrega al final; si falla, la lista se queda y el pie ofrece reintentar. */
+    private fun cargarMas() {
+        val siguiente = paginaActual + 1
+        _estado.update { it.copy(cargandoMas = true, errorAlCargarMas = false) }
+        cargaMas = viewModelScope.launch {
+            when (val resultado = repositorioCatalogos.buscarTrabajadores(filtrosDeLaBusqueda(), pagina = siguiente)) {
+                is Resultado.Exito -> {
+                    paginaActual = siguiente
+                    _estado.update {
+                        // Sin repetidos: la lista usa el identificador como llave y repetirla la rompe.
+                        val yaEstan = it.trabajadores.mapTo(HashSet()) { t -> t.trabajadorId }
+                        it.copy(
+                            cargandoMas = false,
+                            trabajadores = it.trabajadores + resultado.dato.filter { t -> t.trabajadorId !in yaEstan },
+                            hayMas = resultado.dato.size >= TAMANO_PAGINA
+                        )
+                    }
+                }
+                is Resultado.Error -> _estado.update { it.copy(cargandoMas = false, errorAlCargarMas = true) }
+            }
+        }
+    }
+
+    private fun filtrosDeLaBusqueda(): FiltrosBusquedaTrabajadores =
+        _estado.value.filtros.copy(texto = textoAplicado.ifBlank { null })
 
     /** Los catalogos de la hoja: si fallan, la hoja lo dice; los resultados no se bloquean. */
     private fun cargarCatalogos() {

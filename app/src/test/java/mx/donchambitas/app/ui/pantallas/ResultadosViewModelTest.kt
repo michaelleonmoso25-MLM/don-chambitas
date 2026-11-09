@@ -2,12 +2,17 @@ package mx.donchambitas.app.ui.pantallas
 
 import androidx.lifecycle.SavedStateHandle
 import java.math.BigDecimal
+import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
 import mx.donchambitas.app.dominio.modelo.FiltrosBusquedaTrabajadores
+import mx.donchambitas.app.dominio.modelo.OrdenBusqueda
+import mx.donchambitas.app.dominio.modelo.PerfilTrabajador
+import mx.donchambitas.app.dominio.modelo.RolUsuario
+import mx.donchambitas.app.dominio.modelo.Usuario
 import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.ReglaCorrutinas
 import mx.donchambitas.app.util.TipoError
@@ -18,7 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
-/** P-06 contra el buscador falso, sin retraso (S4-T03 a S4-T05, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
+/** P-06 contra el buscador falso, sin retraso (S4-T03 a S4-T07, DISENO-SOLICITUDES-BUSQUEDA.md 3). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResultadosViewModelTest {
 
@@ -540,5 +545,313 @@ class ResultadosViewModelTest {
         val estado = viewModel.estado.value
         assertNull(estado.errorCatalogos)
         assertEquals(16, estado.categorias.size)
+    }
+
+    // ---- S4-T07: orden y paginas ----
+
+    /** Suma trabajadores al servidor falso para tener mas de una pagina: con los 9 de prueba no la hay. */
+    private fun agregarTrabajadores(cuantos: Int) {
+        val base = Instant.parse("2026-01-01T00:00:00Z")
+        repeat(cuantos) { i ->
+            val id = "usr-extra-$i"
+            val creado = base.plusSeconds(i * 3_600L)
+            fuente.usuarios.add(
+                Usuario(
+                    id = id,
+                    correo = "extra$i@ejemplo.com",
+                    nombre = "Extra$i",
+                    apellidos = "Prueba",
+                    rol = RolUsuario.TRABAJADOR,
+                    creadoEn = creado,
+                    actualizadoEn = creado
+                )
+            )
+            fuente.perfilesTrabajador.add(
+                PerfilTrabajador(usuarioId = id, titulo = "Oficio $i", creadoEn = creado, actualizadoEn = creado)
+            )
+        }
+    }
+
+    /** 8 de prueba mas 45, que son 53: paginas de 20, 20 y 13. */
+    private fun conTresPaginas() = agregarTrabajadores(45)
+
+    private fun ids(viewModel: ResultadosViewModel) = viewModel.estado.value.trabajadores.map { it.trabajadorId }
+
+    @Test
+    fun elOrdenPorOmision_esLaCalificacion() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        assertEquals(OrdenBusqueda.PROMEDIO, viewModel.estado.value.filtros.orden)
+    }
+
+    @Test
+    fun debeOrdenarPorLosMasRecientes() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        advanceUntilIdle()
+
+        val fechas = viewModel.estado.value.trabajadores.map { it.creadoEn }
+        assertEquals(fechas.sortedDescending(), fechas)
+        assertEquals(OrdenBusqueda.CREADO_EN, viewModel.estado.value.filtros.orden)
+    }
+
+    @Test
+    fun debeOrdenarPorElPrecioMasBajo() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alElegirOrden(OrdenBusqueda.PRECIO_DESDE)
+        advanceUntilIdle()
+
+        val precios = viewModel.estado.value.trabajadores.mapNotNull { it.precioDesde }
+        assertTrue(precios.isNotEmpty())
+        assertEquals(precios.sorted(), precios)
+        assertEquals(fuente.perfilesTrabajador.size, viewModel.estado.value.trabajadores.size)
+    }
+
+    @Test
+    fun alCambiarElOrden_conservaLosFiltrosYElTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTexto("pedro")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+        viewModel.alAplicarFiltros(viewModel.estado.value.filtros.copy(promedioMin = 0.0))
+        advanceUntilIdle()
+
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("pedro", estado.texto)
+        assertEquals(0.0, estado.filtros.promedioMin)
+        assertEquals(OrdenBusqueda.CREADO_EN, estado.filtros.orden)
+        assertTrue(estado.trabajadores.isNotEmpty())
+        assertTrue(estado.trabajadores.all { "${it.nombre} ${it.apellidos} ${it.titulo}".contains("pedro", ignoreCase = true) })
+    }
+
+    @Test
+    fun alQuitarLosFiltros_elOrdenSeQueda() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        viewModel.alAplicarFiltros(viewModel.estado.value.filtros.copy(promedioMin = 4.0))
+        advanceUntilIdle()
+
+        viewModel.alQuitarTodosLosFiltros()
+        advanceUntilIdle()
+
+        assertEquals(OrdenBusqueda.CREADO_EN, viewModel.estado.value.filtros.orden)
+        assertEquals(0, viewModel.estado.value.filtrosActivos)
+    }
+
+    @Test
+    fun conMenosDeUnaPagina_noHayMas_yNoSePideOtra() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        val antes = ids(viewModel)
+
+        assertFalse(viewModel.estado.value.hayMas)
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.estado.value.cargandoMas)
+        assertEquals(antes, ids(viewModel))
+    }
+
+    @Test
+    fun debePedirLasPaginasSiguientes_hastaLaUltima() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+        assertTrue(viewModel.estado.value.hayMas)
+
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        assertEquals(40, viewModel.estado.value.trabajadores.size)
+        assertTrue(viewModel.estado.value.hayMas)
+
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        assertEquals(fuente.perfilesTrabajador.size, viewModel.estado.value.trabajadores.size)
+        // La ultima trajo 13, menos de 20: no hay mas.
+        assertFalse(viewModel.estado.value.hayMas)
+
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        assertEquals(fuente.perfilesTrabajador.size, viewModel.estado.value.trabajadores.size)
+        assertFalse(viewModel.estado.value.cargandoMas)
+    }
+
+    @Test
+    fun ningunTrabajadorSaleRepetido_alJuntarLasPaginas() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        assertEquals(ids(viewModel).size, ids(viewModel).toSet().size)
+    }
+
+    @Test
+    fun noDebePedirDosPaginasALaVez() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alLlegarAlFinal()
+        assertTrue(viewModel.estado.value.cargandoMas)
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        assertEquals(40, viewModel.estado.value.trabajadores.size)
+    }
+
+    @Test
+    fun noDebePedirMas_mientrasCargaLaPrimeraPagina_oSiFalloLaPrimera() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        viewModel.alLlegarAlFinal()
+        assertFalse(viewModel.estado.value.cargandoMas)
+
+        repositorioCatalogos.errorForzado = TipoError.RED
+        viewModel.alReintentarCarga()
+        advanceUntilIdle()
+        assertEquals(TipoError.RED, viewModel.estado.value.errorCarga)
+        repositorioCatalogos.errorForzado = null
+        viewModel.alLlegarAlFinal()
+
+        assertFalse(viewModel.estado.value.cargandoMas)
+    }
+
+    @Test
+    fun siFallaUnaPagina_laListaSeQueda_yNoSePideSola() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        val primera = ids(viewModel)
+
+        repositorioCatalogos.errorForzado = TipoError.RED
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(primera, ids(viewModel))
+        assertTrue(estado.errorAlCargarMas)
+        assertFalse(estado.cargandoMas)
+        assertNull(estado.errorCarga)
+
+        // Al volver a llegar al final no insiste: eso es de "Reintentar".
+        repositorioCatalogos.errorForzado = null
+        viewModel.alLlegarAlFinal()
+        assertFalse(viewModel.estado.value.cargandoMas)
+        assertEquals(primera, ids(viewModel))
+    }
+
+    @Test
+    fun alReintentarLaPagina_seAgregaSinVaciarLaLista() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        repositorioCatalogos.errorForzado = TipoError.RED
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        repositorioCatalogos.errorForzado = null
+        viewModel.alReintentarMas()
+        assertTrue(viewModel.estado.value.cargandoMas)
+        assertFalse(viewModel.estado.value.errorAlCargarMas)
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+        advanceUntilIdle()
+
+        assertEquals(40, viewModel.estado.value.trabajadores.size)
+        assertFalse(viewModel.estado.value.errorAlCargarMas)
+    }
+
+    @Test
+    fun alReintentarMas_sinErrorNoHaceNada() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        viewModel.alReintentarMas()
+        advanceUntilIdle()
+
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+    }
+
+    @Test
+    fun cambiarElOrdenElTextoOUnFiltro_vuelveALaPrimeraPagina() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        assertEquals(40, viewModel.estado.value.trabajadores.size)
+
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        advanceUntilIdle()
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+        assertTrue(viewModel.estado.value.hayMas)
+
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        viewModel.alCambiarTexto("extra")
+        viewModel.alBuscar()
+        advanceUntilIdle()
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        viewModel.alAplicarFiltros(viewModel.estado.value.filtros.copy(promedioMin = 0.0))
+        advanceUntilIdle()
+        assertEquals(20, viewModel.estado.value.trabajadores.size)
+        assertFalse(viewModel.estado.value.cargandoMas)
+    }
+
+    @Test
+    fun siguiendoLasPaginas_seRetomaDesdeLaPrimera_trasCambiarElOrden() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        advanceUntilIdle()
+
+        // Despues de reiniciar, la pagina siguiente es la 2 de nuevo, no la 3.
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+        viewModel.alLlegarAlFinal()
+        advanceUntilIdle()
+
+        assertEquals(fuente.perfilesTrabajador.size, viewModel.estado.value.trabajadores.size)
+        assertEquals(ids(viewModel).size, ids(viewModel).toSet().size)
+    }
+
+    @Test
+    fun unaPaginaTardia_noPisaNiSeMezclaConLaBusquedaNueva() = runTest(reglaCorrutinas.testDispatcher) {
+        conTresPaginas()
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        // La pagina 2 tarda; mientras tanto se cambia el orden, que no tarda.
+        repositorioCatalogos.retrasoMs = 1_000
+        viewModel.alLlegarAlFinal()
+        repositorioCatalogos.retrasoMs = 0
+        viewModel.alElegirOrden(OrdenBusqueda.CREADO_EN)
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(20, estado.trabajadores.size)
+        assertFalse(estado.cargandoMas)
+        assertEquals(OrdenBusqueda.CREADO_EN, estado.filtros.orden)
     }
 }

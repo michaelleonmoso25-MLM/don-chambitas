@@ -199,6 +199,12 @@
     <string name="resultados_titulo">Resultados</string>
     <string name="resultados_buscador_marcador">Busca por nombre u oficio</string>
     <string name="resultados_buscador_borrar">Borrar texto</string>
+    <string name="resultados_orden_titulo">Ordenar por</string>
+    <string name="resultados_orden_etiqueta">Ordenar por: %1$s</string>
+    <string name="resultados_orden_calificacion">Mejor calificados</string>
+    <string name="resultados_orden_precio">Precio más bajo</string>
+    <string name="resultados_orden_recientes">Más recientes</string>
+    <string name="resultados_mas_error">No pudimos cargar más</string>
     <string name="filtros_boton">Filtros</string>
     <string name="filtros_boton_n">Filtros (%1$d)</string>
     <string name="filtros_titulo">Filtros</string>
