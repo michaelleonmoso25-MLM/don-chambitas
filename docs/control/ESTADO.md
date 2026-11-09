@@ -91,26 +91,30 @@ _Ninguna._
 
 ## Última tarea terminada
 
-**`S3-T15` — Pruebas del módulo de perfil y servicios con datos falsos.**
-2026-10-25. Rama `test/S3-T15-pruebas-perfil-servicios`, desde
-`docs/S3-T11-diseno-prompt-redaccion` para llevar la pausa de la IA, pull
-request **sin abrir todavía**. Ticket redactado por el agente al tomar la tarea.
+**`S4-T15` — Pruebas del módulo de búsqueda y solicitudes.** 2026-11-07. Rama
+`feat/S4-T15-pruebas-busqueda-solicitudes`, pull request **#59**, integrado con
+los #46 a #58 que tenía apilados. Ticket redactado por el agente al tomar la
+tarea.
 
-- **`FlujoTrabajadorTest`**, 15 pruebas con los tres repositorios falsos sobre
-  una sola fuente, sin `mockk`: seis recorridos entre P-11, P-12 y P-13 (lo
-  guardado se relee, lo publicado aparece en P-12, lo pausado sale del perfil
-  público, lo eliminado es "no existe" en P-13) y las filas que faltaban de
-  2.4, 3.3, 4.4 y 4.5.
+- **`FlujoClienteTest`**, 13 pruebas con los repositorios falsos sobre una sola
+  fuente, sin `mockk`:
+  - **Recorridos:** lo que publica P-08 lo lee P-09; sin presupuesto llega nulo;
+    la solicitud de otro cliente no sale; P-06 combina texto, filtros, orden y
+    páginas (53 trabajadores: 20, 20 y 13); los trabajadores de P-06 se abren
+    en P-07 como cliente, y el propio como vista previa.
+  - **Filas de error** con `RED`, `SERVIDOR`, `DESCONOCIDO`, `AUTENTICACION` y
+    `VALIDACION` en P-06, P-08 y P-09, cada una con su recuperación.
+- **`SolicitudNuevaPantallaTest`**, 10 pruebas de Compose de P-08, que era la
+  única pantalla del módulo sin ellas.
 - **`app/src/main` no cambió** y ninguna prueba encontró un defecto.
-- **Fuera, por la pausa de la IA:** el botón "Redactar con IA" y la columna
-  `LIMITE_IA` de §6.
+- **Límite:** con los falsos todo es consistente, así que estas pruebas no ven
+  el desajuste de municipios ni que P-07 lea de Supabase lo que P-06 saca del
+  falso. Es de `S4-T09`.
 - Verificación:
   - Compilación exitosa (`./gradlew assembleDebug`).
-  - 313 pruebas unitarias, 0 fallas. `FlujoTrabajadorTest` pasó diez corridas
+  - 448 pruebas unitarias, 0 fallas. `FlujoClienteTest` pasó diez corridas
     seguidas con `--rerun`.
-  - Con `ServicioViewModel` sin guardar el id nuevo al publicar, fallaron 2
-    (publicar y listar, y las tres fotos). La línea se regresó.
-  - No hay nada que probar en el dispositivo: la tarea no cambia la aplicación.
+  - Las 10 instrumentadas de `SolicitudNuevaPantallaTest` pasan en el emulador.
 
 Las anteriores, con su detalle completo, están al final de
 `docs/control/BITACORA.md`, en "Detalle de las tareas terminadas".
@@ -145,7 +149,7 @@ los catálogos reales, la app ya muestra las categorías sin acentos.
 
 ## Huecos: todos decididos el 2026-11-09
 
-El líder decidió los huecos abiertos en `DEC-35` a `DEC-42`. Cada uno quedó
+El líder decidió los huecos abiertos en `DEC-35` a `DEC-43`. Cada uno quedó
 marcado `CERRADO` donde se reportó. **Decidido no es aplicado**: esta tabla dice
 quién hace cada cosa.
 
@@ -153,19 +157,17 @@ quién hace cada cosa.
 |---|---|---|
 | `H-05`, `H-40`, `H-25`, `H-48`, `H-43` | Búsqueda sin acentos, ubicación nula y tarjeta con precio y "No disponible" (`DEC-36`) | `S4-T09` |
 | `H-07`, `H-41`, `H-42`, `H-44`, `H-46`, `H-47` | Reglas de solicitudes en la base y `vw_mis_solicitudes` (`DEC-37`) | `S4-T16` |
-| `H-13` | `S4-T16` hace real a `RepositorioSolicitudes` (`DEC-38`) | — |
+| `H-13` | `S4-T16` hace real a `RepositorioSolicitudes` (`DEC-38`); `S5-T13`, postulaciones y reseñas (`DEC-43`) | `S4-T16`, `S5-T13` |
 | `H-23`, `H-35`, `H-36`, `H-32`, `H-34` | Tope consultable, entrada de 1,000 y prompt neutro (`DEC-39`) | `S4-T10`, `S4-T11` |
-| `H-37` | `TipoError` nuevo para el rechazo de la IA (`DEC-39`) | **Sin tarea** |
+| `H-37` | `TipoError` nuevo para el rechazo de la IA (`DEC-39`) | `S4-T10` (`DEC-43`) |
 | `H-29` | F1 solo en P-11 y P-13 (`DEC-39`) | Ya aplicado en `IA.md` y `PANTALLAS.md` |
-| `H-27`, `H-28`, `H-17` | P-12 pide el perfil antes de publicar, `ErroresAuth` sin token y fotos de servicio validadas antes de subir (`DEC-40`) | **Sin tarea** |
+| `H-27`, `H-28`, `H-17` | P-12 pide el perfil antes de publicar, `ErroresAuth` sin token y fotos de servicio validadas antes de subir (`DEC-40`) | `S4-T14` (`DEC-43`) |
 | `H-24` | P-14 la construye `S5-T02` (`DEC-41`) | `S5-T02` |
 | `H-33` | `S3-T10` cierra con 12 de 13 (`DEC-35`) | — |
 | `H-08`, `H-14`, `H-22`, `H-26`, `H-38` | Se quedan como están (`DEC-42`) | — |
 
-**Quedan dos cosas para el líder:**
-- `H-37` y las tres de `DEC-40` no caen en ninguna tarea: hay que asignarlas.
-- `H-13` sigue abierto para `RepositorioPostulaciones` y `RepositorioResenas`.
-  Hay que asignarlos antes de redactar los tickets del Sprint 5.
+Todo tiene tarea desde `DEC-43`. Los tickets de `S4-T10`, `S4-T14`, `S5-T06` y
+`S5-T13` tienen que nombrar lo que les tocó aquí.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
@@ -196,7 +198,8 @@ no queda ninguno abierto.**
 `DEC-42`.** Los registró el agente por instrucción suya. Reanuda la IA entera
 (`PEND-03`), confirma el Sprint 4, cierra `S3-T10` con 12 de 13 casos, agrega
 `S4-T16` para las solicitudes reales y amplía `S5-T02` con P-14. El resumen,
-en "Huecos: todos decididos el 2026-11-09".
+en "Huecos: todos decididos el 2026-11-09". Ese mismo día `DEC-43` repartió lo
+que había quedado sin tarea y agregó `S5-T13`.
 
 **2026-09-27 · Se integra la versión de `S2-T05` a `S2-T07` hecha hoy, no la de
 Ricardo5690.** Ricardo5690 implementó las mismas tres tareas entre el 23 y el

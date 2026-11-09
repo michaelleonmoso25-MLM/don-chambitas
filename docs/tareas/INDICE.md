@@ -25,13 +25,14 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | 2 | 16 | 0 | 0 | 0 | 16 |
 | 3 | 15 | 0 | 0 | 0 | 15 |
 | 4 | 16 | 5 | 0 | 2 | 9 |
-| 5 | 12 | 12 | 0 | 0 | 0 |
+| 5 | 13 | 13 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **88** | **30** | **0** | **2** | **56** |
+| **Total** | **89** | **31** | **0** | **2** | **56** |
 
 > **La línea de inteligencia artificial se reanudó entera** (`DEC-33`, cierra
 > `PEND-03`): `S4-T10` y `S4-T11` pasaron a `pendiente` el 2026-11-09. El Sprint 4
-> quedó abierto desde el 2026-11-07 (`DEC-34`), y `S4-T16` es nueva (`DEC-38`).
+> quedó abierto desde el 2026-11-07 (`DEC-34`). `S4-T16` y `S5-T13` son nuevas
+> (`DEC-38`, `DEC-43`).
 > PEND-01 se resolvió el 2026-09-14 a favor de Supabase (`DEC-16`) y PEND-02 el
 > 2026-09-22 a favor de los 26 municipios sembrados (`DEC-26`).
 
@@ -120,11 +121,11 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S4-T07` | 750 | ViewModels, paginación y ordenamiento de resultados | BCJL | hecha | — |
 | `S4-T08` | 700 | Contrato de la API de solicitudes, búsqueda y filtros | LMM | hecha | S4-T03 |
 | `S4-T09` | 650 | Implementación real de la búsqueda y el filtrado en Supabase | RRC | pendiente | S4-T08 |
-| `S4-T10` | 600 | Consumir la API del GPT previamente entrenado desde la Edge Function (PRIORITARIO) | GRI | pendiente | S3-T10, S3-T12 |
+| `S4-T10` | 600 | Consumir la API del GPT previamente entrenado desde la Edge Function (PRIORITARIO), con el `TipoError` de `H-37` (`DEC-43`) | GRI | pendiente | S3-T10, S3-T12 |
 | `S4-T11` | 550 | Tope de llamadas de IA por usuario al día y caché de respuestas | BCJL | pendiente | S3-T13 |
 | `S4-T12` | 500 | Categorización automática de la solicitud a partir de texto libre | LMM | opcional | S4-T11 |
 | `S4-T13` | 450 | Ranking de trabajadores sugeridos para una solicitud (sin ubicacion) | RRC | opcional | S4-T11 |
-| `S4-T14` | 400 | Manejo de errores y reintentos | GRI | pendiente | S4-T11 |
+| `S4-T14` | 400 | Manejo de errores y reintentos, con `H-17`, `H-27` y `H-28` (`DEC-43`) | GRI | pendiente | S4-T11 |
 | `S4-T15` | 300 | Pruebas del módulo de búsqueda y solicitudes | BCJL | hecha | — |
 | `S4-T16` | 250 | Implementación real de las solicitudes en Supabase (`DEC-38`) | — | pendiente | S4-T08 |
 
@@ -142,13 +143,14 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S5-T03` | 950 | Bandeja de postulaciones del cliente (aceptar / rechazar) | LMM | pendiente | S5-T02 |
 | `S5-T04` | 900 | Gestión del estado de la solicitud (abierta / asignada / cerrada) | RRC | pendiente | S5-T03 |
 | `S5-T05` | 850 | Chat interno: lista de conversaciones y detalle (interfaz) | GRI | pendiente | S1-T10 |
-| `S5-T06` | 800 | Contrato de la API de mensajería y postulaciones | BCJL | pendiente | — |
+| `S5-T06` | 800 | Contrato de la API de mensajería, postulaciones y reseñas (`DEC-43`) | BCJL | pendiente | — |
 | `S5-T07` | 750 | Implementación real de la mensajería en tiempo real (Supabase Realtime) | LMM | pendiente | S5-T06 |
 | `S5-T08` | 700 | Pantalla de reseñas y calificaciones | RRC | pendiente | S5-T04 |
 | `S5-T09` | 650 | Cálculo y despliegue de la calificación promedio del trabajador | GRI | pendiente | S5-T08 |
 | `S5-T10` | 600 | Notificaciones locales de postulaciones y mensajes | BCJL | pendiente | — |
 | `S5-T11` | 550 | Integración de módulos y revisión de la navegación completa | LMM | pendiente | — |
 | `S5-T12` | 500 | Pruebas de integración del flujo cliente-trabajador | RRC | pendiente | — |
+| `S5-T13` | 450 | Implementación real de postulaciones y reseñas en Supabase (`DEC-43`) | — | pendiente | S5-T06 |
 
 ## Sprint 6
 

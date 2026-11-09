@@ -84,6 +84,27 @@ que se descubrió y no estaba previsto. Si no pasó nada, se deja vacía.
 > antes de que la siguiente la relevara. La más reciente va arriba. Se agrega,
 > no se edita.
 
+**`S3-T15` — Pruebas del módulo de perfil y servicios con datos falsos.**
+2026-10-25. Rama `test/S3-T15-pruebas-perfil-servicios`, desde
+`docs/S3-T11-diseno-prompt-redaccion` para llevar la pausa de la IA, pull
+request **sin abrir todavía**. Ticket redactado por el agente al tomar la tarea.
+
+- **`FlujoTrabajadorTest`**, 15 pruebas con los tres repositorios falsos sobre
+  una sola fuente, sin `mockk`: seis recorridos entre P-11, P-12 y P-13 (lo
+  guardado se relee, lo publicado aparece en P-12, lo pausado sale del perfil
+  público, lo eliminado es "no existe" en P-13) y las filas que faltaban de
+  2.4, 3.3, 4.4 y 4.5.
+- **`app/src/main` no cambió** y ninguna prueba encontró un defecto.
+- **Fuera, por la pausa de la IA:** el botón "Redactar con IA" y la columna
+  `LIMITE_IA` de §6.
+- Verificación:
+  - Compilación exitosa (`./gradlew assembleDebug`).
+  - 313 pruebas unitarias, 0 fallas. `FlujoTrabajadorTest` pasó diez corridas
+    seguidas con `--rerun`.
+  - Con `ServicioViewModel` sin guardar el id nuevo al publicar, fallaron 2
+    (publicar y listar, y las tres fotos). La línea se regresó.
+  - No hay nada que probar en el dispositivo: la tarea no cambia la aplicación.
+
 **`S3-T09` — Persistencia real de perfiles y servicios en Supabase.**
 2026-10-20. Rama `feat/S3-T09-persistencia-trabajador-servicios`, desde `main`
 con `S3-T08` ya integrada (#38), pull request **#39**. Ticket

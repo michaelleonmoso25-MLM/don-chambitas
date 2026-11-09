@@ -1557,7 +1557,7 @@ que sumar `ia_consumo` a mano y repetir el `10` que ya vive en SQL. Y la columna
 `tokens` queda siempre en `0`. **Le toca a `S4-T10` o al líder**: una función
 SQL de consulta y una forma de sumar los tokens después.
 
-**`H-37` · CERRADO el 2026-11-09 por `DEC-39`:** un `TipoError` nuevo, con su mensaje en `strings.xml`. Sin tarea asignada todavía. El hallazgo, como se reportó:
+**`H-37` · CERRADO el 2026-11-09 por `DEC-39`:** un `TipoError` nuevo, con su mensaje en `strings.xml`; lo aplica `S4-T10` (`DEC-43`). El hallazgo, como se reportó:
 
 **`H-37` · `TipoError` no tiene un valor para "la IA rechazó la entrada".** Hoy se
 traduce a `VALIDACION`, pero `VALIDACION` pinta el mensaje del trigger, que aquí
@@ -1669,7 +1669,7 @@ lo guarde o lo registre en un log. Quitarlo toca el modelo `Sesion`, así que
 no se hizo aquí. Sugerencia: que lo retire `S2-T07` o `S2-T08`, si el líder
 está de acuerdo.
 
-**`H-13` · CERRADO el 2026-11-09 por `DEC-38`:** solo para `RepositorioSolicitudes`, con la tarea nueva `S4-T16`. **Postulaciones y reseñas siguen sin tarea real**. El hallazgo, como se reportó:
+**`H-13` · CERRADO el 2026-11-09 por `DEC-38`:** `S4-T16` hace real a `RepositorioSolicitudes`, y `S5-T13` a `RepositorioPostulaciones` y `RepositorioResenas` (`DEC-43`). El hallazgo, como se reportó:
 
 **`H-13` · Tres repositorios no tienen tarea de implementación real.** Salió
 al resolver el riesgo de P-18 que dejó `S2-T07`, y que cerró `DEC-31`. Las
@@ -1692,7 +1692,7 @@ esos tickets. **Lo decide el líder.**
 Salen de escribir el contrato de perfil de usuario en `S2-T12`. **Ninguno se
 resolvió aquí.**
 
-**`H-28` · CERRADO el 2026-11-09 por `DEC-40`:** `ErroresAuth.kt` pasa a `RestException.error`, con una prueba. Sin tarea asignada todavía. El hallazgo, como se reportó:
+**`H-28` · CERRADO el 2026-11-09 por `DEC-40`:** `ErroresAuth.kt` pasa a `RestException.error`, con una prueba; lo aplica `S4-T14` (`DEC-43`). El hallazgo, como se reportó:
 
 **`H-28` · El `mensaje` de los errores de autenticación lleva el token.**
 - `traducirErrorAuth` y `traducirErrorFicha` guardan `error.message` en
@@ -1747,7 +1747,7 @@ se puede leer.**
   cambio de `basedatos/`. Con lo que hay, el riesgo es bajo. **Lo decide el
   líder.**
 
-**`H-27` · CERRADO el 2026-11-09 por `DEC-40`:** P-12 pide completar el perfil, con un botón a P-11, antes de abrir P-13. Sin tarea asignada todavía. El hallazgo, como se reportó:
+**`H-27` · CERRADO el 2026-11-09 por `DEC-40`:** P-12 pide completar el perfil, con un botón a P-11, antes de abrir P-13; lo aplica `S4-T14` (`DEC-43`). El hallazgo, como se reportó:
 
 **`H-27` · Un trabajador no puede publicar un servicio antes de guardar su
 perfil.**
