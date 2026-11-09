@@ -11,14 +11,19 @@
 
 | Campo | Valor |
 |---|---|
-| Sprint | 3 |
+| Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 15 |
-| Terminadas | 15 |
+| Terminadas | 1 |
 | En curso | 0 |
-| Bloqueadas | 0 |
+| Bloqueadas | 2 |
 
-> Sprint 3 abierto el 2026-10-18 por autorización del líder. Sus tickets se
+> **Sprint 4 abierto el 2026-11-07 por aviso de la persona del equipo**, que dice haberlo
+> autorizado el líder. **El líder tiene que confirmarlo en `PENDIENTES.md`.** Las dos
+> bloqueadas son `S4-T10` y `S4-T11`.
+>
+> Sprint 3 cerrado con sus 15 tareas en `hecha` (PR #46 a #50), abierto el 2026-10-18
+> por autorización del líder. Sus tickets se
 > redactan uno por uno al tomar cada tarea, como en el Sprint 2.
 >
 > Sprint 2 cerrado con sus 16 tareas en `hecha` (la última, `S2-T16`, con el
@@ -173,7 +178,7 @@ y el esquema. Están explicados en la sección 10 de
 
 ## Siguiente en la cola
 
-**Sprint 3 completo: sus 15 tareas están en `hecha`.** La última, `S3-T14`, quedó el 2026-11-07: la vista previa del perfil público (P-07) abre desde P-11 con los estados vacíos de HU-08, contra Supabase. Hubo que mover P-07 a `RUTAS_COMPARTIDAS` (`H-38`). **Abrir el Sprint 4 lo decide el líder** (`AGENTS.md` §3). Pendientes de él: la confirmación de la IA, `H-37` y `H-38`. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Siguiente: `S4-T02`** (prioridad 970, depende de `S3-T02`, `hecha`), y después `S4-T03` y el resto del Sprint 4 por prioridad. `S4-T01` quedó `hecha` el 2026-11-07: el diseño de P-05, P-06, P-08 y P-09 y de P-07 para el cliente está en `DISENO-SOLICITUDES-BUSQUEDA.md`, con `H-39` resuelto y seis huecos nuevos (`H-40` a `H-45`) que decide el líder. El Sprint 3 está completo (15 de 15). `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
 
 **La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
 del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
