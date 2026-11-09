@@ -570,3 +570,22 @@ como se propuso para la entrada de IA (`H-35`). **Lo confirma el líder.**
 
 **`H-45` · `Ruta.Resultados` no recibe argumentos.** P-05 necesita pasarle texto o
 categoría. **Le toca a `S4-T03`.**
+
+### Qué propuso `S4-T08` para cada uno
+
+`S4-T08` escribió el contrato de detalle en `CONTRATOS-API.md` ("Búsqueda y catálogos" y
+"Solicitudes") y dejó los hallazgos, con su SQL propuesto, en "Hallazgos de `S4-T08`". **Nada se
+aplicó a `basedatos/`.**
+
+| Hallazgo | Qué se propuso | Quién decide |
+|---|---|---|
+| `H-40` | Columna `texto_busqueda` en la vista, con `unaccent` | Líder; la implementa `S4-T09` |
+| `H-41` | Trigger `before insert` que exija estado y municipio, y que el municipio sea del estado | Líder |
+| `H-42` | Vista `vw_mis_solicitudes` con las postulaciones sin revisar (o el conteo embebido, sin verificar) | Líder; la implementa `S4-T09` |
+| `H-43` | No cambia el contrato; falta decidir la tarjeta y si un no disponible sale | Líder |
+| `H-44` | `CHECK` de 1,000 caracteres, si se confirma | Líder |
+| `H-45` | Cerrado por `S4-T03` | — |
+
+Y tres nuevos, que salieron de leer la base: **`H-46`** (cualquier usuario con sesión lee las
+solicitudes abiertas de todos), **`H-47`** (cancelar una `asignada` no está definido) y **`H-48`**
+(un trabajador sin ubicación hace fallar la página de resultados).
