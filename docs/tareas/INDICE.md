@@ -24,10 +24,10 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | 1 | 16 | 0 | 0 | 0 | 16 |
 | 2 | 16 | 0 | 0 | 0 | 16 |
 | 3 | 15 | 0 | 0 | 0 | 15 |
-| 4 | 15 | 3 | 2 | 2 | 8 |
+| 4 | 15 | 2 | 2 | 2 | 9 |
 | 5 | 12 | 12 | 0 | 0 | 0 |
 | 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **87** | **28** | **2** | **2** | **55** |
+| **Total** | **87** | **27** | **2** | **2** | **56** |
 
 > **La línea de inteligencia artificial se retomó el 2026-11-07** en el Sprint 3,
 > según el aviso de la persona del equipo: `S3-T12` y `S3-T13` pasan a
@@ -127,7 +127,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S4-T12` | 500 | Categorización automática de la solicitud a partir de texto libre | LMM | opcional | S4-T11 |
 | `S4-T13` | 450 | Ranking de trabajadores sugeridos para una solicitud (sin ubicacion) | RRC | opcional | S4-T11 |
 | `S4-T14` | 400 | Manejo de errores y reintentos | GRI | pendiente | S4-T11 |
-| `S4-T15` | 300 | Pruebas del módulo de búsqueda y solicitudes | BCJL | pendiente | — |
+| `S4-T15` | 300 | Pruebas del módulo de búsqueda y solicitudes | BCJL | hecha | — |
 
 > Las tareas `opcional` solo se desarrollan si sobra tiempo tras cerrar
 > todo lo obligatorio del sprint. El riesgo lo asume el equipo.
