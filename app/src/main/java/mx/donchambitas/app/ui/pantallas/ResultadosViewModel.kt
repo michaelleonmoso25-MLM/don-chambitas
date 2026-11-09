@@ -18,13 +18,15 @@ import mx.donchambitas.app.ui.navegacion.Ruta
 import mx.donchambitas.app.util.Resultado
 
 /**
- * ViewModel de Resultados (P-06), HU-16 y HU-17.
+ * ViewModel de Resultados (P-06), HU-16, HU-17 y HU-18.
  * Especificado en docs/producto/DISENO-SOLICITUDES-BUSQUEDA.md, seccion 3.
  *
- * La categoria opcional sale del argumento de la ruta (H-45). Pide la primera pagina de
- * RepositorioCatalogos.buscarTrabajadores, ordenada por calificacion y con el texto del
- * buscador (S4-T04). El texto se manda tal cual: que ignore acentos es H-40 y es de la
- * base (S4-T08 y S4-T09). Hoy el repositorio es el falso: la busqueda real es S4-T09.
+ * Pide la primera pagina de RepositorioCatalogos.buscarTrabajadores, ordenada por calificacion,
+ * con el texto del buscador (S4-T04) y los filtros (S4-T05). La categoria opcional de la ruta
+ * (H-45) entra como un filtro mas: se ve como chip y se puede quitar.
+ *
+ * El texto se manda tal cual: que ignore acentos es H-40 y es de la base (S4-T08 y S4-T09).
+ * Hoy el repositorio es el falso: la busqueda real es S4-T09.
  */
 @HiltViewModel
 class ResultadosViewModel @Inject constructor(
@@ -32,20 +34,28 @@ class ResultadosViewModel @Inject constructor(
     estadoGuardado: SavedStateHandle
 ) : ViewModel() {
 
-    /** Nulo cuando la ruta no trae categoria: se listan todos los trabajadores. */
-    private val categoriaId: Int? = estadoGuardado.get<Int>(Ruta.Resultados.ARG_CATEGORIA_ID)
-        ?.takeIf { it != Ruta.Resultados.SIN_CATEGORIA }
-
-    private val _estado = MutableStateFlow(EstadoResultados())
+    private val _estado = MutableStateFlow(
+        EstadoResultados(
+            filtros = FiltrosBusquedaTrabajadores(
+                // Nulo cuando la ruta no trae categoria: se listan todos los trabajadores.
+                categoriaId = estadoGuardado.get<Int>(Ruta.Resultados.ARG_CATEGORIA_ID)
+                    ?.takeIf { it != Ruta.Resultados.SIN_CATEGORIA }
+            )
+        )
+    )
     val estado: StateFlow<EstadoResultados> = _estado.asStateFlow()
 
     /** El texto con el que se hizo la ultima busqueda; no cambia mientras se escribe. */
     private var textoAplicado: String = ""
 
     private var busqueda: Job? = null
+    private var cargaCatalogos: Job? = null
+    private var cargaMunicipios: Job? = null
 
     init {
         cargar()
+        // Los chips de filtros necesitan el nombre de la categoria de la ruta, antes de abrir la hoja.
+        cargarCatalogos()
     }
 
     /** Solo actualiza el campo: cada busqueda pega en la base (3.4 del diseno). */
@@ -70,14 +80,60 @@ class ResultadosViewModel @Inject constructor(
         cargar()
     }
 
+    /** Abre la hoja; trae los catalogos si faltan y los municipios del estado aplicado. */
+    fun alAbrirFiltros() {
+        _estado.update { it.copy(hojaFiltrosAbierta = true, errorCatalogos = null) }
+        val actual = _estado.value
+        if (actual.categorias.isEmpty() || actual.estados.isEmpty()) cargarCatalogos()
+        cargarMunicipios(actual.filtros.estadoId)
+    }
+
+    /** Descarta el borrador; los municipios vuelven a ser los del estado aplicado, que son los de los chips. */
+    fun alCerrarFiltros() {
+        _estado.update { it.copy(hojaFiltrosAbierta = false) }
+        cargarMunicipios(_estado.value.filtros.estadoId)
+    }
+
+    /** Guarda los filtros de la hoja, la cierra y pide la primera pagina. */
+    fun alAplicarFiltros(filtros: FiltrosBusquedaTrabajadores) {
+        _estado.update { it.copy(filtros = filtros, hojaFiltrosAbierta = false) }
+        cargar()
+    }
+
+    /** Quita un filtro desde su chip; quitar el estado quita tambien el municipio, que depende de el. */
+    fun alQuitarFiltro(cual: FiltroResultados) {
+        _estado.update {
+            it.copy(
+                filtros = when (cual) {
+                    FiltroResultados.CATEGORIA -> it.filtros.copy(categoriaId = null)
+                    FiltroResultados.ESTADO -> it.filtros.copy(estadoId = null, municipioId = null)
+                    FiltroResultados.MUNICIPIO -> it.filtros.copy(municipioId = null)
+                    FiltroResultados.PRECIO -> it.filtros.copy(precioDesdeMax = null)
+                    FiltroResultados.CALIFICACION -> it.filtros.copy(promedioMin = null)
+                }
+            )
+        }
+        cargar()
+    }
+
+    /** Quita los cinco, incluida la categoria que trajo la ruta. */
+    fun alQuitarTodosLosFiltros() {
+        _estado.update { it.copy(filtros = FiltrosBusquedaTrabajadores(), hojaFiltrosAbierta = false) }
+        cargar()
+    }
+
+    /** La hoja eligio otro estado: trae sus municipios. El borrador del municipio lo limpia la hoja. */
+    fun alElegirEstadoEnFiltros(estadoId: Int?) {
+        cargarMunicipios(estadoId)
+    }
+
     private fun cargar() {
         // Una busqueda nueva cancela la anterior para que una respuesta tardia no la pise.
         busqueda?.cancel()
         _estado.update { it.copy(cargando = true, errorCarga = null) }
         busqueda = viewModelScope.launch {
-            val filtros = FiltrosBusquedaTrabajadores(
+            val filtros = _estado.value.filtros.copy(
                 texto = textoAplicado.ifBlank { null },
-                categoriaId = categoriaId,
                 orden = OrdenBusqueda.PROMEDIO
             )
             when (val resultado = repositorioCatalogos.buscarTrabajadores(filtros, pagina = 1)) {
@@ -87,6 +143,35 @@ class ResultadosViewModel @Inject constructor(
                 is Resultado.Error -> _estado.update {
                     it.copy(cargando = false, trabajadores = emptyList(), errorCarga = resultado.tipo)
                 }
+            }
+        }
+    }
+
+    /** Los catalogos de la hoja: si fallan, la hoja lo dice; los resultados no se bloquean. */
+    private fun cargarCatalogos() {
+        cargaCatalogos?.cancel()
+        _estado.update { it.copy(errorCatalogos = null) }
+        cargaCatalogos = viewModelScope.launch {
+            val categorias = repositorioCatalogos.obtenerCategorias()
+            val estados = repositorioCatalogos.obtenerEstados()
+            _estado.update {
+                it.copy(
+                    categorias = (categorias as? Resultado.Exito)?.dato ?: it.categorias,
+                    estados = (estados as? Resultado.Exito)?.dato ?: it.estados,
+                    errorCatalogos = (categorias as? Resultado.Error)?.tipo ?: (estados as? Resultado.Error)?.tipo
+                )
+            }
+        }
+    }
+
+    private fun cargarMunicipios(estadoId: Int?) {
+        cargaMunicipios?.cancel()
+        _estado.update { it.copy(municipios = emptyList()) }
+        if (estadoId == null) return
+        cargaMunicipios = viewModelScope.launch {
+            when (val resultado = repositorioCatalogos.obtenerMunicipios(estadoId)) {
+                is Resultado.Exito -> _estado.update { it.copy(municipios = resultado.dato) }
+                is Resultado.Error -> _estado.update { it.copy(errorCatalogos = resultado.tipo) }
             }
         }
     }
