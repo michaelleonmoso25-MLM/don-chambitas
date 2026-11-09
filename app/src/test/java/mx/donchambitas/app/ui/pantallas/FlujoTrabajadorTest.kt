@@ -9,6 +9,7 @@ import kotlinx.coroutines.test.runTest
 import mx.donchambitas.app.R
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
+import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioServiciosFalso
 import mx.donchambitas.app.datos.falso.RepositorioTrabajadorFalso
 import mx.donchambitas.app.dominio.modelo.ServicioFoto
@@ -43,13 +44,16 @@ class FlujoTrabajadorTest {
     private val repositorioServicios = RepositorioServiciosFalso(fuente).apply { retrasoMs = 0 }
     private val repositorioCatalogos = RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 }
 
-    private fun miPerfil() = MiPerfilViewModel(repositorioTrabajador, repositorioCatalogos)
+    private val repositorioIa = RepositorioIaFalso().apply { retrasoMs = 0 }
+
+    private fun miPerfil() = MiPerfilViewModel(repositorioTrabajador, repositorioCatalogos, repositorioIa)
 
     private fun misServicios() = MisServiciosViewModel(repositorioServicios, repositorioCatalogos)
 
     private fun servicio(servicioId: String? = null) = ServicioViewModel(
         repositorioServicios,
         repositorioCatalogos,
+        repositorioIa,
         SavedStateHandle(mapOf(Ruta.CrearEditarServicio.ARG_SERVICIO_ID to servicioId))
     )
 

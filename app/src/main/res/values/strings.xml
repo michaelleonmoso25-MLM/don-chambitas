@@ -163,6 +163,11 @@
     <string name="ia_redactar">Redactar con IA</string>
     <string name="ia_restantes">Te quedan %1$d de 10 hoy</string>
     <string name="ia_limite">Alcanzaste el límite de hoy</string>
+    <string name="ia_reemplazar_titulo">¿Reemplazar lo que escribiste?</string>
+    <string name="ia_reemplazar">Reemplazar</string>
+    <string name="ia_conservar">Conservar el mío</string>
+    <string name="ia_aviso_fallo">La IA no respondió, puedes escribirlo tú</string>
+    <string name="ia_aviso_no_pudo">La IA no pudo redactar con esos datos, escríbelo tú</string>
 
     <!-- P-11 Mi perfil (S3-T03) -->
     <string name="mi_perfil_titulo">Mi perfil profesional</string>

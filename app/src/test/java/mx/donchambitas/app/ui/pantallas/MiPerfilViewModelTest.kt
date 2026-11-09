@@ -6,13 +6,18 @@ import io.mockk.mockk
 import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mx.donchambitas.app.R
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
+import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioTrabajadorFalso
+import mx.donchambitas.app.dominio.modelo.FuncionIa
 import mx.donchambitas.app.dominio.modelo.PerfilTrabajador
+import mx.donchambitas.app.dominio.modelo.ResultadoIa
 import mx.donchambitas.app.dominio.modelo.Sesion
+import mx.donchambitas.app.dominio.repositorio.RepositorioIa
 import mx.donchambitas.app.dominio.repositorio.RepositorioTrabajador
 import mx.donchambitas.app.util.ReglaCorrutinas
 import mx.donchambitas.app.util.Resultado
@@ -36,8 +41,12 @@ class MiPerfilViewModelTest {
     private val repositorioTrabajador = RepositorioTrabajadorFalso(fuente).apply { retrasoMs = 0 }
     private val repositorioCatalogos = RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 }
 
-    private fun crearViewModel(trabajador: RepositorioTrabajador = repositorioTrabajador) =
-        MiPerfilViewModel(trabajador, repositorioCatalogos)
+    private val repositorioIa = RepositorioIaFalso().apply { retrasoMs = 0 }
+
+    private fun crearViewModel(
+        trabajador: RepositorioTrabajador = repositorioTrabajador,
+        ia: RepositorioIa = repositorioIa
+    ) = MiPerfilViewModel(trabajador, repositorioCatalogos, ia)
 
     @Test
     fun debeLlenarElFormulario_cuandoYaHayPerfil() = runTest(reglaCorrutinas.testDispatcher) {
@@ -288,6 +297,193 @@ class MiPerfilViewModelTest {
         viewModel.alCambiarTelefono("123")
         viewModel.alPerderFoco(CampoMiPerfil.TELEFONO)
         assertEquals(R.string.validacion_telefono_digitos, viewModel.estado.value.errorTelefono)
+    }
+
+    // Redactar con IA (S3-T13, DISENO-PERFIL-SERVICIOS.md 1.9)
+
+    @Test
+    fun debeLlenarLaDescripcion_cuandoPidesIaConLaDescripcionVacia() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("")
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertTrue(estado.descripcion.startsWith("Me dedico"))
+        assertNull(estado.propuestaIa)
+        assertEquals(EstadoBotonIa.Disponible(restantesHoy = 7), estado.ia)
+    }
+
+    @Test
+    fun debeProponerSinTocarLaDescripcion_cuandoYaHabiaTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("Mi texto")
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("Mi texto", estado.descripcion)
+        assertTrue(estado.propuestaIa.orEmpty().startsWith("Me dedico"))
+    }
+
+    @Test
+    fun debeReemplazarLaDescripcion_alAceptarLaPropuesta() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("Mi texto")
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+        val propuesta = viewModel.estado.value.propuestaIa
+
+        viewModel.alAceptarPropuestaIa()
+
+        assertEquals(propuesta, viewModel.estado.value.descripcion)
+        assertNull(viewModel.estado.value.propuestaIa)
+    }
+
+    @Test
+    fun debeConservarLaDescripcion_alDescartarLaPropuesta() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("Mi texto")
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        viewModel.alDescartarPropuestaIa()
+
+        assertEquals("Mi texto", viewModel.estado.value.descripcion)
+        assertNull(viewModel.estado.value.propuestaIa)
+    }
+
+    @Test
+    fun debeDeshabilitarElBoton_cuandoLlegaElLimiteDiario() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("Mi texto")
+        repositorioIa.errorForzado = TipoError.LIMITE_IA
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(EstadoBotonIa.LimiteAlcanzado, estado.ia)
+        assertNull(estado.aviso)
+        assertEquals("Mi texto", estado.descripcion)
+    }
+
+    @Test
+    fun debeAvisarQueNoRespondio_sinTocarElCampo_cuandoFallaLaRedOElServidor() = runTest(reglaCorrutinas.testDispatcher) {
+        for (tipo in listOf(TipoError.RED, TipoError.SERVIDOR, TipoError.DESCONOCIDO)) {
+            val viewModel = crearViewModel()
+            advanceUntilIdle()
+            viewModel.alCambiarTitulo("Plomero")
+            viewModel.alCambiarDescripcion("Mi texto")
+            repositorioIa.errorForzado = tipo
+
+            viewModel.alPedirIa()
+            advanceUntilIdle()
+
+            val estado = viewModel.estado.value
+            assertEquals(R.string.ia_aviso_fallo, estado.aviso)
+            assertTrue(estado.ia is EstadoBotonIa.Disponible)
+            assertEquals("Mi texto", estado.descripcion)
+            assertNull(estado.propuestaIa)
+        }
+    }
+
+    @Test
+    fun debeAvisarQueNoPudoRedactar_cuandoLaIaRechazaLaEntrada() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("Mi texto")
+        repositorioIa.errorForzado = TipoError.VALIDACION
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals(R.string.ia_aviso_no_pudo, estado.aviso)
+        assertEquals("Mi texto", estado.descripcion)
+    }
+
+    @Test
+    fun noDebePegarNoPuedoRedactar_cuandoLlegaComoTexto() = runTest(reglaCorrutinas.testDispatcher) {
+        val ia = mockk<RepositorioIa> {
+            coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("NO_PUEDO_REDACTAR"))
+        }
+        val viewModel = crearViewModel(ia = ia)
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("")
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("", estado.descripcion)
+        assertNull(estado.propuestaIa)
+        assertEquals(R.string.ia_aviso_no_pudo, estado.aviso)
+    }
+
+    @Test
+    fun noDebePedir_cuandoFaltaElTitulo() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("")
+
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(8, repositorioIa.llamadasRestantes)
+    }
+
+    @Test
+    fun debeMandarLaEntradaConElFormatoDeLaSeccion2_yUnaSolaVez() = runTest(reglaCorrutinas.testDispatcher) {
+        val ia = mockk<RepositorioIa> {
+            coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("Texto"))
+        }
+        val viewModel = crearViewModel(trabajadorSimulado(), ia)
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("  Plomero   con gas ")
+        viewModel.alCambiarExperiencia("10")
+
+        viewModel.alPedirIa()
+        viewModel.alPedirIa()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            ia.generar(FuncionIa.REDACTAR_PERFIL, "Oficio: Plomero con gas\nAños de experiencia: 10\nHabilidades: Cobre")
+        }
+    }
+
+    @Test
+    fun debeSeguirEditableLaDescripcion_mientrasPideLaIa() = runTest(reglaCorrutinas.testDispatcher) {
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+        viewModel.alCambiarTitulo("Plomero")
+        viewModel.alCambiarDescripcion("")
+        repositorioIa.retrasoMs = 100
+
+        viewModel.alPedirIa()
+        runCurrent()
+        assertEquals(EstadoBotonIa.Pidiendo, viewModel.estado.value.ia)
+        viewModel.alCambiarDescripcion("Lo escribi yo")
+        advanceUntilIdle()
+
+        val estado = viewModel.estado.value
+        assertEquals("Lo escribi yo", estado.descripcion)
+        assertTrue(estado.propuestaIa.orEmpty().startsWith("Me dedico"))
     }
 
     /** Un perfil con una habilidad, para contar llamadas sin depender de la fuente falsa. */

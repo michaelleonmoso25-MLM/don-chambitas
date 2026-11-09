@@ -12,12 +12,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import mx.donchambitas.app.R
+import mx.donchambitas.app.dominio.ia.EntradaIa
+import mx.donchambitas.app.dominio.modelo.FuncionIa
 import mx.donchambitas.app.dominio.modelo.PerfilTrabajador
 import mx.donchambitas.app.dominio.repositorio.RepositorioCatalogos
+import mx.donchambitas.app.dominio.repositorio.RepositorioIa
 import mx.donchambitas.app.dominio.repositorio.RepositorioTrabajador
 import mx.donchambitas.app.dominio.validacion.ValidacionesTrabajador
 import mx.donchambitas.app.ui.componentes.obtenerMensajeErrorRes
 import mx.donchambitas.app.util.Resultado
+import mx.donchambitas.app.util.TipoError
 
 private const val MAXIMO_DIGITOS_EXPERIENCIA = 2
 
@@ -26,13 +30,14 @@ private const val MAXIMO_DIGITOS_EXPERIENCIA = 2
  * Especificado en docs/producto/DISENO-PERFIL-SERVICIOS.md, secciones 2.2 a 2.5.
  *
  * Valida con ValidacionesTrabajador (5.2) cuando dice 1.5: al perder el foco
- * un campo ya tocado y todos al guardar. Pedir a la IA es de S3-T13; aqui solo
- * se recalcula el boton.
+ * un campo ya tocado y todos al guardar. El boton "Redactar con IA" pide el texto
+ * a RepositorioIa (1.9); la descripcion sigue editable mientras tanto (HU-31).
  */
 @HiltViewModel
 class MiPerfilViewModel @Inject constructor(
     private val repositorioTrabajador: RepositorioTrabajador,
-    private val repositorioCatalogos: RepositorioCatalogos
+    private val repositorioCatalogos: RepositorioCatalogos,
+    private val repositorioIa: RepositorioIa
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(EstadoMiPerfil())
@@ -140,6 +145,54 @@ class MiPerfilViewModel @Inject constructor(
 
     fun alCambiarDescripcion(valor: String) {
         _estado.update { it.copy(descripcion = valor) }
+    }
+
+    /**
+     * Pide el texto a la IA con titulo, anios y habilidades (1.9). Solo con el boton
+     * disponible: faltando datos, pidiendo o con el limite alcanzado no hace nada.
+     * La descripcion no se bloquea, asi que se compara con lo que haya al llegar la respuesta.
+     */
+    fun alPedirIa() {
+        val actual = _estado.value
+        val antes = actual.ia as? EstadoBotonIa.Disponible ?: return
+        val entrada = EntradaIa.perfil(actual.titulo, actual.experienciaAnios, actual.habilidades)
+        _estado.update { it.copy(ia = EstadoBotonIa.Pidiendo) }
+        viewModelScope.launch {
+            val resultado = repositorioIa.generar(FuncionIa.REDACTAR_PERFIL, entrada)
+            val texto = (resultado as? Resultado.Exito)?.dato?.resultado?.trim().orEmpty()
+            _estado.update {
+                val faltanDatos = it.titulo.isBlank()
+                when {
+                    resultado is Resultado.Error -> it.copy(
+                        ia = estadoIaTrasFallo(resultado.tipo, antes).recalcular(faltanDatos),
+                        aviso = avisoIaDe(resultado.tipo)
+                    )
+                    texto.isEmpty() || texto == EntradaIa.NO_PUEDO_REDACTAR -> it.copy(
+                        ia = antes.recalcular(faltanDatos),
+                        aviso = avisoIaDe(TipoError.VALIDACION)
+                    )
+                    else -> {
+                        val restantes = (resultado as Resultado.Exito).dato.llamadasRestantesHoy
+                        val disponible = EstadoBotonIa.Disponible(restantes).recalcular(faltanDatos)
+                        if (it.descripcion.isBlank()) {
+                            it.copy(descripcion = texto, ia = disponible)
+                        } else {
+                            it.copy(propuestaIa = texto, ia = disponible)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** "Reemplazar": la propuesta pasa a ser la descripcion (HU-30). */
+    fun alAceptarPropuestaIa() {
+        _estado.update { it.copy(descripcion = it.propuestaIa ?: it.descripcion, propuestaIa = null) }
+    }
+
+    /** "Conservar el mio": se descarta la propuesta y la descripcion no se toca. */
+    fun alDescartarPropuestaIa() {
+        _estado.update { it.copy(propuestaIa = null) }
     }
 
     /** Otro estado borra el municipio y trae solo los suyos (HU-06). */

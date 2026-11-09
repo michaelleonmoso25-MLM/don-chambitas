@@ -20,6 +20,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import mx.donchambitas.app.R
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
+import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioTrabajadorFalso
 import mx.donchambitas.app.dominio.modelo.Estado
 import mx.donchambitas.app.dominio.modelo.Municipio
@@ -277,6 +278,7 @@ private fun viewModelSinRetraso(): MiPerfilViewModel {
     val fuente = FuenteDatosFalsa()
     return MiPerfilViewModel(
         RepositorioTrabajadorFalso(fuente).apply { retrasoMs = 0 },
-        RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 }
+        RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 },
+        RepositorioIaFalso().apply { retrasoMs = 0 }
     )
 }

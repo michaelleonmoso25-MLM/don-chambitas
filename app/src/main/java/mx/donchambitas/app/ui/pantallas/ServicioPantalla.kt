@@ -112,8 +112,8 @@ private const val OPACIDAD_VELO_SUBIDA = 0.4f
  *
  * Conecta [ServicioContenido] con [ServicioViewModel], que lee el servicioId
  * de la ruta. La foto elegida se valida aqui, porque leerla necesita el
- * ContentResolver, y sus bytes se le pasan al ViewModel. Pedir a la IA
- * todavia no hace nada: es S3-T13.
+ * ContentResolver, y sus bytes se le pasan al ViewModel. El boton "Redactar
+ * con IA" y su dialogo de reemplazo van contra el ViewModel (1.9).
  *
  * @param alRegresar Regresa a P-12. Descarta lo no guardado.
  * @param alGuardarCambios "Guardar cambios" salio bien: regresa a P-12, que da el aviso (4.5).
@@ -180,7 +180,9 @@ fun ServicioPantalla(
         alPedirQuitarFoto = viewModel::alPedirQuitarFoto,
         alConfirmarQuitarFoto = viewModel::alConfirmarQuitarFoto,
         alCancelarQuitarFoto = viewModel::alCancelarQuitarFoto,
-        alPedirIa = {},
+        alPedirIa = viewModel::alPedirIa,
+        alAceptarPropuestaIa = viewModel::alAceptarPropuestaIa,
+        alDescartarPropuestaIa = viewModel::alDescartarPropuestaIa,
         alReintentarCarga = viewModel::alReintentarCarga,
         alReintentar = viewModel::alGuardar,
         alConsumirAviso = viewModel::alConsumirAviso,
@@ -213,6 +215,8 @@ fun ServicioContenido(
     alPedirIa: () -> Unit,
     alRegresar: () -> Unit,
     modifier: Modifier = Modifier,
+    alAceptarPropuestaIa: () -> Unit = {},
+    alDescartarPropuestaIa: () -> Unit = {},
     alReintentarCarga: () -> Unit = {},
     alReintentar: (() -> Unit)? = null,
     alConsumirAviso: () -> Unit = {},
@@ -434,6 +438,22 @@ fun ServicioContenido(
             },
             dismissButton = {
                 BotonTexto(texto = stringResource(R.string.trabajador_cancelar), onClick = alCancelarQuitarFoto)
+            },
+            containerColor = Crema
+        )
+    }
+
+    // 1.9: con la descripcion ya escrita, la IA propone y la persona decide (HU-30).
+    if (estado.propuestaIa != null) {
+        AlertDialog(
+            onDismissRequest = alDescartarPropuestaIa,
+            title = { Text(stringResource(R.string.ia_reemplazar_titulo)) },
+            text = { Text(estado.propuestaIa) },
+            confirmButton = {
+                BotonTexto(texto = stringResource(R.string.ia_reemplazar), onClick = alAceptarPropuestaIa)
+            },
+            dismissButton = {
+                BotonTexto(texto = stringResource(R.string.ia_conservar), onClick = alDescartarPropuestaIa)
             },
             containerColor = Crema
         )

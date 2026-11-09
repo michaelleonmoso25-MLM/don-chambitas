@@ -21,6 +21,7 @@ import java.time.Instant
 import mx.donchambitas.app.R
 import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
 import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
+import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioServiciosFalso
 import mx.donchambitas.app.dominio.modelo.Categoria
 import mx.donchambitas.app.dominio.modelo.ServicioFoto
@@ -226,6 +227,7 @@ private fun viewModelSinRetraso(): ServicioViewModel {
     return ServicioViewModel(
         RepositorioServiciosFalso(fuente).apply { retrasoMs = 0 },
         RepositorioCatalogosFalso(fuente).apply { retrasoMs = 0 },
+        RepositorioIaFalso().apply { retrasoMs = 0 },
         SavedStateHandle()
     )
 }
