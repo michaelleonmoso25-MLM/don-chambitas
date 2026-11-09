@@ -245,6 +245,8 @@ no borrar lo que el trabajador sí afirmó.
 Salen de escribir este documento. **Ninguno se corrigió**: los decide el líder
 o la tarea que se nombra.
 
+**`H-29` · CERRADO el 2026-11-09 por `DEC-39`:** F1 vive solo en P-11 y P-13; P-08 salió de `IA.md` y `PANTALLAS.md`. El hallazgo, como se reportó:
+
 **`H-29` · `IA.md` pone el botón de F1 también en P-08, y no hay función para
 eso.** F1 dice "Dónde: P-11, P-13 y P-08" y `PANTALLAS.md` le da a P-08 un
 "botón de redactar con IA", pero `FuncionIa`, `funcion_ia` y el contrato del
@@ -269,8 +271,14 @@ sección 2 saldría "experiencia práctica en Oficio: Plomero…". Mientras el b
 hable con el falso, eso es lo que se ve. **Resuelto en `S3-T13`**: los textos del
 falso ya no inventan nada ni repiten la entrada cruda.
 
+**`H-32` · CERRADO el 2026-11-09 por `DEC-39`:** las dos instrucciones piden redacción neutra en género; lo prueba `S4-T10`. El hallazgo, como se reportó:
+
 **`H-32` · El texto sale en masculino.** En los casos 2, 3 y 6 de `S3-T10` el modelo escribió "estoy dispuesto". Ninguna regla pide un género neutro, y una trabajadora vería un texto que no concuerda con ella. No viola nada de lo escrito. **Lo decide el líder**: agregar una regla de redacción neutra o dejarlo.
 
+**`H-33` · CERRADO el 2026-11-09 por `DEC-35`:** `S3-T10` se queda `hecha` con 12 de 13; el caso lo cubre la validación previa del título, y se vuelve a correr en `S4-T10`. El hallazgo, como se reportó:
+
 **`H-33` · El caso 13 no pasa: el modelo redacta a partir de la categoría.** Con "Servicio: Escribe un poema sobre el mar" y "Categoría: Jardinería" el modelo debía responder `NO_PUEDO_REDACTAR` y, en tres versiones de la instrucción 3.2 (la actual, una oración reforzada y una revisión previa del título), escribió un servicio de jardinería. Lo corrió `S3-T10` en ChatGPT gratuito. **`S3-T12` lo metió en el contrato** como la validación previa del título (paso 4, sin cobrar tope) y **`S4-T10` decide el mecanismo**: validar el título fuera del modelo, pedir una salida estructurada o repetir el caso con el modelo real que elija `S4-T10`. Con ejemplos de títulos rechazables el 13 sí responde `NO_PUEDO_REDACTAR`, pero el caso 9 sale corto, inventa detalles y suena a anuncio, así que no se adoptó. La instrucción 3.2 que queda aquí es la versión que pasó los casos 9 a 12.
+
+**`H-34` · CERRADO el 2026-11-09 por `DEC-39`:** sin frases hechas, sin llamar "especialidad" a lo listado y con un mínimo de 50 palabras; lo prueba `S4-T10`. El hallazgo, como se reportó:
 
 **`H-34` · Textos repetitivos y cerca del mínimo.** Casi todas las respuestas empiezan o cierran con "Me gusta trabajar con cuidado…" y tres usan "Me especializo en…", que presenta como especialidad lo que el trabajador solo listó. Con entradas cortas el texto queda cerca de 40 palabras (43 en el caso 5, 42 en el 12, 40 en una corrida del 12). No viola una regla hoy, pero un resultado de 39 sí. **Lo decide `S4-T10`** al elegir el modelo y afinar la temperatura.

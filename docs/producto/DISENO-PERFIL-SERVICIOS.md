@@ -1061,6 +1061,8 @@ para `DISENO.md`: `TarjetaServicio` gana `pausado: Boolean = false` (tarjeta al
 oculta el precio cuando viene vacío. **No se implementa hasta que el líder lo
 apruebe y quede escrito en `DISENO.md`** (`DISENO.md` · Componentes base).
 
+**`H-22` · CERRADO el 2026-11-09 por `DEC-42`:** se queda así: las fotos se agregan después de publicar. El hallazgo, como se reportó:
+
 **`H-22` · Al crear un servicio todavía no se le pueden agregar fotos.**
 `subirFoto` pide el `servicioId`, que no existe antes de `crear`. El diseño
 deja el bloque de fotos deshabilitado al crear y, al publicar, pasa P-13 a modo
@@ -1068,6 +1070,8 @@ editar para que se agreguen ahí (4.1). La alternativa —guardar las fotos en
 memoria y subirlas después del `crear`— complica la cancelación y los fallos a
 medias, y no la pide ninguna historia. Si el líder la prefiere, cambian 4.1,
 4.4 y 4.5.
+
+**`H-23` · CERRADO el 2026-11-09 por `DEC-39`:** función `fn_ia_restantes()` que P-11 y P-13 consultan al abrir; la aplican `S4-T10` y `S4-T11`. El hallazgo, como se reportó:
 
 **`H-23` · No hay forma de saber el tope de IA al abrir la pantalla.** HU-31
 dice que con los 10 usos gastados el botón ya aparece deshabilitado "cuando
@@ -1142,6 +1146,8 @@ Las demás cadenas de la pantalla (`perfil_publico_titulo`, `_disponible`,
   resolvió aquí.
 
 ### 11.5 Hallazgos de `S3-T14`
+
+**`H-38` · CERRADO el 2026-11-09 por `DEC-42`:** confirmado: P-07 se queda en `RUTAS_COMPARTIDAS`. El hallazgo, como se reportó:
 
 **`H-38` · La guarda de roles no dejaba al trabajador abrir P-07, y HU-08 se lo pide.** `Ruta.PerfilTrabajador` estaba en `RUTAS_CLIENTE` ("exclusivas del cliente") y `NavegacionTest` fijaba que el trabajador no entra a ninguna de ellas, así que "Ver mi perfil como cliente" lo devolvía a P-10. **Aplicado en `S3-T14`:** P-07 pasó a `RUTAS_COMPARTIDAS`, con su propia barra superior, y se agregó una prueba que fija que el trabajador y el cliente la abren y que sin sesión se va a iniciar sesión. **El líder tiene que confirmarlo**: es un cambio de quién puede ver qué.
 

@@ -37,7 +37,7 @@ aparte, por tokens, en la plataforma de desarrolladores.
 
 El usuario escribe 3 o 4 datos sueltos y la IA devuelve un texto presentable.
 
-- **Dónde:** botón "Redactar con IA" en P-11, P-13 y P-08.
+- **Dónde:** botón "Redactar con IA" en P-11 y P-13. No va en P-08 (`DEC-39`).
 - **Entrada:** oficio, años de experiencia y habilidades en P-11; título,
   categoría y borrador en P-13. El formato exacto y las instrucciones del
   modelo están en `PROMPT-REDACCION.md`.

@@ -1538,12 +1538,16 @@ este contrato, ni la aplicación, ni el repositorio la llevan.
 Salen de escribir este contrato. **Ninguno se resolvió aquí**: los decide el líder
 o la tarea que se nombra.
 
+**`H-35` · CERRADO el 2026-11-09 por `DEC-39`:** se confirma el tope de 1,000 caracteres en la `entrada`. El hallazgo, como se reportó:
+
 **`H-35` · Nada limita el largo del borrador que se manda a la IA.**
 `perfiles_trabajador.descripcion` y `servicios.descripcion` son `text` sin tope en
 el esquema, y `ValidacionesTrabajador` solo acota títulos y habilidades. Un
 borrador largo encarece cada llamada. Este contrato pone un tope de **1000
 caracteres** en la `entrada`, como propuesta. **Lo confirma el líder**, o el
 tope se mueve a los campos de origen.
+
+**`H-36` · CERRADO el 2026-11-09 por `DEC-39`:** `fn_ia_restantes()` y los tokens se registran después de la respuesta; lo aplican `S4-T10` y `S4-T11`. El hallazgo, como se reportó:
 
 **`H-36` · La función no tiene cómo saber lo que queda ni cuántos tokens gastó.**
 `fn_ia_registrar_llamada` solo registra y devuelve lo que queda *después* de
@@ -1552,6 +1556,8 @@ conocen. Con un acierto de caché no hay función que consulte lo que queda: hay
 que sumar `ia_consumo` a mano y repetir el `10` que ya vive en SQL. Y la columna
 `tokens` queda siempre en `0`. **Le toca a `S4-T10` o al líder**: una función
 SQL de consulta y una forma de sumar los tokens después.
+
+**`H-37` · CERRADO el 2026-11-09 por `DEC-39`:** un `TipoError` nuevo, con su mensaje en `strings.xml`. Sin tarea asignada todavía. El hallazgo, como se reportó:
 
 **`H-37` · `TipoError` no tiene un valor para "la IA rechazó la entrada".** Hoy se
 traduce a `VALIDACION`, pero `VALIDACION` pinta el mensaje del trigger, que aquí
@@ -1663,6 +1669,8 @@ lo guarde o lo registre en un log. Quitarlo toca el modelo `Sesion`, así que
 no se hizo aquí. Sugerencia: que lo retire `S2-T07` o `S2-T08`, si el líder
 está de acuerdo.
 
+**`H-13` · CERRADO el 2026-11-09 por `DEC-38`:** solo para `RepositorioSolicitudes`, con la tarea nueva `S4-T16`. **Postulaciones y reseñas siguen sin tarea real**. El hallazgo, como se reportó:
+
 **`H-13` · Tres repositorios no tienen tarea de implementación real.** Salió
 al resolver el riesgo de P-18 que dejó `S2-T07`, y que cerró `DEC-31`. Las
 seis tareas reales de AGENTS.md §6 cubren:
@@ -1684,6 +1692,8 @@ esos tickets. **Lo decide el líder.**
 Salen de escribir el contrato de perfil de usuario en `S2-T12`. **Ninguno se
 resolvió aquí.**
 
+**`H-28` · CERRADO el 2026-11-09 por `DEC-40`:** `ErroresAuth.kt` pasa a `RestException.error`, con una prueba. Sin tarea asignada todavía. El hallazgo, como se reportó:
+
 **`H-28` · El `mensaje` de los errores de autenticación lleva el token.**
 - `traducirErrorAuth` y `traducirErrorFicha` guardan `error.message` en
   `Resultado.Error.mensaje`.
@@ -1695,6 +1705,8 @@ resolvió aquí.**
 - `ErroresDatos.kt`, de `S2-T12`, ya usa `RestException.error` y tiene una
   prueba que lo cuida. `ErroresAuth.kt` no se tocó: es de otra tarea.
   **Lo decide el líder.**
+
+**`H-14` · CERRADO el 2026-11-09 por `DEC-42`:** se queda así: nombre, apellidos y teléfono los valida solo la aplicación. El hallazgo, como se reportó:
 
 **`H-14` · `public.usuarios` no valida el contenido de nombre, apellidos ni
 teléfono.**
@@ -1708,6 +1720,8 @@ teléfono.**
 Salen de escribir el contrato de trabajador y servicios en `S3-T08`.
 **Ninguno se resolvió aquí.**
 
+**`H-25` · CERRADO el 2026-11-09 por `DEC-36`:** estado y municipio pasan a nulos en el modelo y P-07 se pinta sin ubicación; lo aplica `S4-T09`. El hallazgo, como se reportó:
+
 **`H-25` · El perfil público de un trabajador sin estado o sin municipio no
 se puede leer.**
 - `fn_perfil_publico_trabajador` une `estados` y `municipios` con `left join`:
@@ -1720,6 +1734,8 @@ se puede leer.**
 - La salida simple es volver nulos los dos campos del modelo y que P-07 pinte
   el vacío; eso es de `S3-T14` y `S4-T03`. **Lo decide el líder.**
 
+**`H-26` · CERRADO el 2026-11-09 por `DEC-42`:** riesgo aceptado del MVP. El hallazgo, como se reportó:
+
 **`H-26` · `reemplazarHabilidades` no es atómico.**
 - Son dos peticiones: borrar todas y luego insertar. Si la segunda falla, el
   perfil queda sin habilidades en la base.
@@ -1730,6 +1746,8 @@ se puede leer.**
   transacción, y eso es una operación nueva de `RepositorioTrabajador` y un
   cambio de `basedatos/`. Con lo que hay, el riesgo es bajo. **Lo decide el
   líder.**
+
+**`H-27` · CERRADO el 2026-11-09 por `DEC-40`:** P-12 pide completar el perfil, con un botón a P-11, antes de abrir P-13. Sin tarea asignada todavía. El hallazgo, como se reportó:
 
 **`H-27` · Un trabajador no puede publicar un servicio antes de guardar su
 perfil.**
@@ -1751,6 +1769,8 @@ perfil.**
 Salen de escribir el contrato de solicitudes y búsqueda. **Ninguno se resolvió aquí**, conforme
 a `AGENTS.md` §9: lo que sigue son **propuestas**, y el SQL no se aplicó a `basedatos/`. Cada
 uno nombra quién decide.
+
+**`H-40` · CERRADO el 2026-11-09 por `DEC-36`:** opción 1, columna normalizada con `unaccent`; lo aplica `S4-T09`. El hallazgo, como se reportó:
 
 **`H-40` · La búsqueda por texto no ignora acentos, y HU-17 lo exige.** `ilike` ignora
 mayúsculas, no acentos: "plomeria" no encuentra "plomería". Opciones:
@@ -1780,6 +1800,8 @@ mayúsculas, no acentos: "plomeria" no encuentra "plomería". Opciones:
 
 **Le toca a `S4-T09` implementarlo, y al líder decidirlo porque cambia la base.**
 
+**`H-41` · CERRADO el 2026-11-09 por `DEC-37`:** trigger `fn_validar_ubicacion_solicitud` solo en `insert`; lo aplica `S4-T16`. El hallazgo, como se reportó:
+
 **`H-41` · La ubicación de una solicitud es obligatoria en HU-12 y opcional en la base.**
 `estado_id` y `municipio_id` aceptan `null`, y la base **tampoco revisa que el municipio sea del
 estado**. Propuesta: un trigger solo en `insert`, con mensaje en español:
@@ -1801,17 +1823,23 @@ end; $$;
 `CHECK` contradiría esas llaves. Solo en `insert` para no invalidar solicitudes antiguas. **Lo
 decide el líder**: esto o dejarlo en la pantalla.
 
+**`H-42` · CERRADO el 2026-11-09 por `DEC-37`:** opción A, la vista `vw_mis_solicitudes`; lo aplica `S4-T16`. El hallazgo, como se reportó:
+
 **`H-42` · No hay cómo mostrar las postulaciones sin revisar en P-09.** Dos opciones, en
 `obtenerMisSolicitudes`: la vista `vw_mis_solicitudes` con `postulaciones_sin_revisar` (A,
 recomendada) o el conteo embebido `postulaciones(count)` (B, sin cambio de base pero sin
 verificar). Las dos piden extender `Solicitud` y `TarjetaSolicitud`, que son del líder, como se
 hizo con `TarjetaServicio` (`H-21`). **Le toca a `S4-T09` implementarlo, y al líder decidir.**
 
+**`H-43` · CERRADO el 2026-11-09 por `DEC-36`:** la tarjeta muestra "Desde $X" y la etiqueta "No disponible", sin ocultar a nadie; lo aplica `S4-T09`. El hallazgo, como se reportó:
+
 **`H-43` · `TarjetaTrabajador` no muestra el precio ni si está disponible.** **No cambia el
 contrato**: la vista ya trae `precio_desde` y `disponible`, y la vista **no filtra `disponible`**.
 Falta decidir si la tarjeta los muestra y si un trabajador no disponible sale en la lista con su
 etiqueta o se oculta (en cuyo caso el filtro iría en la vista o en la consulta). **Lo decide el
 líder.**
+
+**`H-44` · CERRADO el 2026-11-09 por `DEC-37`:** `CHECK` de 1,000 caracteres; lo aplica `S4-T16`. El hallazgo, como se reportó:
 
 **`H-44` · La descripción de una solicitud no tiene tope en la base.** Si el líder confirma las
 1,000 posiciones de la pantalla: `alter table public.solicitudes add constraint
@@ -1821,6 +1849,8 @@ ck_solicitud_descripcion check (char_length(descripcion) <= 1000);`. Las solicit
 **`H-45` · CERRADO por `S4-T03`:** `Ruta.Resultados` recibe la categoría opcional. Queda sin
 hacer el texto que vendría de P-05, porque P-05 sigue siendo un andamio.
 
+**`H-46` · CERRADO el 2026-11-09 por `DEC-37`:** solo los trabajadores leen las solicitudes abiertas; lo aplica `S4-T16`. El hallazgo, como se reportó:
+
 **`H-46` · Cualquier usuario con sesión, incluido un cliente, lee las solicitudes abiertas de
 todos.** La política "trabajador ve las solicitudes abiertas" es `using (estatus = 'abierta')` y no
 mira el rol. Lo que se ve es título, descripción, presupuesto, categoría y ubicación, no datos de
@@ -1828,9 +1858,13 @@ contacto. Puede ser lo que se quiere en un mercado abierto, pero el nombre de la
 cosa. Si se quiere solo para trabajadores hace falta una función que consulte el rol. **Lo decide
 el líder.**
 
+**`H-47` · CERRADO el 2026-11-09 por `DEC-37`:** solo se cancela una solicitud `abierta`. El hallazgo, como se reportó:
+
 **`H-47` · Cancelar una solicitud `asignada` no está definido.** HU-14 solo habla de la abierta, y
 `cancelar` del contrato actúa solo sobre `abierta`. Qué pasa con el trabajador ya asignado, y si el
 cliente puede arrepentirse, no está escrito. **Lo decide el líder.**
+
+**`H-48` · CERRADO el 2026-11-09 por `DEC-36`:** los campos de ubicación pasan a nulos y la tarjeta se pinta sin ellos; lo aplica `S4-T09`. El hallazgo, como se reportó:
 
 **`H-48` · Un trabajador sin ubicación rompe la página de resultados.** `p.estado_id` y
 `p.municipio_id` son nulos hasta que el trabajador guarda su perfil con ubicación, y la vista los

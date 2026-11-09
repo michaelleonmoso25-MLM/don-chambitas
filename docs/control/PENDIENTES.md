@@ -82,6 +82,31 @@ INEGI con un `COPY` contra `municipios`.
 
 ---
 
+## PEND-03 · Pausa de la línea de inteligencia artificial
+
+**Estado:** resuelto — 2026-11-09
+**Quién decidió:** GRI (líder)
+**Resultado:** **Se reanuda entera.** Ver `DEC-33` en
+`docs/control/DECISIONES.md`.
+
+### Qué se decidió
+
+La pausa del 2026-10-25, que congeló `S3-T10`, `S3-T11`, `S3-T12`, `S3-T13`,
+`S4-T10` y `S4-T11` por indicación del equipo, queda sin efecto. Las cuatro del
+Sprint 3 se retomaron el 2026-11-07 (PR #46 a #49) y este registro lo confirma.
+
+### Qué se desbloquea
+
+| ID | Tarea |
+|---|---|
+| S4-T10 | Consumir la API del GPT desde la Edge Function |
+| S4-T11 | Tope de llamadas de IA por usuario al día y caché de respuestas |
+
+Con `S4-T11` se pueden tomar después `S4-T14` y las opcionales `S4-T12` y
+`S4-T13`. Lo que esas tareas tienen que aplicar está en `DEC-35` y `DEC-39`.
+
+---
+
 ## Plantilla para pendientes nuevos
 
 ```

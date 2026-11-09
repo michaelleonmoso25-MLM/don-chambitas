@@ -359,6 +359,8 @@ La numeración sigue la de los hallazgos de `S1-T02`, que llegaron hasta `H-04`.
 
 ### H-05 · La búsqueda por texto no ignora los acentos
 
+**CERRADO el 2026-11-09 por `DEC-36`:** columna `texto_busqueda` normalizada con `unaccent`; lo aplica `S4-T09`. El hallazgo, como se reportó:
+
 **Qué dice la historia.** HU-17, primer criterio: *"Dado que escribo 'plomeria'
 sin acento, cuando busco, entonces los resultados incluyen a quienes escribieron
 'plomería' con acento."*
@@ -419,6 +421,8 @@ a `S2-T14` y `S3-T09`, que lo implementan. No bloquea a nadie hoy.
 
 ### H-08 · Uno de los cinco triggers del paso 2 no se puede probar
 
+**CERRADO el 2026-11-09 por `DEC-42`:** el quinto trigger lo sostienen los roles excluyentes de `DEC-22`, y `S1-T03` se queda cerrada. El hallazgo, como se reportó:
+
 **Qué pide el ticket.** El paso 2 de `S1-T03`: probar a mano los cinco
 triggers, entre ellos *"postularte a tu propia solicitud"*, y que los cinco
 fallen.
@@ -452,6 +456,8 @@ el esquema y no el trigger.
 `S1-T03`. No afecta a ninguna tarea posterior.
 
 ### H-07 · "Postulaciones sin revisar" no existe como dato
+
+**CERRADO el 2026-11-09 por `DEC-37`:** vista `vw_mis_solicitudes` con `postulaciones_sin_revisar`; lo aplica `S4-T16`. El hallazgo, como se reportó:
 
 **Qué dice la historia.** HU-13, segundo criterio: *"Dado que una solicitud
 tiene postulaciones sin revisar, cuando la veo en la lista, entonces se

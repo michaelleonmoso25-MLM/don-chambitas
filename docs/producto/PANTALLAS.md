@@ -24,7 +24,7 @@ de describir la pantalla otra vez.
 | P-05 | Inicio cliente | Buscador, cuadrícula de categorías y trabajadores mejor calificados |
 | P-06 | Resultados | Lista de trabajadores con filtros de categoría, estado, municipio, precio y calificación. Se ordena por calificación, precio o más recientes, y se carga por páginas |
 | P-07 | Perfil público del trabajador | Datos, habilidades, **sus servicios**, **sus reseñas** y botón de contactar |
-| P-08 | Publicar solicitud | Título, descripción, categoría, presupuesto y ubicación. Botón de redactar con IA |
+| P-08 | Publicar solicitud | Título, descripción, categoría, presupuesto y ubicación |
 | P-09 | Mis solicitudes | Lista de las solicitudes del cliente con su estado |
 
 ## Trabajador

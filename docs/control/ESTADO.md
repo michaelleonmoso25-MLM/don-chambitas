@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-11-07
+**Última actualización:** 2026-11-09
 
 ---
 
@@ -13,14 +13,14 @@
 |---|---|
 | Sprint | 4 |
 | Fechas | PENDIENTE |
-| Tareas del sprint | 15 |
+| Tareas del sprint | 16 |
 | Terminadas | 9 |
 | En curso | 0 |
-| Bloqueadas | 2 |
+| Bloqueadas | 0 |
 
-> **Sprint 4 abierto el 2026-11-07 por aviso de la persona del equipo**, que dice haberlo
-> autorizado el líder. **El líder tiene que confirmarlo en `PENDIENTES.md`.** Las dos
-> bloqueadas son `S4-T10` y `S4-T11`.
+> **Sprint 4 abierto el 2026-11-07**, confirmado por el líder en `DEC-34`. El
+> 2026-11-09 `S4-T10` y `S4-T11` se desbloquearon (`DEC-33`) y entró `S4-T16`
+> (`DEC-38`), así que el sprint pasó a 16 tareas sin ninguna bloqueada.
 >
 > Sprint 3 cerrado con sus 15 tareas en `hecha` (PR #46 a #50), abierto el 2026-10-18
 > por autorización del líder. Sus tickets se
@@ -47,7 +47,7 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Tocas el avatar de P-18 | Hoja con "Elegir de la galería" y "Tomar foto", y luego el recortador. Una imagen de más de 5 MB o que no sea JPG, PNG o WebP se rechaza con el motivo | — |
 | Como trabajador, tocas "Mi perfil profesional" en P-18 | P-11 **guarda en Supabase** (`S3-T09`): estados y municipios salen de la base, "Perfil guardado" y el aviso de incompleto recalculado, y al reabrir la aplicación lo guardado sigue. Valida como P-03: cada campo al salir de él y todos al guardar, con el foco en el primer error. Probado con `beto.rls@…` y Puebla → Cholula | — |
 | Como trabajador, tocas la pestaña **Servicios** | P-12 **lee de Supabase** tus servicios, activos primero, con la miniatura de la foto de la posición 1. La hoja de acciones edita, pausa o reactiva y elimina con confirmación, cada una con su aviso. Recarga al volver de P-13 | — |
-| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción** con un texto de `RepositorioIaFalso` (la IA real es `S4-T10`); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `H-27`, `S4-T10` |
+| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción** con un texto de `RepositorioIaFalso` (la IA real es `S4-T10`); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `DEC-40` (`H-27`), `S4-T10` |
 | Pulsas "Usar foto" en el recortador | La foto se guarda en Supabase Storage, el avatar la muestra y sigue al reabrir. La anterior se borra de la cubeta. Sin red, "Sin conexión" | — |
 | Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
 | Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
@@ -128,91 +128,44 @@ where email like '%@prueba.donchambitas.mx'
    or email like '%@donchambitas.test';
 ```
 
-## Los cuatro huecos de S1-T03, uno ya cerrado
-
-Salen del cruce contra las historias y de revisar el paso 2 del ticket.
-**Ninguno se corrigió**: el esquema no se rediseña en `S1-T03`. Están
-explicados al final de `MODELO-ER.md`.
-
-- **`H-05` — La búsqueda por texto no ignora los acentos.** HU-17 promete que
-  "plomeria" encuentre "plomería". `pg_trgm` acelera el `ilike`, no cambia lo
-  que el `ilike` considera igual, y `unaccent` no está instalado; el contrato
-  de `buscarTrabajadores` busca justamente con `ilike`. Es el más serio y
-  **conviene cerrarlo antes de `S4-T04`**.
-- **`H-06` — CERRADO el 2026-10-19 por el líder**: se borra la fila primero y
-  el archivo después, con las URL leídas antes. Si falla el borrado del
-  archivo, queda un archivo sin fila que nadie ve. El orden de cada operación
-  está en `CONTRATOS-API.md` (`S3-T08`).
-- **`H-07` — "Postulaciones sin revisar" no existe como dato.** `enviada` es
-  "no decidida", no "no vista". Probablemente sea la redacción de HU-13.
-- **`H-08` — Uno de los cinco triggers del paso 2 no se puede probar, y eso
-  toca un criterio de aceptación de este ticket.** "Postularse a tu propia
-  solicitud" exigiría un uuid que fuera cliente y trabajador a la vez, y los
-  roles excluyentes lo impiden antes de que el trigger opine. Los otros cuatro
-  están demostrados. **Este es el único punto por el que `S1-T03` podría
-  devolverse:** o el criterio baja a cuatro triggers, o se anota que al quinto
-  lo sostiene el esquema.
-
-## Los seis huecos de S3-T01
-
-Salen de cruzar HU-06, HU-08 a HU-11 y HU-29 a HU-31 contra los repositorios
-y el esquema. Están explicados en la sección 10 de
-`docs/producto/DISENO-PERFIL-SERVICIOS.md`. **Cerrados cuatro, `H-18` a
-`H-21`; quedan dos.**
-
-- **`H-18` — CERRADO el 2026-10-19 por el líder**: fotos embebidas.
-  `Servicio` ganó `fotos`; lo aplicó `S3-T08` en el modelo, el falso, P-12 y
-  P-13. La real es de `S3-T09`.
-- **`H-19` — CERRADO el 2026-10-18 por el líder**: operación nueva,
-  `obtenerMisHabilidades()`, que agregó `S3-T03` en la interfaz y en el falso.
-  La real es de `S3-T09`.
-- **`H-20` — CERRADO el 2026-10-19 por el líder**: sin porcentaje. HU-11 se
-  cumple con el indicador indeterminado de P-13 (`S3-T08`).
-- **`H-21` — CERRADO el 2026-10-18 por el líder**: `TarjetaServicio` ganó
-  `pausado` y ya no pinta el renglón de precio vacío. Lo aplicó `S3-T05`.
-- **`H-22` — Al crear un servicio todavía no se le pueden agregar fotos.** El
-  diseño pasa P-13 a modo editar al publicar; el líder puede elegir lo
-  contrario.
-- **`H-23` — No hay forma de saber el tope de IA al abrir la pantalla**, como
-  pide HU-31. Le toca a `S3-T12`.
-
 ## Siguiente en la cola
 
-**Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`), **pero no debería empezar sin que el líder decida `H-40`, `H-42` y `H-48`**; las demás del Sprint 4 están bloqueadas (`S4-T10`, `S4-T11`, `S4-T14`) u opcionales (`S4-T12`, `S4-T13`). `S4-T15` quedó `hecha` el 2026-11-07: `FlujoClienteTest` (recorridos y filas de error de P-06, P-08 y P-09 con los falsos) y la prueba de Compose de P-08; **sin defectos en `main`**. Con falsos todo es consistente: esas pruebas no ven el desajuste de municipios ni que P-07 lea de Supabase lo que P-06 saca del falso (`S4-T09`). El Sprint 4 se abrió por aviso de la persona del equipo; el líder lo confirma. `S3-T10` quedó `hecha` el 2026-11-07 **con 12 de 13 casos**: el 13 no pasa en ChatGPT Gratis (`H-33`) y se cerró así por decisión de la persona del equipo. **El líder tiene que confirmarlo en el PR.**
+**Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`). Ya no
+espera nada: el líder decidió `H-40`, `H-43` y `H-48` en `DEC-36`, y eso es lo
+que la tarea aplica. Después vienen `S4-T10` (600), `S4-T11` (550), `S4-T14`
+(400, cuando `S4-T11` esté `hecha`) y `S4-T16` (250). `S4-T12` y `S4-T13` son
+opcionales.
 
-**La IA se retomó el 2026-11-07** en el Sprint 3, según el aviso de la persona
-del equipo: el líder desbloqueó la línea. `S3-T11` se recuperó del historial de
-git (`df37851`, revertida el 2026-10-25) y queda `hecha`. `S4-T10` y `S4-T11`
-siguen `bloqueada`: el aviso solo nombró el Sprint 3. **El líder tiene que
-confirmarlo en `PENDIENTES.md` y decir si desbloquea las del Sprint 4.**
+**La IA se reanudó entera el 2026-11-09** (`DEC-33`, cierra `PEND-03`). `S3-T10`
+se queda `hecha` con 12 de 13 casos (`DEC-35`). Lo que `S4-T10` y `S4-T11` tienen
+que aplicar está en `DEC-39`.
 
 **Antes conviene que el líder vuelva a correr `04_datos_semilla.sql`**: con
 los catálogos reales, la app ya muestra las categorías sin acentos.
 
-## Tres huecos nuevos de S3-T08
+## Huecos: todos decididos el 2026-11-09
 
-Salen de escribir el contrato de trabajador y servicios. Están explicados al
-final de `docs/tecnico/CONTRATOS-API.md`. **Ninguno se corrigió.**
+El líder decidió los huecos abiertos en `DEC-35` a `DEC-42`. Cada uno quedó
+marcado `CERRADO` donde se reportó. **Decidido no es aplicado**: esta tabla dice
+quién hace cada cosa.
 
-- **`H-25` — El perfil público de un trabajador sin estado o sin municipio no
-  se puede leer.** La RPC los manda `null` y `PerfilPublicoTrabajador` los
-  pide no nulos. Pega en la vista previa de HU-08.
-- **`H-26` — `reemplazarHabilidades` no es atómico.** Si falla el `insert`
-  después del `delete`, el perfil queda sin habilidades hasta que se reintente.
-  P-11 conserva la lista en pantalla mientras siga abierta.
-- **`H-27` — Un trabajador no puede publicar un servicio antes de guardar su
-  perfil.** `servicios.perfil_id` apunta a `perfiles_trabajador`: `crear`
-  falla con `409` y P-13 da el error genérico. Es el camino natural de quien
-  se acaba de registrar. **Es el más urgente: se nota en cuanto entre
-  `S3-T09`.**
+| Huecos | Decisión | Lo aplica |
+|---|---|---|
+| `H-05`, `H-40`, `H-25`, `H-48`, `H-43` | Búsqueda sin acentos, ubicación nula y tarjeta con precio y "No disponible" (`DEC-36`) | `S4-T09` |
+| `H-07`, `H-41`, `H-42`, `H-44`, `H-46`, `H-47` | Reglas de solicitudes en la base y `vw_mis_solicitudes` (`DEC-37`) | `S4-T16` |
+| `H-13` | `S4-T16` hace real a `RepositorioSolicitudes` (`DEC-38`) | — |
+| `H-23`, `H-35`, `H-36`, `H-32`, `H-34` | Tope consultable, entrada de 1,000 y prompt neutro (`DEC-39`) | `S4-T10`, `S4-T11` |
+| `H-37` | `TipoError` nuevo para el rechazo de la IA (`DEC-39`) | **Sin tarea** |
+| `H-29` | F1 solo en P-11 y P-13 (`DEC-39`) | Ya aplicado en `IA.md` y `PANTALLAS.md` |
+| `H-27`, `H-28`, `H-17` | P-12 pide el perfil antes de publicar, `ErroresAuth` sin token y fotos de servicio validadas antes de subir (`DEC-40`) | **Sin tarea** |
+| `H-24` | P-14 la construye `S5-T02` (`DEC-41`) | `S5-T02` |
+| `H-33` | `S3-T10` cierra con 12 de 13 (`DEC-35`) | — |
+| `H-08`, `H-14`, `H-22`, `H-26`, `H-38` | Se quedan como están (`DEC-42`) | — |
 
-## Un hueco nuevo de S3-T05
-
-- **`H-24` — Ninguna tarea de la cola construye P-14 "Mis postulaciones".**
-  P-12 y P-18 ya llevan a ella y sigue siendo el andamio de `S1-T12`. Las
-  postulaciones son del Sprint 5 (`S5-T02`, `S5-T03`), pero ninguna nombra la
-  pantalla del trabajador. **Lo tiene que decidir el líder**: agregar una
-  tarea o asignársela a una existente.
+**Quedan dos cosas para el líder:**
+- `H-37` y las tres de `DEC-40` no caen en ninguna tarea: hay que asignarlas.
+- `H-13` sigue abierto para `RepositorioPostulaciones` y `RepositorioResenas`.
+  Hay que asignarlos antes de redactar los tickets del Sprint 5.
 
 ## Los dos huecos de S2-T01, ya cerrados
 
@@ -238,6 +191,12 @@ no queda ninguno abierto.**
 
 
 ## Decisiones recientes
+
+**2026-11-09 · El líder decidió todos los huecos abiertos: `DEC-33` a
+`DEC-42`.** Los registró el agente por instrucción suya. Reanuda la IA entera
+(`PEND-03`), confirma el Sprint 4, cierra `S3-T10` con 12 de 13 casos, agrega
+`S4-T16` para las solicitudes reales y amplía `S5-T02` con P-14. El resumen,
+en "Huecos: todos decididos el 2026-11-09".
 
 **2026-09-27 · Se integra la versión de `S2-T05` a `S2-T07` hecha hoy, no la de
 Ricardo5690.** Ricardo5690 implementó las mismas tres tareas entre el 23 y el

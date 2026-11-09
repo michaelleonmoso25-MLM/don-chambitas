@@ -541,11 +541,15 @@ Salen de diseñar estas pantallas contra `HISTORIAS.md`, `CONTRATOS-API.md` y el
 esquema. **Ninguno se resolvió aquí**: los decide el líder o la tarea que se
 nombra.
 
+**`H-40` · CERRADO el 2026-11-09 por `DEC-36`:** opción 1, columna normalizada con `unaccent`; lo aplica `S4-T09`. El hallazgo, como se reportó:
+
 **`H-40` · La búsqueda por texto no ignora acentos, y HU-17 lo exige.** El
 contrato dice "texto libre contra `titulo` (`ilike`)". `ilike` ignora mayúsculas,
 no acentos: "plomeria" no encuentra "plomería". Hace falta `unaccent` en la
 vista o una columna de búsqueda normalizada. **Le toca a `S4-T08`, y al líder
 porque cambia la base.**
+
+**`H-41` · CERRADO el 2026-11-09 por `DEC-37`:** trigger `fn_validar_ubicacion_solicitud` solo en `insert`; lo aplica `S4-T16`. El hallazgo, como se reportó:
 
 **`H-41` · La ubicación de una solicitud es obligatoria en HU-12 y opcional en la
 base.** `solicitudes.estado_id` y `municipio_id` aceptan `null`. Este diseño las
@@ -553,16 +557,22 @@ pide en la pantalla; la base no lo impone, así que otro cliente de la API podr�
 publicar sin ubicación. **Lo decide el líder**: dejarlo en la pantalla o agregar
 el `CHECK`.
 
+**`H-42` · CERRADO el 2026-11-09 por `DEC-37`:** opción A, la vista `vw_mis_solicitudes`; lo aplica `S4-T16`. El hallazgo, como se reportó:
+
 **`H-42` · No hay cómo mostrar las postulaciones sin revisar en P-09.** HU-13 lo
 pide. `TarjetaSolicitud` no tiene ese dato y `obtenerMisSolicitudes()` no trae el
 conteo. Se necesita una columna o vista con el conteo y extender la tarjeta
 (como se hizo con `TarjetaServicio`, `H-21`). **Le toca a `S4-T08`, y al líder
 para la tarjeta.**
 
+**`H-43` · CERRADO el 2026-11-09 por `DEC-36`:** la tarjeta muestra "Desde $X" y la etiqueta "No disponible", sin ocultar a nadie; lo aplica `S4-T09`. El hallazgo, como se reportó:
+
 **`H-43` · `TarjetaTrabajador` no muestra el precio ni si está disponible.** El
 filtro y el orden por precio de P-06 piden ver el "desde $", y la vista devuelve
 `disponible`. Falta extender la tarjeta y decidir si un trabajador no disponible
 sale en la lista, con su etiqueta, o se oculta. **Lo decide el líder.**
+
+**`H-44` · CERRADO el 2026-11-09 por `DEC-37`:** `CHECK` de 1,000 caracteres; lo aplica `S4-T16`. El hallazgo, como se reportó:
 
 **`H-44` · La descripción de una solicitud no tiene tope en la base.**
 `descripcion text not null`. Este diseño propone 1000 caracteres en la pantalla,
