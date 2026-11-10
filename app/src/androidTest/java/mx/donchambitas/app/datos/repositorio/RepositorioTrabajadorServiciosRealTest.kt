@@ -16,8 +16,6 @@ import java.math.BigDecimal
 import java.time.Instant
 import kotlinx.coroutines.runBlocking
 import mx.donchambitas.app.BuildConfig
-import mx.donchambitas.app.datos.falso.FuenteDatosFalsa
-import mx.donchambitas.app.datos.falso.RepositorioCatalogosFalso
 import mx.donchambitas.app.dominio.modelo.PerfilTrabajador
 import mx.donchambitas.app.dominio.modelo.Servicio
 import mx.donchambitas.app.util.Resultado
@@ -67,7 +65,7 @@ class RepositorioTrabajadorServiciosRealTest {
         auth = RepositorioAuthReal { cliente }
         trabajador = RepositorioTrabajadorReal { cliente }
         servicios = RepositorioServiciosReal { cliente }
-        catalogos = RepositorioCatalogosReal({ cliente }, RepositorioCatalogosFalso(FuenteDatosFalsa()))
+        catalogos = RepositorioCatalogosReal { cliente }
 
         val sesion = auth.iniciarSesion(CORREO, CONTRASENA)
         assertTrue("No se pudo entrar con $CORREO: $sesion", sesion is Resultado.Exito)

@@ -984,12 +984,14 @@ Los precios llegan exactos: `350.50` se guarda y se lee como `350.50`.
 
 ## Búsqueda y catálogos · `RepositorioCatalogos`
 
-Escrito a detalle en `S4-T08`. **`buscarTrabajadores` lo implementa `S4-T09`**; los tres
-catálogos ya son reales desde `S3-T09`. **Nada de lo que sigue se verificó contra el
-proyecto de Supabase**: es un contrato, y su verificación es de `S4-T09`. Lo que depende
-de una decisión del líder va marcado **(propuesta)** y se cierra en "Hallazgos de
-`S4-T08`", al final del documento. Los nombres de los métodos de `supabase-kt` se
-comprobaron en el código fuente de la 3.0.3.
+Escrito a detalle en `S4-T08`. **`buscarTrabajadores` lo implementó `S4-T09`** en
+`RepositorioCatalogosReal`, y los tres catálogos son reales desde `S3-T09`. **Lo que sigue
+se compila y se prueba con pruebas unitarias, pero todavía no se verificó contra el
+proyecto de Supabase** (ver "Qué no se verificó", al final de la sección). Lo que estaba
+marcado **(propuesta)** lo decidió el líder en `DEC-36` y ya está aplicado; el SQL vive en
+`basedatos/01_esquema.sql`, y **la vista de Supabase no tiene `texto_busqueda` hasta que el
+líder lo corra**. Los nombres de los métodos de `supabase-kt` se comprobaron en el código
+fuente de la 3.0.3.
 
 ### Resumen
 
@@ -1024,7 +1026,7 @@ Una fila por trabajador: `trabajador_id`, `nombre`, `apellidos`, `foto_url`, `ti
 ```kotlin
 from("vw_busqueda_trabajadores").select {
     filter {
-        palabras(filtros.texto).forEach { ilike("texto_busqueda", "%$it%") }   // (propuesta, H-40)
+        palabrasBusqueda(filtros.texto).forEach { ilike("texto_busqueda", patronContiene(it)) }   // DEC-36
         filtros.categoriaId?.let { contains("categorias", listOf(it)) }
         filtros.estadoId?.let { eq("estado_id", it) }
         filtros.municipioId?.let { eq("municipio_id", it) }
@@ -1056,13 +1058,16 @@ contrato queda así: el texto se compara con **nombre, apellidos y título**.
   Pedro Ramírez, plomero, aunque el título diga "plomero" antes que el nombre). El falso
   hoy busca la frase entera; `S4-T09` lo alinea.
 - Se escapan `\`, `%` y `_` antes de armar el patrón, para que "50%" no sea comodín.
-- **(propuesta, `H-40`)** La comparación ignora mayúsculas **y acentos**, que es lo que pide
-  HU-17. `ilike` solo ignora mayúsculas, así que hace falta una columna nueva en la vista,
-  `texto_busqueda`, con nombre, apellidos y título ya sin acentos y en minúsculas, y la
-  aplicación quita los acentos de lo que se escribe antes de buscar. Quitarlos solo del
-  texto escrito **no sirve**: el dato guardado sigue con acento. Ver el SQL en `H-40`.
-- Sin esa decisión, el contrato cae al de antes: solo `titulo`, con `ilike`, y el criterio
-  de acentos de HU-17 no se cumple.
+- **Decidido en `DEC-36` (`H-40`) y aplicado en `S4-T09`.** La comparación ignora mayúsculas
+  **y acentos**, que es lo que pide HU-17. `ilike` solo ignora mayúsculas, así que la vista
+  tiene una columna, `texto_busqueda`, con título, nombre y apellidos ya sin acentos y en
+  minúsculas (`public.fn_normalizar`, sobre `unaccent`), y la aplicación quita los acentos de
+  lo que se escribe antes de buscar (`normalizarTexto`, en `ConsultaBusqueda.kt`). Quitarlos
+  solo del texto escrito **no sirve**: el dato guardado sigue con acento. La columna se
+  agregó **al final** de la vista porque `create or replace view` solo permite agregar ahí.
+  La app no la pide de vuelta: el `select` lista las demás columnas (`COLUMNAS_BUSQUEDA`).
+- El falso (`RepositorioCatalogosFalso`) se alineó: mismas palabras, mismo desempate y
+  ubicación nula, que antes rellenaba con `0` y `""`.
 
 **El orden.** Siempre lleva un desempate fijo: sin él, con tantos trabajadores en 0 de
 promedio, las páginas pueden repetir o saltarse filas, porque el orden entre iguales no está

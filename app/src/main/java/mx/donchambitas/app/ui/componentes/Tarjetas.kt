@@ -56,16 +56,23 @@ private val TamanoIconoUbicacion = 14.dp
 
 /**
  * Tarjeta para mostrar el resumen del perfil de un trabajador segun DISENO.md.
- * Incluye foto, nombre, titulo/oficio, estrellas y municipio.
+ * Incluye foto, nombre, titulo/oficio, estrellas, municipio, el precio inicial
+ * y, si no toma trabajos, la etiqueta "No disponible" (H-43, DEC-36).
+ *
+ * @param municipio Nulo o vacio cuando el trabajador no puso su ubicacion: el renglon no se pinta (H-48).
+ * @param precioDesdeTexto Nulo cuando no tiene servicios con precio: el renglon no se pinta.
+ * @param disponible Falso lo marca con la etiqueta; no se oculta ni se atenua la tarjeta.
  */
 @Composable
 fun TarjetaTrabajador(
     nombre: String,
     oficio: String,
     calificacion: Float,
-    municipio: String,
+    municipio: String?,
     fotoUrl: String? = null,
     totalResenas: Int? = null,
+    precioDesdeTexto: String? = null,
+    disponible: Boolean = true,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -135,21 +142,46 @@ fun TarjetaTrabajador(
                     totalResenas = totalResenas
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Espaciado.dp4)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        tint = Cafe,
-                        modifier = Modifier.size(TamanoIconoUbicacion)
-                    )
-                    Text(
-                        text = municipio,
-                        style = DonChambitasTema.tipografia.pie,
-                        color = Cafe
-                    )
+                if (!municipio.isNullOrBlank()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Espaciado.dp4)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            tint = Cafe,
+                            modifier = Modifier.size(TamanoIconoUbicacion)
+                        )
+                        Text(
+                            text = municipio,
+                            style = DonChambitasTema.tipografia.pie,
+                            color = Cafe
+                        )
+                    }
+                }
+
+                if (precioDesdeTexto != null || !disponible) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Espaciado.dp12),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (precioDesdeTexto != null) {
+                            Text(
+                                text = precioDesdeTexto,
+                                style = DonChambitasTema.tipografia.secundario,
+                                color = Carbon
+                            )
+                        }
+                        if (!disponible) {
+                            Text(
+                                text = stringResource(R.string.perfil_publico_no_disponible),
+                                style = DonChambitasTema.tipografia.pie,
+                                color = Cafe
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -346,7 +378,22 @@ private fun PreviaTarjetaTrabajador() {
             oficio = "Plomero y electricista",
             calificacion = 4.8f,
             totalResenas = 34,
-            municipio = "Monterrey, N.L."
+            municipio = "Monterrey, N.L.",
+            precioDesdeTexto = "Desde $350"
+        )
+    }
+}
+
+@Preview(showBackground = true, backgroundColor = 0xFFFFFDF8)
+@Composable
+private fun PreviaTarjetaTrabajadorSinUbicacionNiDisponibilidad() {
+    DonChambitasTema {
+        TarjetaTrabajador(
+            nombre = "Mario González",
+            oficio = "Plomero y electricista",
+            calificacion = 0f,
+            municipio = null,
+            disponible = false
         )
     }
 }

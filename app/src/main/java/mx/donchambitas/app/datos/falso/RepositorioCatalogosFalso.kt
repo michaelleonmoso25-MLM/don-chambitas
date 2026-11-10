@@ -4,6 +4,9 @@ import java.math.BigDecimal
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
+import mx.donchambitas.app.datos.remoto.supabase.TAMANO_PAGINA_BUSQUEDA
+import mx.donchambitas.app.datos.remoto.supabase.normalizarTexto
+import mx.donchambitas.app.datos.remoto.supabase.palabrasBusqueda
 import mx.donchambitas.app.dominio.modelo.Categoria
 import mx.donchambitas.app.dominio.modelo.Estado
 import mx.donchambitas.app.dominio.modelo.FiltrosBusquedaTrabajadores
@@ -56,10 +59,10 @@ class RepositorioCatalogosFalso @Inject constructor(
                 fotoUrl = usuario.fotoUrl,
                 titulo = perfil.titulo,
                 disponible = perfil.disponible,
-                estadoId = perfil.estadoId ?: 0,
-                municipioId = perfil.municipioId ?: 0,
-                estado = estado?.nombre ?: "",
-                municipio = municipio?.nombre ?: "",
+                estadoId = perfil.estadoId,
+                municipioId = perfil.municipioId,
+                estado = estado?.nombre,
+                municipio = municipio?.nombre,
                 promedio = promedio,
                 totalResenas = resenas.size,
                 serviciosActivos = servsActivos.size,
@@ -70,10 +73,12 @@ class RepositorioCatalogosFalso @Inject constructor(
         }
 
         // Filtros
+        // Igual que la base (DEC-36): cada palabra tiene que aparecer en titulo, nombre o
+        // apellidos, sin importar mayusculas ni acentos.
+        val palabras = palabrasBusqueda(filtros.texto)
         var filtrados = items.filter { item ->
-            val cumpleTexto = filtros.texto.isNullOrBlank() ||
-                    item.titulo.contains(filtros.texto, ignoreCase = true) ||
-                    "${item.nombre} ${item.apellidos}".contains(filtros.texto, ignoreCase = true)
+            val textoNormalizado = normalizarTexto("${item.titulo} ${item.nombre} ${item.apellidos}")
+            val cumpleTexto = palabras.all { textoNormalizado.contains(it) }
 
             val cumpleCategoria = filtros.categoriaId == null ||
                     item.categorias.contains(filtros.categoriaId)
@@ -89,18 +94,22 @@ class RepositorioCatalogosFalso @Inject constructor(
             cumpleTexto && cumpleCategoria && cumpleEstado && cumpleMunicipio && cumplePrecio && cumplePromedio
         }
 
-        // Orden
-        filtrados = when (filtros.orden) {
-            OrdenBusqueda.PROMEDIO -> filtrados.sortedByDescending { it.promedio }
-            OrdenBusqueda.CREADO_EN -> filtrados.sortedByDescending { it.creadoEn }
-            OrdenBusqueda.PRECIO_DESDE -> filtrados.sortedWith(
-                compareBy(nullsLast()) { it.precioDesde }
-            )
-            null -> filtrados
-        }
+        // Orden con el desempate fijo del contrato: sin el, las paginas repiten o se saltan filas.
+        val masReciente = compareByDescending<ResumenTrabajadorBusqueda> { it.creadoEn }
+        val porId = compareBy<ResumenTrabajadorBusqueda> { it.trabajadorId }
+        filtrados = filtrados.sortedWith(
+            when (filtros.orden ?: OrdenBusqueda.PROMEDIO) {
+                OrdenBusqueda.PROMEDIO ->
+                    compareByDescending<ResumenTrabajadorBusqueda> { it.promedio }.then(masReciente).then(porId)
+                OrdenBusqueda.CREADO_EN -> masReciente.then(porId)
+                OrdenBusqueda.PRECIO_DESDE ->
+                    compareBy<ResumenTrabajadorBusqueda, BigDecimal?>(nullsLast()) { it.precioDesde }
+                        .then(masReciente).then(porId)
+            }
+        )
 
-        val tamanoPagina = 20
-        val inicio = (pagina - 1) * tamanoPagina
+        val tamanoPagina = TAMANO_PAGINA_BUSQUEDA
+        val inicio = (pagina.coerceAtLeast(1) - 1) * tamanoPagina
         val paginados = if (inicio < filtrados.size) {
             filtrados.drop(inicio).take(tamanoPagina)
         } else {

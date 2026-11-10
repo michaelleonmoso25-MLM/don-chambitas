@@ -63,6 +63,8 @@ begin;
 --  Por eso los indices de abajo califican el operador: extensions.gin_trgm_ops
 -- ----------------------------------------------------------------------------
 create extension if not exists pg_trgm with schema extensions;
+-- S4-T09 (DEC-36): la busqueda por texto de P-06 ignora acentos (HU-17).
+create extension if not exists unaccent with schema extensions;
 
 -- gen_random_uuid() es parte del nucleo desde PostgreSQL 13. No hace falta
 -- pgcrypto para esto.
@@ -713,6 +715,15 @@ select p.usuario_id                               as trabajador_id,
   left join public.resenas r on r.trabajador_id = p.usuario_id
  group by p.usuario_id;
 
+-- Minusculas y sin acentos. unaccent no es inmutable; este envoltorio si lo es,
+-- que es lo que permite usarlo despues en un indice de expresion (DEC-36, H-40).
+create or replace function public.fn_normalizar(p_texto text)
+returns text
+language sql
+immutable
+parallel safe
+as $$ select lower(extensions.unaccent('extensions.unaccent', coalesce(p_texto, ''))) $$;
+
 -- Tarjeta de resultados de P-06 ya armada. Los filtros de busqueda
 -- (texto, categoria, ubicacion, precio, calificacion) se aplican encima de
 -- esta vista desde postgrest. Ver docs/tecnico/CONTRATOS-API.md
@@ -742,7 +753,12 @@ select p.usuario_id  as trabajador_id,
        ) as categorias,
        -- Para el orden "mas recientes" del contrato. Es la fecha de alta del
        -- perfil, no la del usuario.
-       p.creado_en
+       p.creado_en,
+       -- Titulo, nombre y apellidos en minusculas y sin acentos. La app quita
+       -- los acentos de lo que se escribe y compara con ilike, palabra por
+       -- palabra (DEC-36, H-40). Va al final: create or replace view solo
+       -- puede agregar columnas ahi.
+       public.fn_normalizar(p.titulo || ' ' || u.nombre || ' ' || u.apellidos) as texto_busqueda
   from public.perfiles_trabajador p
   join public.usuarios u                     on u.id = p.usuario_id
   left join public.estados e                 on e.id = p.estado_id

@@ -60,8 +60,8 @@ data class PerfilPublicoTrabajador(
     val experienciaAnios: Int = 0,
     val telefonoContacto: String? = null,
     val disponible: Boolean = true,
-    val estado: String,
-    val municipio: String,
+    val estado: String? = null,
+    val municipio: String? = null,
     val habilidades: List<String> = emptyList(),
     val calificacion: CalificacionTrabajador = CalificacionTrabajador(0.0, 0),
     val servicios: List<ServicioPublico> = emptyList(),
@@ -92,6 +92,9 @@ data class FiltrosBusquedaTrabajadores(
 
 /**
  * Fila resumida devuelta por la vista vw_busqueda_trabajadores.
+ *
+ * La ubicacion es opcional (H-48, DEC-36): un trabajador que aun no la pone
+ * sale en la busqueda igual, y la tarjeta se pinta sin ella.
  */
 data class ResumenTrabajadorBusqueda(
     val trabajadorId: String,
@@ -100,10 +103,10 @@ data class ResumenTrabajadorBusqueda(
     val fotoUrl: String? = null,
     val titulo: String,
     val disponible: Boolean,
-    val estadoId: Int,
-    val municipioId: Int,
-    val estado: String,
-    val municipio: String,
+    val estadoId: Int? = null,
+    val municipioId: Int? = null,
+    val estado: String? = null,
+    val municipio: String? = null,
     val promedio: Double,
     val totalResenas: Int,
     val serviciosActivos: Int,
