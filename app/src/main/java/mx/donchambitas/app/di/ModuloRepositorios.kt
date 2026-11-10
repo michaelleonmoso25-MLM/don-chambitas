@@ -32,8 +32,8 @@ import mx.donchambitas.app.dominio.repositorio.RepositorioUsuario
  *
  * RepositorioAuth, RepositorioUsuario, RepositorioTrabajador y
  * RepositorioServicios ya enlazan a su implementacion real, y tambien
- * RepositorioCatalogos, salvo buscarTrabajadores, que sigue en el falso hasta
- * S4-T09 (S3-T09). Los otros cinco, a la falsa en memoria (FuenteDatosFalsa).
+ * RepositorioCatalogos (los catalogos desde S3-T09, la busqueda desde S4-T09).
+ * Los otros cinco, a la falsa en memoria (FuenteDatosFalsa).
  * Cuando cada tarea real aterriza (S2-T07, S2-T12, S2-T14, S3-T09, S4-T09, S5-T07),
  * este archivo es el unico que cambia su enlace.
  */

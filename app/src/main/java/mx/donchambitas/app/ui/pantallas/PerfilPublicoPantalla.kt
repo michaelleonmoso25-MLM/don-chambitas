@@ -226,11 +226,18 @@ private fun Encabezado(perfil: PerfilPublicoTrabajador) {
                 color = Carbon
             )
             Text(text = perfil.titulo, style = DonChambitasTema.tipografia.cuerpoFuerte, color = Carbon)
-            Text(
-                text = stringResource(R.string.perfil_publico_ubicacion, perfil.municipio, perfil.estado),
-                style = DonChambitasTema.tipografia.pie,
-                color = Cafe
-            )
+            val ubicacion = when {
+                perfil.municipio != null && perfil.estado != null ->
+                    stringResource(R.string.perfil_publico_ubicacion, perfil.municipio, perfil.estado)
+                else -> perfil.municipio ?: perfil.estado
+            }
+            if (!ubicacion.isNullOrBlank()) {
+                Text(
+                    text = ubicacion,
+                    style = DonChambitasTema.tipografia.pie,
+                    color = Cafe
+                )
+            }
             if (perfil.experienciaAnios > 0) {
                 Text(
                     text = if (perfil.experienciaAnios == 1) {

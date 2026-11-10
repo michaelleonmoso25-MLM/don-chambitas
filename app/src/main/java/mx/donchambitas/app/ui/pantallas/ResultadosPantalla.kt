@@ -343,6 +343,10 @@ private fun ListaResultados(
                 municipio = trabajador.municipio,
                 fotoUrl = trabajador.fotoUrl,
                 totalResenas = trabajador.totalResenas,
+                precioDesdeTexto = trabajador.precioDesde?.let {
+                    stringResource(R.string.precio_desde, formatearCantidad(it))
+                },
+                disponible = trabajador.disponible,
                 onClick = { alAbrirPerfil(trabajador.trabajadorId) }
             )
         }
