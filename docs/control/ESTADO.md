@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 11 |
-| Terminadas | 9 |
+| Terminadas | 10 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -91,6 +91,36 @@ _Ninguna._
 | Desde | — |
 
 ## Última tarea terminada
+
+**`S4-T16` — Implementación real de las solicitudes en Supabase.** 2026-11-09. Rama
+`feat/S4-T16-solicitudes-real-supabase`, pull request **sin abrir todavía**. Tomada por LMM
+(sin responsable nominal). Ticket: `docs/tareas/S4-T16.md`. Sale de `main`, **sin los cambios de
+`S4-T09`** (#60): las dos tocan `ModuloRepositorios.kt`, `ModelosRepositorio.kt`, los tres archivos
+vivos y el contrato, así que quien integre la segunda resuelve un conflicto pequeño.
+
+- `RepositorioSolicitudesReal`, ya enlazado en `ModuloRepositorios`: mis solicitudes (de la vista),
+  abiertas, detalle con postulaciones embebidas, crear, actualizar, cancelar y cerrar. Cancelar y
+  actualizar solo actúan sobre una `abierta`.
+- **`DEC-37` en la base**, en `01_esquema.sql` y `02_politicas_rls.sql`: trigger de ubicación
+  (`H-41`), tope de 1,000 en la descripción (`H-44`), las abiertas solo las leen los trabajadores
+  con `fn_soy_trabajador()` (`H-46`) y `vw_mis_solicitudes` (`H-42`). Comprobaciones 43 a 46 en
+  `90_verificacion.sql`.
+- `Solicitud.postulacionesSinRevisar` y `TarjetaSolicitud` ("N postulaciones sin revisar").
+- Compila; 463 pruebas unitarias, 0 fallas (15 nuevas); las instrumentadas compilan.
+- **SQL aplicado a mano en Supabase el 2026-11-09 por LMM**, pegando solo lo nuevo: `01_esquema.sql`
+  no se puede volver a correr en una base con datos.
+- **Probado en emulador `Pixel_8` contra Supabase**, con `ana.rls@…` (cliente): P-08 publica
+  "Fuga en el bano prueba S4T16" (Plomería, $450, Ciudad de México, Coyoacán), P-09 la muestra
+  "Abierta" y **sigue ahí después de cerrar la aplicación por completo y reabrirla**. Esa solicitud
+  de prueba quedó en la base; se borra con
+  `delete from public.solicitudes where titulo like '%prueba S4T16%';`.
+- **Lo que no se probó:** las reglas de la base con una petición que se salte la pantalla; que un
+  cliente no vea las abiertas de otros y un trabajador sí; `obtenerAbiertas`, `obtenerDetalle`,
+  `actualizar`, `cancelar` y `cerrar` (ninguna pantalla las usa todavía); `postulaciones_sin_revisar`
+  con postulaciones reales (no hay `RepositorioPostulaciones` real hasta `S5`);
+  `90_verificacion.sql` completo.
+
+Las anteriores, con su detalle:
 
 **`S4-T15` — Pruebas del módulo de búsqueda y solicitudes.** 2026-11-07. Rama
 `feat/S4-T15-pruebas-busqueda-solicitudes`, pull request **#59**, integrado con

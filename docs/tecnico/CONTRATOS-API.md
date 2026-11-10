@@ -1127,9 +1127,12 @@ de prueba. Se arregla con `S4-T09`, no con otro cambio.
 
 ## Solicitudes · `RepositorioSolicitudes`
 
-Escrito a detalle en `S4-T08`. **Hoy ninguna tarea lo vuelve real** (`H-13`, que sigue abierto):
-`S4-T09` es solo la búsqueda. P-08, P-09 y P-19 dependen de él y, mientras tanto, usan el falso.
-**Nada de lo que sigue se verificó contra el proyecto.**
+Escrito a detalle en `S4-T08` e implementado en `S4-T16` (`DEC-38`, cierra `H-13` para este
+repositorio) en `RepositorioSolicitudesReal`. **Verificado contra el proyecto de Supabase
+solo `crear` y `obtenerMisSolicitudes`**, en emulador: publicar desde P-08 y ver la solicitud en
+P-09, también después de cerrar la aplicación por completo. `obtenerAbiertas`, `obtenerDetalle`,
+`actualizar`, `cancelar` y `cerrar` están escritas y compiladas, pero ninguna pantalla actual las
+usa todavía, y no se probaron contra la base. Las reglas de `DEC-37` viven en `basedatos/`.
 
 ### Resumen
 
@@ -1154,8 +1157,9 @@ Los estados de `estatus` son `abierta`, `asignada`, `cerrada` y `cancelada`. **`
 | Quién | Lee | Escribe |
 |---|---|---|
 | El cliente | Sus solicitudes, en cualquier estado | `insert` con `cliente_id = uid`; `update` y `delete` de las suyas |
-| Cualquier usuario con sesión | Las solicitudes `abiertas` de todos (**`H-46`**) | Nada |
+| Un trabajador | Las solicitudes `abiertas` de todos (`H-46`, `DEC-37`: solo los trabajadores, por `fn_soy_trabajador()`, que mira `usuarios.rol`) | Nada |
 | Un trabajador | Además, aquellas en las que participa (`trabajador_id` o se postuló) | Nada |
+| Un cliente | **Ya no** las abiertas de otros clientes | Nada |
 
 **Regla del contrato, no de la base (DEC-21):** la base deja que el cliente cambie cualquier
 columna de su solicitud con un `update` suelto, incluido `estatus` y `trabajador_id`. Aquí **solo se
@@ -1179,14 +1183,12 @@ from("solicitudes")
 - Sin solicitudes devuelve lista vacía: es el vacío de P-09, no un error.
 - **Sin paginar**: P-09 no tiene páginas. Con un cliente muy activo habrá que agregarlas; sería una
   operación nueva y se reporta.
-- **(propuesta, `H-42`)** El número de postulaciones sin revisar de cada solicitud. Dos formas,
-  y las dos exigen extender `Solicitud` o su tarjeta, que son del líder:
-  - **A, recomendada:** una vista `vw_mis_solicitudes` con las columnas de `solicitudes` más
-    `postulaciones_sin_revisar`, el conteo de las `enviada`. P-09 leería de ella. Es el mismo patrón
-    que `vw_busqueda_trabajadores` y no depende de la configuración de PostgREST.
-  - **B:** `select("*, postulaciones(count)")` con el filtro `postulaciones.estatus = enviada`, sin
-    tocar la base. Depende de que PostgREST tenga habilitadas las funciones de agregación, y **no se
-    verificó**. Si funciona, `S4-T09` puede preferirla.
+- **Decidido en `DEC-37` (`H-42`, opción A) y aplicado en `S4-T16`.** Lee de la vista
+  `vw_mis_solicitudes`: las columnas de `solicitudes` más `postulaciones_sin_revisar`, el conteo de
+  las que siguen en `enviada`. `Solicitud.postulacionesSinRevisar` lo trae y `TarjetaSolicitud` lo
+  pinta ("N postulaciones sin revisar"); **solo esta operación lo llena**, en las demás vale 0. No
+  depende de la configuración de PostgREST. La vista filtra por `auth.uid()` y respeta RLS
+  (`security_invoker`).
 
 ### `obtenerAbiertas`
 
@@ -1254,8 +1256,11 @@ from("solicitudes")
 - El presupuesto viaja como texto con punto y dos decimales (`SerializadorBigDecimal`); `null` viaja
   como `null`. Por eso `SolicitudEscrituraDto` no tiene valores por omisión, como los de servicios.
 - **Límites que impone la base:** `titulo` hasta 120, `presupuesto` mayor o igual a 0 y menor que
-  100 millones. Coinciden con `ValidacionesSolicitud`. **La descripción no tiene tope** (`H-44`) y
-  **estado y municipio pueden ir vacíos** (`H-41`): la pantalla los exige, la base no.
+  100 millones. Coinciden con `ValidacionesSolicitud`. Desde `S4-T16` la base también impone la
+  descripción de **1,000 caracteres como máximo** (`ck_solicitud_descripcion`, `H-44`) y exige
+  **estado y municipio, y que el municipio sea del estado** (trigger `tg_solicitudes_ubicacion`, solo
+  en `insert`, `H-41`); un `400` con "La solicitud necesita estado y municipio" o "El municipio no es
+  del estado elegido" es `VALIDACION`.
 - Devuelve la solicitud con su `id`; P-08 no lo usa, pero P-09 lo lee al recargar.
 
 ### `actualizar`
@@ -1298,8 +1303,8 @@ from("solicitudes")
     .decodeList<SolicitudDto>()
 ```
 
-- **Solo se cancela una `abierta` (`H-47`, propuesta).** HU-14 habla de la solicitud abierta. Una
-  `asignada` ya tiene trabajador, y qué pasa con él no está definido. Cero filas es `VALIDACION`.
+- **Solo se cancela una `abierta` (`H-47`, decidido en `DEC-37`).** Con una `asignada`, cliente y
+  trabajador lo arreglan por el chat. Cero filas es `VALIDACION`.
 - Una cancelada deja de recibir postulaciones: lo garantiza `fn_validar_postulacion`, que rechaza
   postularse a una solicitud que no está abierta.
 
