@@ -96,8 +96,8 @@ _Ninguna._
 Rama `feat/S4-T09-busqueda-real-supabase`, pull request **sin abrir todavía**. Tomada por
 LMM (responsable nominal: RRC).
 
-**Cerrada sin verificar contra Supabase ni en emulador, por decisión de LMM.** Compila y
-pasa las pruebas unitarias; lo demás sigue sin comprobarse (ver abajo).
+Compila, pasa las pruebas unitarias y se probó en emulador contra Supabase la búsqueda
+básica; lo que sigue sin comprobarse está abajo.
 
 - `RepositorioCatalogosReal.buscarTrabajadores` lee `vw_busqueda_trabajadores`; ya no recibe
   al falso. Ticket: `docs/tareas/S4-T09.md`.
@@ -112,9 +112,16 @@ pasa las pruebas unitarias; lo demás sigue sin comprobarse (ver abajo).
   correr en una base con datos). Comprobado a mano: la vista tiene las 3 columnas
   (`categorias`, `creado_en`, `texto_busqueda`, que es la prueba 38 de `90_verificacion.sql`)
   y `fn_normalizar('Plomería José Núñez')` devuelve `plomeria jose nunez`.
-- **Lo que no se hizo:** correr `90_verificacion.sql` completo, probar la búsqueda desde la
-  app y en emulador. LMM cerró la tarea sin esa prueba el 2026-11-09. Si P-06 falla al
-  buscar, ahí se empieza.
+- **Probado en emulador `Pixel_8` el 2026-11-09**, contra el proyecto de Supabase y con
+  `ana.rls@…` (cliente): P-06 lista a "Trabajador Demo, Plomero, Coyoacan", que sale de la
+  base y no del falso; "PLOMERO" en mayúsculas lo encuentra; "carpintero" da "No encontramos
+  trabajadores".
+- **Lo que no se probó:** `90_verificacion.sql` completo; los acentos con datos reales (solo
+  hay un trabajador y su oficio no lleva acento, así que quedan cubiertos por las pruebas
+  unitarias y por `fn_normalizar` en el SQL Editor); la tarjeta con "Desde $X" y "No
+  disponible" (el trabajador demo no tiene servicios con precio y está disponible); filtros,
+  orden y paginación con más de un trabajador. Para probarlos hace falta sembrar
+  trabajadores en Supabase.
 
 Las anteriores, con su detalle:
 
