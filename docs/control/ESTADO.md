@@ -116,12 +116,19 @@ básica; lo que sigue sin comprobarse está abajo.
   `ana.rls@…` (cliente): P-06 lista a "Trabajador Demo, Plomero, Coyoacan", que sale de la
   base y no del falso; "PLOMERO" en mayúsculas lo encuentra; "carpintero" da "No encontramos
   trabajadores".
-- **Lo que no se probó:** `90_verificacion.sql` completo; los acentos con datos reales (solo
-  hay un trabajador y su oficio no lleva acento, así que quedan cubiertos por las pruebas
-  unitarias y por `fn_normalizar` en el SQL Editor); la tarjeta con "Desde $X" y "No
-  disponible" (el trabajador demo no tiene servicios con precio y está disponible); filtros,
-  orden y paginación con más de un trabajador. Para probarlos hace falta sembrar
-  trabajadores en Supabase.
+- **Segunda prueba, con 6 trabajadores de prueba sembrados** (`trab1` a `trab6.s4t09@prueba.donchambitas.mx`,
+  creados por LMM desde el SQL Editor; se borran con
+  `delete from auth.users where email like '%.s4t09@prueba.donchambitas.mx';`):
+  - P-06 lista los 7 trabajadores reales; la tarjeta muestra "Desde $350", "$500", "$80",
+    "$2,000" y "$199.50".
+  - Luis Hernández (no disponible) sale en la lista con la etiqueta "No disponible".
+  - Ana Torres, sin ubicación ni servicios, sale en la lista sin renglón de ubicación ni de
+    precio, y su perfil (P-07) abre sin error y sin línea de ubicación (`H-48`, `H-25`).
+  - "jose nunez" sin acentos encuentra a "José Núñez".
+- **Lo que no se probó:** `90_verificacion.sql` completo; los filtros (categoría, estado,
+  municipio, precio, calificación), el orden por precio y la paginación (con 7 trabajadores
+  no hay segunda página); las estrellas (nadie tiene reseñas); y abrir P-07 de un trabajador
+  con servicios con precio.
 
 Las anteriores, con su detalle:
 
