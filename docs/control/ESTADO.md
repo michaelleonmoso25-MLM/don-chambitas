@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 11 |
-| Terminadas | 9 |
+| Terminadas | 10 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -91,6 +91,30 @@ _Ninguna._
 | Desde | — |
 
 ## Última tarea terminada
+
+**`S4-T09` — Implementación real de la búsqueda y el filtrado en Supabase.** 2026-11-09.
+Rama `feat/S4-T09-busqueda-real-supabase`, pull request **sin abrir todavía**. Tomada por
+LMM (responsable nominal: RRC).
+
+**Cerrada sin verificar contra Supabase ni en emulador, por decisión de LMM.** Compila y
+pasa las pruebas unitarias; lo demás sigue sin comprobarse (ver abajo).
+
+- `RepositorioCatalogosReal.buscarTrabajadores` lee `vw_busqueda_trabajadores`; ya no recibe
+  al falso. Ticket: `docs/tareas/S4-T09.md`.
+- **`DEC-36` aplicada:** `unaccent` + `fn_normalizar` + columna `texto_busqueda` en
+  `01_esquema.sql`; estado y municipio nulos en `ResumenTrabajadorBusqueda` y
+  `PerfilPublicoTrabajador`; `TarjetaTrabajador` con "Desde $X" y "No disponible".
+- Compila (`./gradlew assembleDebug`); 484 pruebas unitarias, 0 fallas (36 nuevas); las
+  instrumentadas compilan.
+- **Lo que falta, y es del líder o de quien tenga el emulador:**
+  1. **Correr `01_esquema.sql` en Supabase** (la consola; la `service_role` no entra al
+     repositorio) y luego `90_verificacion.sql`: la prueba 38 debe dar `PASA`. **Mientras no
+     se corra, la búsqueda real falla** porque la vista no tiene `texto_busqueda`.
+  2. Probar contra el proyecto y en emulador lo que enumera el ticket. **No se hizo**: LMM
+     cerró la tarea sin esa prueba el 2026-11-09. Si P-06 falla al buscar, lo primero que se
+     revisa es el punto 1.
+
+Las anteriores, con su detalle:
 
 **`S4-T15` — Pruebas del módulo de búsqueda y solicitudes.** 2026-11-07. Rama
 `feat/S4-T15-pruebas-busqueda-solicitudes`, pull request **#59**, integrado con
