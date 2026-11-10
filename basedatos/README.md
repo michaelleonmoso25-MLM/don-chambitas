@@ -19,7 +19,7 @@ Y dos que **no** crean nada, para comprobar que lo de arriba quedó bien:
 
 | Archivo | Qué hace |
 |---|---|
-| `90_verificacion.sql` | 42 comprobaciones de estructura. Solo lee |
+| `90_verificacion.sql` | 46 comprobaciones de estructura. Solo lee |
 | `91_prueba_funcional.sql` | Recorre los 7 pasos de `PRODUCTO.md` con usuarios de prueba y se limpia solo |
 
 Los dos devuelven una tabla donde **todo tiene que decir `PASA`**. Cualquier

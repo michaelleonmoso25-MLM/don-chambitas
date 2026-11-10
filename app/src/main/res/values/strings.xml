@@ -349,4 +349,10 @@
     <string name="precio_desde">Desde $%1$s</string>
     <string name="precio_hasta">Hasta $%1$s</string>
     <string name="precio_con_unidad">%1$s %2$s</string>
+    <!-- P-09 Mis solicitudes: postulaciones sin decidir (S4-T16, H-42) -->
+    <plurals name="tarjeta_solicitud_sin_revisar">
+        <item quantity="one">%1$d postulación sin revisar</item>
+        <item quantity="many">%1$d postulaciones sin revisar</item>
+        <item quantity="other">%1$d postulaciones sin revisar</item>
+    </plurals>
 </resources>

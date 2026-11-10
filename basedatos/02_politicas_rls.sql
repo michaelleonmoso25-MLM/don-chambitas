@@ -61,7 +61,8 @@ grant select, insert, update, delete on
     public.resenas
 to authenticated;
 
-grant select on public.vw_trabajador_calificacion, public.vw_busqueda_trabajadores to authenticated;
+grant select on public.vw_trabajador_calificacion, public.vw_busqueda_trabajadores,
+    public.vw_mis_solicitudes to authenticated;
 
 -- Las tablas de IA no las toca nadie con la anon key. Punto.
 revoke all on public.ia_consumo, public.ia_cache from anon, authenticated;
@@ -188,6 +189,23 @@ as $$
     );
 $$;
 
+-- Si auth.uid() tiene cuenta de trabajador. Mira usuarios.rol y no
+-- perfiles_trabajador: un trabajador recien registrado todavia no tiene
+-- perfil y ya puede ver las solicitudes abiertas (P-10). Es SECURITY DEFINER
+-- para no depender de las politicas de usuarios (DEC-37, H-46).
+create or replace function public.fn_soy_trabajador()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists (
+        select 1 from public.usuarios u
+         where u.id = auth.uid() and u.rol = 'trabajador'
+    );
+$$;
+
 -- Si auth.uid() es el trabajador dueno de ese servicio.
 create or replace function public.fn_es_dueno_del_servicio(p_servicio_id uuid)
 returns boolean
@@ -310,9 +328,11 @@ create policy "cliente ve sus solicitudes"
     on public.solicitudes for select to authenticated
     using (cliente_id = auth.uid());
 
+-- Solo los trabajadores leen las abiertas de otros (DEC-37, H-46): un cliente
+-- no necesita ver lo que publican los demas clientes.
 create policy "trabajador ve las solicitudes abiertas"
     on public.solicitudes for select to authenticated
-    using (estatus = 'abierta');
+    using (estatus = 'abierta' and public.fn_soy_trabajador());
 
 create policy "trabajador ve las solicitudes en las que participa"
     on public.solicitudes for select to authenticated
@@ -490,14 +510,16 @@ revoke execute on function
     public.fn_participa_en_conversacion(uuid),
     public.fn_es_mi_solicitud(uuid),
     public.fn_me_postule_a(uuid),
-    public.fn_es_dueno_del_servicio(uuid)
+    public.fn_es_dueno_del_servicio(uuid),
+    public.fn_soy_trabajador()
 from public, anon;
 grant execute on function
     public.fn_es_contraparte(uuid),
     public.fn_participa_en_conversacion(uuid),
     public.fn_es_mi_solicitud(uuid),
     public.fn_me_postule_a(uuid),
-    public.fn_es_dueno_del_servicio(uuid)
+    public.fn_es_dueno_del_servicio(uuid),
+    public.fn_soy_trabajador()
 to authenticated, service_role;
 
 -- ============================================================================

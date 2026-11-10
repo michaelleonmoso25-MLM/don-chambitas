@@ -147,6 +147,7 @@ fun MisSolicitudesContenido(
                         } ?: stringResource(R.string.mis_solicitudes_a_convenir),
                         estado = solicitud.estatus,
                         fecha = textoFechaSolicitud(solicitud.creadoEn),
+                        postulacionesSinRevisar = solicitud.postulacionesSinRevisar,
                         onClick = { alAbrirSolicitud(solicitud.id) }
                     )
                 }

@@ -199,7 +199,23 @@ from (values
             and     has_column_privilege('authenticated', 'public.usuarios', 'foto_url', 'update'))::text), 'true'),
   (42, 'A-4 un mensaje recibido se marca leido, no se reescribe',
        (select (    has_column_privilege('authenticated', 'public.mensajes', 'leido_en',  'update')
-            and not has_column_privilege('authenticated', 'public.mensajes', 'contenido', 'update'))::text), 'true')
+            and not has_column_privilege('authenticated', 'public.mensajes', 'contenido', 'update'))::text), 'true'),
+
+  -- S4-T16 (DEC-37): las reglas de las solicitudes viven en la base, no solo en la pantalla.
+  (43, 'S4-T16 la vista de mis solicitudes cuenta las postulaciones sin revisar',
+       (select count(*)::text from information_schema.columns
+         where table_schema = 'public' and table_name = 'vw_mis_solicitudes'
+           and column_name = 'postulaciones_sin_revisar'), '1'),
+  (44, 'S4-T16 una solicitud nueva exige estado y municipio del mismo estado',
+       (select count(*)::text from pg_trigger
+         where tgname = 'tg_solicitudes_ubicacion' and not tgisinternal), '1'),
+  (45, 'S4-T16 la descripcion de una solicitud tiene tope de 1000 caracteres',
+       (select count(*)::text from pg_constraint where conname = 'ck_solicitud_descripcion'), '1'),
+  (46, 'S4-T16 las solicitudes abiertas de otros solo las lee un trabajador',
+       (select count(*)::text from pg_policies
+         where schemaname = 'public' and tablename = 'solicitudes'
+           and policyname = 'trabajador ve las solicitudes abiertas'
+           and qual like '%fn_soy_trabajador%'), '1')
 
 ) as t(orden, prueba, obtenido, esperado)
 order by orden;

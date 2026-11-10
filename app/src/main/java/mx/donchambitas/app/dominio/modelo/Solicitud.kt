@@ -22,7 +22,13 @@ data class Solicitud(
     val categorizadaPorIa: Boolean = false,
     val creadoEn: Instant,
     val actualizadoEn: Instant,
-    val cerradaEn: Instant? = null
+    val cerradaEn: Instant? = null,
+    /**
+     * Cuantas postulaciones siguen en `enviada`, o sea sin decidir (DEC-37, H-42).
+     * Solo lo llena obtenerMisSolicitudes, que lee de vw_mis_solicitudes; en las
+     * demas operaciones vale 0 aunque haya postulaciones.
+     */
+    val postulacionesSinRevisar: Int = 0
 )
 
 /**

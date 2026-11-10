@@ -296,6 +296,8 @@ create table public.solicitudes (
     constraint ck_solicitud_presupuesto
         check (presupuesto is null or presupuesto >= 0),
     constraint ck_solicitud_rol_cliente check (rol_cliente = 'cliente'),
+    -- DEC-37 (H-44): el mismo tope que la pantalla de P-08.
+    constraint ck_solicitud_descripcion check (char_length(descripcion) <= 1000),
     constraint fk_solicitud_cliente
         foreign key (cliente_id, rol_cliente) references public.usuarios(id, rol)
         on delete cascade,
@@ -339,6 +341,31 @@ $$;
 create trigger tg_solicitudes_transicion
     before update on public.solicitudes
     for each row execute function public.fn_validar_transicion_solicitud();
+
+-- La ubicacion de una solicitud es obligatoria (HU-12) y el municipio tiene que
+-- ser del estado (DEC-37, H-41). Solo en insert, y no como CHECK: estado_id y
+-- municipio_id son "on delete set null", y un CHECK sobre la fila contradiria
+-- esas llaves e impediria borrar un estado o un municipio. Con el trigger solo
+-- en insert, las solicitudes antiguas no se invalidan.
+create or replace function public.fn_validar_ubicacion_solicitud()
+returns trigger
+language plpgsql
+as $$
+begin
+    if new.estado_id is null or new.municipio_id is null then
+        raise exception 'La solicitud necesita estado y municipio';
+    end if;
+    if not exists (select 1 from public.municipios
+                    where id = new.municipio_id and estado_id = new.estado_id) then
+        raise exception 'El municipio no es del estado elegido';
+    end if;
+    return new;
+end;
+$$;
+
+create trigger tg_solicitudes_ubicacion
+    before insert on public.solicitudes
+    for each row execute function public.fn_validar_ubicacion_solicitud();
 
 -- ============================================================================
 --  POSTULACIONES
@@ -726,6 +753,34 @@ select p.usuario_id  as trabajador_id,
  group by p.usuario_id, u.nombre, u.apellidos, u.foto_url, p.titulo,
           p.disponible, p.estado_id, p.municipio_id, e.nombre, m.nombre,
           c.promedio, c.total_resenas, p.creado_en;
+
+-- P-09 Mis solicitudes: las columnas de solicitudes mas cuantas postulaciones
+-- siguen sin revisar, o sea en 'enviada' (DEC-37, H-42). Es una vista y no un
+-- conteo embebido de PostgREST porque no depende de que PostgREST tenga las
+-- funciones de agregacion habilitadas. Respeta RLS (security_invoker): el
+-- cliente dueno ve todas las postulaciones de sus solicitudes.
+create or replace view public.vw_mis_solicitudes
+with (security_invoker = on) as
+select s.id,
+       s.cliente_id,
+       s.rol_cliente,
+       s.categoria_id,
+       s.titulo,
+       s.descripcion,
+       s.presupuesto,
+       s.estado_id,
+       s.municipio_id,
+       s.estatus,
+       s.trabajador_id,
+       s.categorizada_por_ia,
+       s.creado_en,
+       s.actualizado_en,
+       s.cerrada_en,
+       (select count(*) from public.postulaciones po
+         where po.solicitud_id = s.id and po.estatus = 'enviada')::int
+           as postulaciones_sin_revisar
+  from public.solicitudes s
+ where s.cliente_id = auth.uid();
 
 -- ============================================================================
 --  FUNCIONES RPC

@@ -9,10 +9,10 @@ import mx.donchambitas.app.datos.falso.RepositorioChatFalso
 import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioPostulacionesFalso
 import mx.donchambitas.app.datos.falso.RepositorioResenasFalso
-import mx.donchambitas.app.datos.falso.RepositorioSolicitudesFalso
 import mx.donchambitas.app.datos.repositorio.RepositorioAuthReal
 import mx.donchambitas.app.datos.repositorio.RepositorioCatalogosReal
 import mx.donchambitas.app.datos.repositorio.RepositorioServiciosReal
+import mx.donchambitas.app.datos.repositorio.RepositorioSolicitudesReal
 import mx.donchambitas.app.datos.repositorio.RepositorioTrabajadorReal
 import mx.donchambitas.app.datos.repositorio.RepositorioUsuarioReal
 import mx.donchambitas.app.dominio.repositorio.RepositorioAuth
@@ -33,8 +33,9 @@ import mx.donchambitas.app.dominio.repositorio.RepositorioUsuario
  * RepositorioAuth, RepositorioUsuario, RepositorioTrabajador y
  * RepositorioServicios ya enlazan a su implementacion real, y tambien
  * RepositorioCatalogos, salvo buscarTrabajadores, que sigue en el falso hasta
- * S4-T09 (S3-T09). Los otros cinco, a la falsa en memoria (FuenteDatosFalsa).
- * Cuando cada tarea real aterriza (S2-T07, S2-T12, S2-T14, S3-T09, S4-T09, S5-T07),
+ * S4-T09 (S3-T09). RepositorioSolicitudes tambien, desde S4-T16. Los otros cuatro,
+ * a la falsa en memoria (FuenteDatosFalsa).
+ * Cuando cada tarea real aterriza (S2-T07, S2-T12, S2-T14, S3-T09, S4-T09, S4-T16, S5-T07),
  * este archivo es el unico que cambia su enlace.
  */
 @Module
@@ -68,7 +69,7 @@ abstract class ModuloRepositorios {
     @Binds
     @Singleton
     abstract fun enlazarRepositorioSolicitudes(
-        impl: RepositorioSolicitudesFalso
+        impl: RepositorioSolicitudesReal
     ): RepositorioSolicitudes
 
     @Binds

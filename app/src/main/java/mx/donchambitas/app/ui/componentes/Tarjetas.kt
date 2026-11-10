@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -253,6 +254,9 @@ fun TarjetaServicio(
 /**
  * Tarjeta para mostrar una solicitud de trabajo segun DISENO.md.
  * Incluye titulo, categoria, presupuesto, estado y fecha.
+ *
+ * @param postulacionesSinRevisar Cuantas postulaciones siguen sin decidir; con 0 no se pinta
+ * el renglon (DEC-37, H-42).
  */
 @Composable
 fun TarjetaSolicitud(
@@ -261,6 +265,7 @@ fun TarjetaSolicitud(
     presupuesto: String,
     estado: EstadoSolicitud,
     fecha: String,
+    postulacionesSinRevisar: Int = 0,
     onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -298,6 +303,18 @@ fun TarjetaSolicitud(
                 style = DonChambitasTema.tipografia.cuerpoFuerte,
                 color = Carbon
             )
+
+            if (postulacionesSinRevisar > 0) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.tarjeta_solicitud_sin_revisar,
+                        postulacionesSinRevisar,
+                        postulacionesSinRevisar
+                    ),
+                    style = DonChambitasTema.tipografia.secundario,
+                    color = Terracota
+                )
+            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

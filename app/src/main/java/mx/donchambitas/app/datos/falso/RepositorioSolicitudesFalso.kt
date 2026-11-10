@@ -6,6 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.delay
 import mx.donchambitas.app.dominio.modelo.DetalleSolicitud
+import mx.donchambitas.app.dominio.modelo.EstadoPostulacion
 import mx.donchambitas.app.dominio.modelo.EstadoSolicitud
 import mx.donchambitas.app.dominio.modelo.Solicitud
 import mx.donchambitas.app.dominio.repositorio.RepositorioSolicitudes
@@ -31,7 +32,14 @@ class RepositorioSolicitudesFalso @Inject constructor(
         val usuarioId = fuente.obtenerUsuarioActivoId()
             ?: return Resultado.Error(TipoError.AUTENTICACION, "No hay sesion activa")
 
-        val lista = fuente.solicitudes.filter { it.clienteId == usuarioId }
+        // Como vw_mis_solicitudes: cuantas postulaciones siguen en enviada (H-42).
+        val lista = fuente.solicitudes.filter { it.clienteId == usuarioId }.map { solicitud ->
+            solicitud.copy(
+                postulacionesSinRevisar = fuente.postulaciones.count {
+                    it.solicitudId == solicitud.id && it.estatus == EstadoPostulacion.ENVIADA
+                }
+            )
+        }
         return Resultado.Exito(lista)
     }
 
