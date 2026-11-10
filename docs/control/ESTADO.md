@@ -93,7 +93,7 @@ _Ninguna._
 ## Última tarea terminada
 
 **`S4-T09` — Implementación real de la búsqueda y el filtrado en Supabase.** 2026-11-09.
-Rama `feat/S4-T09-busqueda-real-supabase`, pull request **sin abrir todavía**. Tomada por
+Rama `feat/S4-T09-busqueda-real-supabase`, pull request **#60**. Tomada por
 LMM (responsable nominal: RRC).
 
 Compila, pasa las pruebas unitarias y se probó en emulador contra Supabase la búsqueda
