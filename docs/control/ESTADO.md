@@ -93,7 +93,7 @@ _Ninguna._
 ## Última tarea terminada
 
 **`S4-T16` — Implementación real de las solicitudes en Supabase.** 2026-11-09. Rama
-`feat/S4-T16-solicitudes-real-supabase`, pull request **sin abrir todavía**. Tomada por LMM
+`feat/S4-T16-solicitudes-real-supabase`, pull request **#61**. Tomada por LMM
 (sin responsable nominal). Ticket: `docs/tareas/S4-T16.md`. Sale de `main`, **sin los cambios de
 `S4-T09`** (#60): las dos tocan `ModuloRepositorios.kt`, `ModelosRepositorio.kt`, los tres archivos
 vivos y el contrato, así que quien integre la segunda resuelve un conflicto pequeño.
