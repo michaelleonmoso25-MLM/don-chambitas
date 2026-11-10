@@ -106,13 +106,15 @@ pasa las pruebas unitarias; lo demás sigue sin comprobarse (ver abajo).
   `PerfilPublicoTrabajador`; `TarjetaTrabajador` con "Desde $X" y "No disponible".
 - Compila (`./gradlew assembleDebug`); 484 pruebas unitarias, 0 fallas (36 nuevas); las
   instrumentadas compilan.
-- **Lo que falta, y es del líder o de quien tenga el emulador:**
-  1. **Correr `01_esquema.sql` en Supabase** (la consola; la `service_role` no entra al
-     repositorio) y luego `90_verificacion.sql`: la prueba 38 debe dar `PASA`. **Mientras no
-     se corra, la búsqueda real falla** porque la vista no tiene `texto_busqueda`.
-  2. Probar contra el proyecto y en emulador lo que enumera el ticket. **No se hizo**: LMM
-     cerró la tarea sin esa prueba el 2026-11-09. Si P-06 falla al buscar, lo primero que se
-     revisa es el punto 1.
+- **Supabase, aplicado el 2026-11-09 por LMM** desde el SQL Editor del proyecto `principal`,
+  pegando solo la extensión `unaccent`, `fn_normalizar` y `vw_busqueda_trabajadores` (no el
+  archivo completo: `01_esquema.sql` crea tablas sin `if not exists` y no se puede volver a
+  correr en una base con datos). Comprobado a mano: la vista tiene las 3 columnas
+  (`categorias`, `creado_en`, `texto_busqueda`, que es la prueba 38 de `90_verificacion.sql`)
+  y `fn_normalizar('Plomería José Núñez')` devuelve `plomeria jose nunez`.
+- **Lo que no se hizo:** correr `90_verificacion.sql` completo, probar la búsqueda desde la
+  app y en emulador. LMM cerró la tarea sin esa prueba el 2026-11-09. Si P-06 falla al
+  buscar, ahí se empieza.
 
 Las anteriores, con su detalle:
 
