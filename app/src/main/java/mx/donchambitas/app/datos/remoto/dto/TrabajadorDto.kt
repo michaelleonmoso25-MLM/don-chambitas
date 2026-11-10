@@ -75,8 +75,8 @@ data class NombreHabilidadDto(val habilidad: String)
 
 /**
  * Lo que devuelve fn_perfil_publico_trabajador (CONTRATOS-API.md,
- * "obtenerPerfilPublico"). estado y municipio son no nulos como en el modelo:
- * si la funcion los manda null, la lectura falla (H-25).
+ * "obtenerPerfilPublico"). estado y municipio pueden venir null: un trabajador
+ * que aun no pone su ubicacion tiene perfil igual (H-25, DEC-36).
  */
 @Serializable
 data class PerfilPublicoDto(
@@ -89,8 +89,8 @@ data class PerfilPublicoDto(
     @SerialName("experiencia_anios") val experienciaAnios: Int,
     @SerialName("telefono_contacto") val telefonoContacto: String? = null,
     val disponible: Boolean,
-    val estado: String,
-    val municipio: String,
+    val estado: String? = null,
+    val municipio: String? = null,
     val habilidades: List<String>,
     val calificacion: CalificacionDto,
     val servicios: List<ServicioPublicoDto>,

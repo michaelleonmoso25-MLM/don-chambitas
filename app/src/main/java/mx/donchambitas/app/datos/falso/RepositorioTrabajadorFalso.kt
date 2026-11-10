@@ -35,8 +35,8 @@ class RepositorioTrabajadorFalso @Inject constructor(
         val perfil = fuente.perfilesTrabajador.firstOrNull { it.usuarioId == id }
             ?: return Resultado.Error(TipoError.VALIDACION, "Perfil de trabajador no encontrado")
 
-        val estadoNombre = fuente.estados.firstOrNull { it.id == perfil.estadoId }?.nombre ?: "No especificado"
-        val municipioNombre = fuente.municipios.firstOrNull { it.id == perfil.municipioId }?.nombre ?: "No especificado"
+        val estadoNombre = fuente.estados.firstOrNull { it.id == perfil.estadoId }?.nombre
+        val municipioNombre = fuente.municipios.firstOrNull { it.id == perfil.municipioId }?.nombre
 
         val habilidadesLista = fuente.habilidades
             .filter { it.perfilId == id }

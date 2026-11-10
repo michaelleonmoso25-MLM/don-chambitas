@@ -177,10 +177,10 @@ from (values
            and p.proname in ('fn_validar_postulacion', 'fn_validar_mensaje',
                              'fn_validar_resena', 'fn_tocar_conversacion',
                              'fn_liberar_solicitudes_del_trabajador')), '5'),
-  (38, 'A-2 la vista de busqueda filtra por categoria y ordena por fecha',
+  (38, 'A-2 la vista de busqueda filtra por categoria, texto sin acentos y ordena por fecha',
        (select count(*)::text from information_schema.columns
          where table_schema = 'public' and table_name = 'vw_busqueda_trabajadores'
-           and column_name in ('categorias', 'creado_en')), '2'),
+           and column_name in ('categorias', 'creado_en', 'texto_busqueda')), '3'),
   (39, 'A-3 con la anon key no se ejecuta el tope de IA ni el perfil publico',
        (select (has_function_privilege('anon',
                     'public.fn_ia_registrar_llamada(uuid, public.funcion_ia, integer)', 'execute')

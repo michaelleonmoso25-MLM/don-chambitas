@@ -14,7 +14,7 @@
 | Sprint | 4 |
 | Fechas | PENDIENTE |
 | Tareas del sprint | 11 |
-| Terminadas | 9 |
+| Terminadas | 10 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
@@ -91,6 +91,46 @@ _Ninguna._
 | Desde | — |
 
 ## Última tarea terminada
+
+**`S4-T09` — Implementación real de la búsqueda y el filtrado en Supabase.** 2026-11-09.
+Rama `feat/S4-T09-busqueda-real-supabase`, pull request **#60**. Tomada por
+LMM (responsable nominal: RRC).
+
+Compila, pasa las pruebas unitarias y se probó en emulador contra Supabase la búsqueda
+básica; lo que sigue sin comprobarse está abajo.
+
+- `RepositorioCatalogosReal.buscarTrabajadores` lee `vw_busqueda_trabajadores`; ya no recibe
+  al falso. Ticket: `docs/tareas/S4-T09.md`.
+- **`DEC-36` aplicada:** `unaccent` + `fn_normalizar` + columna `texto_busqueda` en
+  `01_esquema.sql`; estado y municipio nulos en `ResumenTrabajadorBusqueda` y
+  `PerfilPublicoTrabajador`; `TarjetaTrabajador` con "Desde $X" y "No disponible".
+- Compila (`./gradlew assembleDebug`); 484 pruebas unitarias, 0 fallas (36 nuevas); las
+  instrumentadas compilan.
+- **Supabase, aplicado el 2026-11-09 por LMM** desde el SQL Editor del proyecto `principal`,
+  pegando solo la extensión `unaccent`, `fn_normalizar` y `vw_busqueda_trabajadores` (no el
+  archivo completo: `01_esquema.sql` crea tablas sin `if not exists` y no se puede volver a
+  correr en una base con datos). Comprobado a mano: la vista tiene las 3 columnas
+  (`categorias`, `creado_en`, `texto_busqueda`, que es la prueba 38 de `90_verificacion.sql`)
+  y `fn_normalizar('Plomería José Núñez')` devuelve `plomeria jose nunez`.
+- **Probado en emulador `Pixel_8` el 2026-11-09**, contra el proyecto de Supabase y con
+  `ana.rls@…` (cliente): P-06 lista a "Trabajador Demo, Plomero, Coyoacan", que sale de la
+  base y no del falso; "PLOMERO" en mayúsculas lo encuentra; "carpintero" da "No encontramos
+  trabajadores".
+- **Segunda prueba, con 6 trabajadores de prueba sembrados** (`trab1` a `trab6.s4t09@prueba.donchambitas.mx`,
+  creados por LMM desde el SQL Editor; se borran con
+  `delete from auth.users where email like '%.s4t09@prueba.donchambitas.mx';`):
+  - P-06 lista los 7 trabajadores reales; la tarjeta muestra "Desde $350", "$500", "$80",
+    "$2,000" y "$199.50".
+  - Luis Hernández (no disponible) sale en la lista con la etiqueta "No disponible".
+  - Ana Torres, sin ubicación ni servicios, sale en la lista sin renglón de ubicación ni de
+    precio, y su perfil (P-07) abre sin error y sin línea de ubicación (`H-48`, `H-25`).
+  - "jose nunez" sin acentos encuentra a "José Núñez".
+- **Lo que no se probó:** `90_verificacion.sql` completo; los filtros (categoría, estado,
+  municipio, precio, calificación), el orden por precio y la paginación (con 7 trabajadores
+  no hay segunda página); las estrellas (nadie tiene reseñas); y abrir P-07 de un trabajador
+  con servicios con precio.
+
+Las anteriores, con su detalle:
 
 **`S4-T15` — Pruebas del módulo de búsqueda y solicitudes.** 2026-11-07. Rama
 `feat/S4-T15-pruebas-busqueda-solicitudes`, pull request **#59**, integrado con

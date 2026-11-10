@@ -121,7 +121,7 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S4-T06` | 800 | Panel del cliente: mis solicitudes y su estado | GRI | hecha | S4-T03 |
 | `S4-T07` | 750 | ViewModels, paginación y ordenamiento de resultados | BCJL | hecha | — |
 | `S4-T08` | 700 | Contrato de la API de solicitudes, búsqueda y filtros | LMM | hecha | S4-T03 |
-| `S4-T09` | 650 | Implementación real de la búsqueda y el filtrado en Supabase | RRC | pendiente | S4-T08 |
+| `S4-T09` | 650 | Implementación real de la búsqueda y el filtrado en Supabase | RRC | hecha | S4-T08 |
 | `S4-T15` | 300 | Pruebas del módulo de búsqueda y solicitudes | BCJL | hecha | — |
 | `S4-T16` | 250 | Implementación real de las solicitudes en Supabase (`DEC-38`) | — | pendiente | S4-T08 |
 
