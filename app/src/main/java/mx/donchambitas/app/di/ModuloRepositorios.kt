@@ -6,11 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import mx.donchambitas.app.datos.falso.RepositorioChatFalso
-import mx.donchambitas.app.datos.falso.RepositorioIaFalso
 import mx.donchambitas.app.datos.falso.RepositorioPostulacionesFalso
 import mx.donchambitas.app.datos.falso.RepositorioResenasFalso
 import mx.donchambitas.app.datos.repositorio.RepositorioAuthReal
 import mx.donchambitas.app.datos.repositorio.RepositorioCatalogosReal
+import mx.donchambitas.app.datos.repositorio.RepositorioIaReal
 import mx.donchambitas.app.datos.repositorio.RepositorioServiciosReal
 import mx.donchambitas.app.datos.repositorio.RepositorioSolicitudesReal
 import mx.donchambitas.app.datos.repositorio.RepositorioTrabajadorReal
@@ -30,10 +30,10 @@ import mx.donchambitas.app.dominio.repositorio.RepositorioUsuario
  * Modulo de Hilt que enlaza las diez interfaces de repositorio del dominio
  * con sus implementaciones activas.
  *
- * RepositorioAuth, RepositorioUsuario, RepositorioTrabajador y
+ * RepositorioAuth, RepositorioUsuario, RepositorioTrabajador, RepositorioIa y
  * RepositorioServicios ya enlazan a su implementacion real, y tambien
  * RepositorioCatalogos, salvo buscarTrabajadores, que sigue en el falso hasta
- * S4-T09 (S3-T09). RepositorioSolicitudes tambien, desde S4-T16. Los otros cuatro,
+ * S4-T09 (S3-T09). RepositorioSolicitudes tambien, desde S4-T16. Los otros tres,
  * a la falsa en memoria (FuenteDatosFalsa).
  * Cuando cada tarea real aterriza (S2-T07, S2-T12, S2-T14, S3-T09, S4-T09, S4-T16, S5-T07),
  * este archivo es el unico que cambia su enlace.
@@ -99,6 +99,6 @@ abstract class ModuloRepositorios {
     @Binds
     @Singleton
     abstract fun enlazarRepositorioIa(
-        impl: RepositorioIaFalso
+        impl: RepositorioIaReal
     ): RepositorioIa
 }

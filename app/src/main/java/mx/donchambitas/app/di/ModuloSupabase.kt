@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import javax.inject.Singleton
@@ -44,6 +45,8 @@ object ModuloSupabase {
             install(Postgrest)
             // Fotos de perfil, cubeta perfiles (S2-T14), y de servicios, cubeta servicios (S3-T09).
             install(Storage)
+            // Invocacion de Edge Functions (ia-generar)
+            install(Functions)
         }
     }
 }
