@@ -182,6 +182,15 @@ las de emulador de la sesión anterior.
 Guía y evidencias de pruebas: `supabase/functions/README.md`. La llave se
 configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
 
+## Última tarea del Sprint 5 trabajada (2026-11-16)
+
+**`S5-T01` — Diseño de postulación, contacto y reseñas**, `hecha`. Rama
+`docs/S5-T01-diseno-contacto-postulacion-resenas`. Solo diseño:
+`docs/producto/DISENO-POSTULACION-CONTACTO-RESENAS.md`. El líder indicó a la persona
+(verbalmente) continuar con las tareas del chat, en este orden: `S5-T01`, `S5-T06`,
+`S5-T05`, `S5-T07`. **Falta que el líder registre ese permiso**; el Sprint 5 no se abrió
+formalmente. Hallazgos `H-49` a `H-55` pendientes de decisión (ver el documento, sección 10).
+
 ## Tarea en curso
 
 | Campo | Valor |

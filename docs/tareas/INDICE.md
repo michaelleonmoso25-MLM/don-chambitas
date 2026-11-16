@@ -138,7 +138,7 @@ S4-T10 sigue en curso y #62 abierta, sin integrar.
 
 | ID | Prio | Tarea | Resp. | Estado | Depende de |
 |---|---|---|---|---|---|
-| `S5-T01` | 1000 | Diseño de las pantallas de postulación, contacto y reseñas | GRI | pendiente | — |
+| `S5-T01` | 1000 | Diseño de las pantallas de postulación, contacto y reseñas | GRI | hecha | — |
 | `S5-T02` | 970 | Postulación del trabajador a una solicitud y pantalla P-14 Mis postulaciones (`DEC-41`) | BCJL | pendiente | S4-T02 |
 | `S5-T03` | 950 | Bandeja de postulaciones del cliente (aceptar / rechazar) | LMM | pendiente | S5-T02 |
 | `S5-T04` | 900 | Gestión del estado de la solicitud (abierta / asignada / cerrada) | RRC | pendiente | S5-T03 |
