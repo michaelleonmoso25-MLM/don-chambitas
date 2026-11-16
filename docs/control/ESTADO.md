@@ -49,7 +49,7 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Tocas el avatar de P-18 | Hoja con "Elegir de la galería" y "Tomar foto", y luego el recortador. Una imagen de más de 5 MB o que no sea JPG, PNG o WebP se rechaza con el motivo | — |
 | Como trabajador, tocas "Mi perfil profesional" en P-18 | P-11 **guarda en Supabase** (`S3-T09`): estados y municipios salen de la base, "Perfil guardado" y el aviso de incompleto recalculado, y al reabrir la aplicación lo guardado sigue. Valida como P-03: cada campo al salir de él y todos al guardar, con el foco en el primer error. Probado con `beto.rls@…` y Puebla → Cholula | — |
 | Como trabajador, tocas la pestaña **Servicios** | P-12 **lee de Supabase** tus servicios, activos primero, con la miniatura de la foto de la posición 1. La hoja de acciones edita, pausa o reactiva y elimina con confirmación, cada una con su aviso. Recarga al volver de P-13 | — |
-| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción con IA real (Gemini)**, un texto distinto por usuario y con tope de 10 llamadas al día (`S4-T10`, en curso); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `DEC-40` (`H-27`), `S4-T10` |
+| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción con IA real (Gemini)**, el mismo texto para los mismos datos (caché compartida, `DEC-45`), con tope de 10 llamadas al día y el cupo visible al abrir (`S4-T10` y `S4-T11`, en curso); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `DEC-40` (`H-27`), `S4-T10` |
 | Pulsas "Usar foto" en el recortador | La foto se guarda en Supabase Storage, el avatar la muestra y sigue al reabrir. La anterior se borra de la cubeta. Sin red, "Sin conexión" | — |
 | Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
 | Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
@@ -135,39 +135,36 @@ las de emulador de la sesión anterior.
 
 ### Qué retomar: políticas decididas, implementación y pruebas pendientes
 
-1. **Caché — política resuelta en `DEC-45`:** compartida entre usuarios, por
-   función y entrada normalizada, sin usuario en el hash; aciertos sin consumo.
-   S4-T11 debe corregir la separación por usuario y el uso de solo `trim()` de
-   #62. Probar espacios colapsados, separación entre funciones y reutilización
-   entre dos usuarios, comprobando `desde_cache`, `ia_cache` e `ia_consumo`.
-   Al cambiar de modelo, usar una entrada nueva para verificar el proveedor.
-2. **Límite diario:** verificar 10 llamadas totales por usuario sumando funciones,
-   HTTP 429, mensaje y estado del botón; caché sin cargo y comportamiento ante
-   fallos. Revisar concurrencia. El contador en pantalla no demuestra el límite
-   del servidor. No agotar el cupo del líder por sorpresa: usar cuenta de prueba.
-3. **Cupo en errores — política resuelta en `DEC-46`:** los fallos técnicos
-   del proveedor, incluido timeout, no consumen cupo ni se guardan en caché.
-   La devolución actual usa lectura y escritura separadas; S4-T11 debe asegurar
-   atomicidad y evitar devoluciones dobles sin perder consumos concurrentes.
-   Un rechazo de contenido del modelo conserva su regla contractual distinta.
-   DEC-39 sigue exigiendo consulta de restantes (`fn_ia_restantes`) y registro
-   real de tokens después de responder; hoy se mandan cero tokens. Coordinar
-   S4-T10 con S4-T11 sin declarar completada ninguna implementación pendiente.
+1. **Caché compartida (S4-T11, hecho, `DEC-45`):** hash sin usuario sobre la entrada
+   normalizada, por función. Verificada contra el servidor con dos usuarios, espacios
+   distintos y dos funciones. Las filas antiguas de la caché por usuario ya no se reutilizan.
+2. **Límite diario (S4-T11, hecho):** `429` en la llamada 11; un acierto de caché responde
+   `200` con el cupo en 0; con cupo 1 y 4 peticiones simultáneas, un `200` y tres `429`
+   (candado por usuario en `fn_ia_registrar_llamada`).
+3. **Cupo en errores (S4-T11, hecho, `DEC-46`):** `fn_ia_liberar_llamada` descuenta una sola
+   vez la reserva de la petición. Fallo forzado: `503` sin consumo ni caché, también con 8
+   simultáneas; una ráfaga real de 12 dejó el cupo igual a los éxitos. `fn_ia_restantes` y los
+   tokens reales (`DEC-39`) también hechos; P-11 y P-13 consultan el cupo al abrir.
+   **El SQL nuevo ya está aplicado en Supabase** (bloques `S4-T11` de `01` y `02`).
 4. **Validación previa del título (S4-T10, hecho, 2026-11-16):** reglas
    deterministas más una consulta mínima al modelo, antes de caché y cupo.
    Contra el servidor desplegado, los casos 6, 7, 8 y 13 de RESULTADOS-GPT.md
    se comportan como se espera (6: presentación; 7, 8 y 13: `422` sin consumo).
 5. **Errores Android (S4-T10, hecho):** `TipoError.IA_RECHAZADA` (`H-37`);
    422 y un 200 con `NO_PUEDO_REDACTAR` lo usan; 400 → `DESCONOCIDO`. 503
-   pruebas unitarias, 0 fallas. **Sin probar aún en emulador** esta rama.
+   pruebas unitarias, 0 fallas; P-11 y P-13 probados en emulador con la rama apilada.
 6. **Prompt y parámetros (S4-T10, hecho):** mínimo 50 palabras, redacción neutra y
    sin frases hechas; temperatura 0.5 y 200 tokens como la tabla. Se quitó
    `thinkingConfig`: `gemini-flash-lite-latest` lo rechaza con 400. Casos 1 a 5 y
    9 a 12 con la API real: de 41 a 71 palabras; **dos quedan por debajo de 50**
    (caso 10 con 49, caso 11 con 41 por respetar el borrador).
-7. **Cierre:** `S4-T10` **no se marca `hecha`**: sus comprobaciones de caché
-   entre usuarios, cupo, concurrencia y fallo sin consumo dependen de `S4-T11`.
-   Quedan pendientes las pruebas de emulador de esta rama.
+7. **Cierre:** `S4-T10` y `S4-T11` siguen `en curso` hasta que el líder integre sus PR.
+   Criterios verificados salvo: **50 palabras no está garantizado por el modelo** (49 y 41 en
+   dos casos), sin conexión en emulador y la mezcla determinista de éxitos y fallos. Pendientes
+   del líder: `IA.md` aún dice 40 a 80 palabras; decidir si basta el mínimo en el prompt; el
+   validador del título hace una consulta extra al modelo sin cupo (cuota del proveedor).
+   Orden de integración: primero `feat/S4-T10-ia-integracion`, después
+   `feat/S4-T11-cache-compartida-y-cupo` (apilada sobre la primera).
 
 Guía y evidencias de pruebas: `supabase/functions/README.md`. La llave se
 configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
@@ -177,11 +174,11 @@ configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
 | Campo | Valor |
 |---|---|
 | ID | S4-T10 |
-| Título | Integración de IA mediante la Edge Function, Gemini activo |
+| Título | S4-T10 (integración de IA con Gemini) y S4-T11 (caché compartida y cupo) |
 | Quién la tomó | Michael (implementación original); líder (revisión y entrega) |
 | Rama | `feat/S4-T10-ia-integracion` (T11 apilada en `feat/S4-T11-cache-compartida-y-cupo`) |
 | Desde | 2026-11-14; continuidad revisada el 2026-11-16 |
-| Estado | En curso: integración, validaciones y errores hechos; cierre pendiente de `S4-T11` y de la prueba en emulador |
+| Estado | Implementadas y verificadas contra el servidor y en emulador; en curso hasta que el líder integre las PR |
 
 ## Última tarea terminada
 
