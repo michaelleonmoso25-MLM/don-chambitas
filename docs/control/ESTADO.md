@@ -3,7 +3,7 @@
 > Archivo **vivo**. Quien termina una tarea lo actualiza. Es la primera cosa
 > que lee el agente y la única fuente confiable sobre qué está pasando hoy.
 
-**Última actualización:** 2026-11-09
+**Última actualización:** 2026-11-16
 
 ---
 
@@ -12,16 +12,17 @@
 | Campo | Valor |
 |---|---|
 | Sprint | 4 |
-| Fechas | PENDIENTE |
+| Fechas | Apertura: 2026-11-07; cierre previsto: 2026-11-10 |
 | Tareas del sprint | 11 |
-| Terminadas | 10 |
+| Terminadas | 11 |
 | En curso | 0 |
 | Bloqueadas | 0 |
 
-> **Sprint 4 abierto el 2026-11-07**, confirmado por el líder en `DEC-34`, **cierra
-> el 2026-11-10**. El 2026-11-09 entró `S4-T16` (`DEC-38`) y toda la IA, `S4-T10`
-> a `S4-T14`, pasó al Sprint 5 (`DEC-44`): quedan 11 tareas, 9 hechas y dos
-> pendientes, `S4-T09` y `S4-T16`, que se pueden hacer en paralelo.
+> **Sprint 4:** sus 11 tareas están hechas; `S4-T09` y `S4-T16` ya se
+> integraron mediante #60 y #61. La apertura fue confirmada en `DEC-34`.
+> Falta registrar el cierre formal y la apertura del Sprint 5 por el líder.
+> S4-T10 pertenece al Sprint 5 (`DEC-44`) y tiene trabajo iniciado en #62;
+> se conserva en curso, sin considerar abierto todo el sprint.
 >
 > Sprint 3 cerrado con sus 15 tareas en `hecha` (PR #46 a #50), abierto el 2026-10-18
 > por autorización del líder. Sus tickets se
@@ -48,7 +49,7 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 | Tocas el avatar de P-18 | Hoja con "Elegir de la galería" y "Tomar foto", y luego el recortador. Una imagen de más de 5 MB o que no sea JPG, PNG o WebP se rechaza con el motivo | — |
 | Como trabajador, tocas "Mi perfil profesional" en P-18 | P-11 **guarda en Supabase** (`S3-T09`): estados y municipios salen de la base, "Perfil guardado" y el aviso de incompleto recalculado, y al reabrir la aplicación lo guardado sigue. Valida como P-03: cada campo al salir de él y todos al guardar, con el foco en el primer error. Probado con `beto.rls@…` y Puebla → Cholula | — |
 | Como trabajador, tocas la pestaña **Servicios** | P-12 **lee de Supabase** tus servicios, activos primero, con la miniatura de la foto de la posición 1. La hoja de acciones edita, pausa o reactiva y elimina con confirmación, cada una con su aviso. Recarga al volver de P-13 | — |
-| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción** con un texto de `RepositorioIaFalso` (la IA real es `S4-T10`); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `DEC-40` (`H-27`), `S4-T10` |
+| Como trabajador, publicas un servicio en P-13 | **Guarda en Supabase.** Las 16 categorías salen de la base, **todavía sin acentos** ("Plomeria"), hasta que el líder vuelva a correr la semilla (`S3-T02`). "Publicar" deja la pantalla en "Editar servicio"; las fotos suben a la cubeta `servicios` con un indicador que gira. **Sin haber guardado antes el perfil profesional, "Publicar" falla con el error genérico** (`H-27`). "Redactar con IA" **llena la descripción con IA real (Gemini)**, un texto distinto por usuario y con tope de 10 llamadas al día (`S4-T10`, en curso); con texto ya escrito pregunta "¿Reemplazar lo que escribiste?" | `DEC-40` (`H-27`), `S4-T10` |
 | Pulsas "Usar foto" en el recortador | La foto se guarda en Supabase Storage, el avatar la muestra y sigue al reabrir. La anterior se borra de la cubeta. Sin red, "Sin conexión" | — |
 | Cambias la contraseña en P-18 | Solo se pide la nueva (mínimo 8). Si repites la actual: "La contraseña nueva es igual a la actual" | — |
 | Pulsas "Cerrar sesión" en P-18 y confirmas | Cierra la sesión real: vas a P-02, atrás cierra la aplicación y al reabrir sigues en P-02 | — |
@@ -78,17 +79,109 @@ de P-04 describen lo que dejó `S2-T10`, integrada con el #13.
 `public.usuarios`, y sobrevive al reinicio. Por `DEC-25` el registro deja
 sesión abierta, con la confirmación por correo desactivada en la consola.
 
-## Tarea en curso
+## Continuidad — PR #62 / S4-T10 (actualizada el 2026-11-16)
 
-_Ninguna._
+**S4-T10 sigue en curso, no terminada; implementación detenida para su entrega.**
+Rama local: `docs/S4-T10-contrato-ia-proveedores`, basada en `origin/pr-62`.
+Incluye los commits de Michael de #62 y las correcciones locales posteriores.
+La entrega se prepara en un commit de esta rama el 2026-11-16; el líder hará
+el push. La identidad Git ya está configurada; el impedimento del 2026-11-15
+quedó resuelto. No usar la identidad de otro integrante.
+
+**#62 sigue abierta y no integrada**, confirmado en GitHub el 2026-11-16.
+Su origen es `michaelleonmoso25-MLM:feat/S4-T10-ia-gemini-edge-function`;
+subir esta rama local al repositorio del líder no actualiza esa PR.
+
+**Entrega acordada por el líder (`DEC-47`):** otra persona retoma esta rama y
+trabaja **S4-T10 y después S4-T11**, sin nueva confirmación inicial ni selección
+automática de otra tarea. Redactar los tickets faltantes y separar ramas y
+commits. Las verificaciones de integración que requieran ambas se completan al
+final, sin declarar ninguna tarea terminada antes de cumplir sus criterios.
+No incluye S4-T14, tareas opcionales ni apertura general del Sprint 5.
+
+La persona abre las PR y el líder integra. La PR que complete S4-T10 conserva
+el trabajo de Michael y sustituye #62; cerrar #62 como reemplazada solo después
+de verificar e integrar esa PR. No integrar #62 primero. Si S4-T11 se apila sobre
+S4-T10, indicar la rama base y el orden de integración. El agente se detiene
+tras ambas tareas. Las políticas DEC-45 y DEC-46 ya están aprobadas.
+
+**Verificación del 2026-11-16:** `assembleDebug` y `testDebugUnitTest` correctos;
+499 pruebas, 0 fallas, 0 errores. No se repitieron las pruebas del servidor ni
+las de emulador de la sesión anterior.
+
+### Lo confirmado
+
+- El líder confirmó Gemini como proveedor activo y contrato independiente del
+  proveedor. Se actualizaron IA.md, CONTRATOS-API.md y referencias; cambiar a
+  otra API requiere adaptar el servidor, sin modificar Android. Solo Gemini
+  está implementado. Modelos configurables mediante `IA_MODELOS`.
+- Android llama a `ia-generar`. El despliegue inicial del líder se llamaba
+  `hyper-worker`, por lo que la URL esperada devolvía 404. El líder desplegó
+  después `ia-generar` en su proyecto y la app ya obtiene respuestas.
+- `.env` y `local.properties` son locales e ignorados. Se copiaron únicamente
+  URL y anon key del líder a `local.properties`, conservando `sdk.dir`.
+  A petición del líder se quitó GEMINI_API_KEY de `.env`; se configura en
+  Supabase Secrets, según `.env.ejemplo`. No copiarla al APK.
+- `assembleDebug` y 499 pruebas unitarias pasaron; después se recompiló e
+  instaló con las credenciales del líder. Emulador: `Don_Chambitas_Pruebas`.
+  El líder inició sesión manualmente como trabajador.
+- P-13 generó descripción para «Reparacion de muebles de madera» / Carpintería,
+  mostrando 9 de 10 llamadas. P-11 generó presentación, mostró confirmación de
+  reemplazo y 8 de 10; se eligió conservar el texto original.
+- P-11 rechazó «Escribe un poema sobre el mar» con el aviso correspondiente.
+  Esto prueba el comportamiento visible, no el HTTP ni que el rechazo no cobre.
+- No se guardaron cambios al perfil ni se publicaron servicios; se descartó la
+  entrada inválida y se comprobó el perfil original. La prueba sí consumió IA.
+
+### Qué retomar: políticas decididas, implementación y pruebas pendientes
+
+1. **Caché — política resuelta en `DEC-45`:** compartida entre usuarios, por
+   función y entrada normalizada, sin usuario en el hash; aciertos sin consumo.
+   S4-T11 debe corregir la separación por usuario y el uso de solo `trim()` de
+   #62. Probar espacios colapsados, separación entre funciones y reutilización
+   entre dos usuarios, comprobando `desde_cache`, `ia_cache` e `ia_consumo`.
+   Al cambiar de modelo, usar una entrada nueva para verificar el proveedor.
+2. **Límite diario:** verificar 10 llamadas totales por usuario sumando funciones,
+   HTTP 429, mensaje y estado del botón; caché sin cargo y comportamiento ante
+   fallos. Revisar concurrencia. El contador en pantalla no demuestra el límite
+   del servidor. No agotar el cupo del líder por sorpresa: usar cuenta de prueba.
+3. **Cupo en errores — política resuelta en `DEC-46`:** los fallos técnicos
+   del proveedor, incluido timeout, no consumen cupo ni se guardan en caché.
+   La devolución actual usa lectura y escritura separadas; S4-T11 debe asegurar
+   atomicidad y evitar devoluciones dobles sin perder consumos concurrentes.
+   Un rechazo de contenido del modelo conserva su regla contractual distinta.
+   DEC-39 sigue exigiendo consulta de restantes (`fn_ia_restantes`) y registro
+   real de tokens después de responder; hoy se mandan cero tokens. Coordinar
+   S4-T10 con S4-T11 sin declarar completada ninguna implementación pendiente.
+4. **Validación previa del título:** falta rechazar órdenes/texto inválido antes de
+   caché, consumo y proveedor (paso 4 del contrato; DEC-35). El rechazo observado
+   no demuestra cumplir ese orden. Repetir casos 7, 8 y 13 de RESULTADOS-GPT.md.
+5. **Errores Android:** falta TipoError específico para rechazo (DEC-43/H-37);
+   422 sigue como VALIDACION. 400 se mapea a VALIDACION, pero el contrato pide
+   DESCONOCIDO. Falta rechazo defensivo de un 200 con NO_PUEDO_REDACTAR y comprobar
+   ausencia de sesión antes de ir a red. Verificar 401/422/429/503 y sin conexión.
+6. **Prompt y parámetros:** DEC-39 exige mínimo 50 palabras, neutralidad de género
+   y evitar frases hechas/especialidades inventadas. Código/prompt aún dicen 40–80
+   y el código acepta desde 15. Parámetros 1024 tokens / 0.7 difieren de la tabla
+   de PROMPT-REDACCION.md (200 / 0.5). Alinear y repetir batería con la API real.
+7. **Cierre:** sigue faltando `docs/tareas/S4-T10.md`; completar criterios y
+   evidencias antes de marcar hecha. Las otras diferencias no quedaron autorizadas
+   solo por aprobar Gemini. Las políticas de caché y fallos ya están decididas en DEC-45 y DEC-46.
+   Cualquier nueva decisión corresponde al líder.
+
+Guía y evidencias de pruebas: `supabase/functions/README.md`. La llave se
+configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
+
+## Tarea en curso
 
 | Campo | Valor |
 |---|---|
-| ID | — |
-| Título | — |
-| Quién la tomó | — |
-| Rama | — |
-| Desde | — |
+| ID | S4-T10 |
+| Título | Integración de IA mediante la Edge Function, Gemini activo |
+| Quién la tomó | Michael (implementación original); líder (revisión y entrega) |
+| Rama | `docs/S4-T10-contrato-ia-proveedores` |
+| Desde | 2026-11-14; continuidad revisada el 2026-11-16 |
+| Estado | Incompleta; siguiente implementador por asignar por el líder |
 
 ## Última tarea terminada
 
@@ -165,12 +258,13 @@ where email like '%@prueba.donchambitas.mx'
 
 ## Siguiente en la cola
 
-**Siguiente: `S4-T09`** (prioridad 650, depende de `S4-T08`, `hecha`). Ya no
-espera nada: el líder decidió `H-40`, `H-43` y `H-48` en `DEC-36`, y eso es lo
-que la tarea aplica. **La otra es `S4-T16`** (250, depende de `S4-T08`), con lo
-de `DEC-37`. Son independientes: con `S4-T09` en curso, la regla de
-`AGENTS.md` §3 da `S4-T16`, y dos personas las hacen en paralelo. Con las dos
-`hecha` cierra el Sprint 4.
+**No quedan tareas pendientes del Sprint 4.** `S4-T09` y `S4-T16` ya están
+hechas. No volver a seleccionarlas ni abrir el Sprint 5 automáticamente.
+
+**Continuidad acordada (`DEC-47`):** entregar la rama de S4-T10 para que otra
+persona complete S4-T10 y después S4-T11. Esta asignación prevalece sobre la
+selección automática; detenerse tras ambas. La apertura general del Sprint 5
+sigue correspondiendo al líder; su primera pendiente por prioridad es `S5-T01`.
 
 **La IA se reanudó entera el 2026-11-09** (`DEC-33`, cierra `PEND-03`). `S3-T10`
 se queda `hecha` con 12 de 13 casos (`DEC-35`). Lo que `S4-T10` y `S4-T11` tienen
@@ -346,3 +440,13 @@ La que ocupaba "Última tarea terminada" pasa, tal cual, al principio de
 Si dos personas van a trabajar el mismo día, la segunda revisa este archivo
 **antes** de pedirle nada al agente. Si dice que hay una tarea en curso, esa
 tarea no se toca.
+
+Verificación local del 2026-11-15: `assembleDebug` y `testDebugUnitTest`
+correctos; 499 pruebas, 0 fallas, 0 errores. En esa primera comprobación aún
+no había dispositivo. La prueba posterior en emulador se resume arriba.
+
+Reprueba de IA del 2026-11-15: después de que el líder desplegó `ia-generar`
+(el despliegue inicial tenía nombre `hyper-worker`), P-11 y P-13 generan texto
+en el emulador. P-11 confirma antes de reemplazar y rechaza una petición de poema.
+Se conservaron los datos guardados y no se publicó el servicio de prueba.
+Detalle y límites de la verificación en `supabase/functions/README.md`.

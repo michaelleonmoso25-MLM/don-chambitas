@@ -1412,8 +1412,8 @@ La calificación promedio no se pide aparte: viene en
 |---|---|
 | `generar(funcion, entrada)` | **Edge Function** `ia-generar` |
 
-Un solo punto de entrada, contra nuestra Edge Function, **nunca contra OpenAI**.
-La llave de OpenAI vive en las variables de entorno de esa función y en ningún
+Un solo punto de entrada, contra nuestra Edge Function, **nunca directamente contra el proveedor de IA**.
+La llave del proveedor de IA vive en las variables de entorno de esa función y en ningún
 otro lugar. Ver `docs/producto/IA.md`.
 
 ```
@@ -1428,7 +1428,7 @@ POST functions/v1/ia-generar
 ```
 
 La función hace, en este orden: valida la sesión, consulta `ia_cache`, llama a
-`fn_ia_registrar_llamada` para el tope, y solo entonces llama a OpenAI. Si
+`fn_ia_registrar_llamada` para el tope, y solo entonces llama al proveedor de IA. Si
 cualquiera de los tres primeros resuelve, no se paga nada.
 
 **`429` y `503` son situaciones normales, no caídas.** La aplicación muestra un
@@ -1452,6 +1452,25 @@ resuelve `RepositorioIaFalso`.
 la sesión de `supabase-kt`, nunca del cuerpo. Sin sesión, `AUTENTICACION` sin
 ir a la red.
 
+#### Independencia del proveedor (2026-11-15)
+
+El líder confirma Gemini como proveedor activo. `ia-generar` es el endpoint
+estable; el nombre del proveedor, el modelo y sus credenciales no forman parte
+de la petición Android. Cambiar de proveedor no cambia `RepositorioIa`, los
+DTO, los códigos HTTP ni las reglas de validación, cupo y caché de este contrato.
+
+La Edge Function adapta el prompt y la entrada a la API seleccionada y normaliza
+su respuesta a `ResultadoIa`. Las claves viven solo en Supabase Secrets.
+Actualmente solo existe integración Gemini; otro proveedor requiere código de
+adaptación y despliegue del servidor, no una nueva versión de la app.
+`IA_MODELOS` permite elegir modelos Gemini sin recompilar Android.
+Las instrucciones operativas están en `supabase/functions/README.md`.
+
+Esta decisión sustituye la obligación de usar OpenAI, pero no autoriza las otras
+diferencias detectadas en la PR #62. El 2026-11-16 el líder resolvió la política
+de caché y cupo en `DEC-45` y `DEC-46`: caché compartida y fallos técnicos sin
+consumo. Falta aplicar/verificar esas reglas, la validación del título y los errores.
+
 #### La petición
 
 ```
@@ -1471,7 +1490,7 @@ Authorization: Bearer <JWT de la sesión>
 
 #### Qué hace la función, en este orden
 
-Los pasos 1 a 6 **no pagan nada**. Solo el paso 7 le pega a OpenAI.
+Los pasos 1 a 6 **no pagan nada**. Solo el paso 7 le pega al proveedor de IA.
 
 1. **Valida la sesión.** Sin JWT válido, `401`.
 2. **Valida la forma.** `funcion` conocida, `entrada` no vacía después de
@@ -1480,7 +1499,8 @@ Los pasos 1 a 6 **no pagan nada**. Solo el paso 7 le pega a OpenAI.
    Si falla, `400`: la aplicación ya valida esto, así que un `400` es un bug nuestro.
 3. **Normaliza la entrada** igual que `PROMPT-REDACCION.md` sección 2 (`trim()` y
    espacios colapsados) y calcula el SHA-256. La llave de la caché es
-   `(funcion, entrada_hash)`, como en `ia_cache`.
+   `(funcion, entrada_hash)`, como en `ia_cache`. Es compartida entre usuarios:
+   no se incluye el usuario en el hash (`DEC-45`).
 4. **Valida el título** (`H-33`). Si el valor de `Oficio` o de `Servicio` no es un
    trabajo de oficio que alguien ofrece (una orden, una pregunta, un texto sin
    sentido, algo ilegal), responde `422` con el código `ENTRADA_NO_VALIDA`. **No
@@ -1490,11 +1510,14 @@ Los pasos 1 a 6 **no pagan nada**. Solo el paso 7 le pega a OpenAI.
 5. **Consulta `ia_cache`.** Si está, responde `200` con `desde_cache: true` y sin
    pagar ni contar nada. Si lo guardado es `NO_PUEDO_REDACTAR`, responde el `422`
    del paso 8.
-6. **Registra la llamada** con `fn_ia_registrar_llamada(uid, funcion, 0)`. Si
-   devuelve `-1`, responde `429`.
-7. **Llama a OpenAI** con la instrucción de `PROMPT-REDACCION.md` sección 3 como
+6. **Reserva cupo antes de llamar al proveedor.** El mecanismo actual es
+   `fn_ia_registrar_llamada(uid, funcion, 0)`; si devuelve `-1`, responde `429`.
+   S4-T11 debe adaptar el control para cumplir `DEC-46`: toda reserva de una
+   petición que falle técnicamente debe poder liberarse de forma segura.
+7. **Llama al proveedor de IA** con la instrucción de `PROMPT-REDACCION.md` sección 3 como
    *system prompt* y la `entrada` como mensaje del usuario, con los parámetros de
-   la sección 4. Si no responde a tiempo o falla, `503`.
+   la sección 4. Si no responde a tiempo o falla, libera la reserva de esa
+   petición y responde `503`, sin consumo neto ni escritura en caché (`DEC-46`).
 8. **Revisa la respuesta.** Con `trim()`, si es exactamente `NO_PUEDO_REDACTAR`,
    la guarda en `ia_cache` y responde `422` con `ENTRADA_NO_VALIDA`. Si no, la
    guarda en `ia_cache` y responde `200` con `desde_cache: false`.
@@ -1534,13 +1557,22 @@ sí respondió, y dijo que no.
 | Acierto de caché (paso 5) | No | Ya estaba |
 | `NO_PUEDO_REDACTAR` del modelo (paso 8) | **Sí**: se pagó | **Sí**, para no pagarlo otra vez |
 | Texto normal (paso 8) | Sí | Sí |
-| `503` de OpenAI | Sí: el paso 6 ya registró | No |
+| Fallo técnico del proveedor o timeout (`503`) | **No** (`DEC-46`): liberar la reserva si la hubo | No |
+
+**Concurrencia (`DEC-46`).** Liberar una reserva no puede sobrescribir el
+consumo de otras peticiones ni ejecutarse dos veces para la misma petición.
+Una lectura del contador seguida de una escritura independiente no basta.
+S4-T11 define y documenta el mecanismo de base de datos antes de implementarlo;
+esta decisión no inventa una nueva firma de RPC. Probar éxitos y fallos
+simultáneos del mismo usuario. Un rechazo `NO_PUEDO_REDACTAR` recibido del modelo
+es una respuesta válida de rechazo, no un fallo técnico; conserva la regla de
+la tabla. La validación previa y cualquier acierto de caché no consumen cupo.
 
 **El tope sigue siendo de 10 llamadas por usuario al día en total** (`DEC-18`), no
 por función. En un acierto de caché, `llamadas_restantes_hoy` lo calcula la
 función leyendo `ia_consumo` con la `service_role` (`H-36`).
 
-**La llave de OpenAI vive solo en las variables de entorno de la función.** Ni
+**La llave del proveedor de IA vive solo en las variables de entorno de la función.** Ni
 este contrato, ni la aplicación, ni el repositorio la llevan.
 
 #### Hallazgos de `S3-T12`
@@ -1561,7 +1593,7 @@ tope se mueve a los campos de origen.
 
 **`H-36` · La función no tiene cómo saber lo que queda ni cuántos tokens gastó.**
 `fn_ia_registrar_llamada` solo registra y devuelve lo que queda *después* de
-registrar, y recibe los tokens **antes** de llamar a OpenAI, cuando aún no se
+registrar, y recibe los tokens **antes** de llamar al proveedor de IA, cuando aún no se
 conocen. Con un acierto de caché no hay función que consulte lo que queda: hay
 que sumar `ia_consumo` a mano y repetir el `10` que ya vive en SQL. Y la columna
 `tokens` queda siempre en `0`. **Le toca a `S4-T10` o al líder**: una función

@@ -63,7 +63,7 @@ Reglas para armarla, en las dos funciones:
 - Los renglones se separan con un salto de línea (`\n`), sin salto al final.
 - Nada más: ni nombre, ni apellidos, ni teléfono, ni estado, ni municipio, ni
   precio, ni fotos. Lo que no está en la lista no le sirve al texto, y lo que
-  no viaja a OpenAI no se puede filtrar.
+  no viaja al proveedor de IA no se puede filtrar.
 
 ### 2.1 `redactar_perfil` · P-11
 
@@ -181,6 +181,10 @@ Si los datos no describen un servicio o un trabajo legítimo (están vacíos, no
   aplicación pegaría la disculpa en el campo.
 
 ---
+
+Las instrucciones son independientes del proveedor. La integración activa usa
+Gemini por indicación del líder (2026-11-15); para cambiar de proveedor se
+conservan estas reglas y se repiten los casos de prueba con su API real.
 
 ## 4. Lo que el proxy recibe de vuelta
 

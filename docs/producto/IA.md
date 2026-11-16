@@ -2,34 +2,35 @@
 
 ## La regla que no se rompe
 
-**La llave de la API de OpenAI nunca vive dentro de la aplicación.** Ni en el
+**La llave de la API del proveedor de IA nunca vive dentro de la aplicación.** Ni en el
 código, ni en `local.properties`, ni en `BuildConfig`, ni ofuscada, ni en una
 rama de pruebas. Un APK se descompila en dos minutos y esa llave está ligada a
 una tarjeta.
 
 La aplicación llama a **un proxy nuestro**, que con DEC-16 es una **Edge
 Function de Supabase**. La función tiene la llave, en sus variables de entorno, y
-llama a OpenAI. Si un ticket te pide lo contrario, el ticket está mal.
+llama al proveedor de IA. Si un ticket te pide lo contrario, el ticket está mal.
 
-## Un aclaración importante sobre los GPT
+## Proveedor intercambiable
 
-Un GPT configurado dentro de ChatGPT **no se puede consumir por API**. No
-existe un endpoint que lo exponga, y la suscripción de ChatGPT Plus no incluye
-créditos de API: son dos plataformas con facturación separada.
+Por instrucción del líder del 2026-11-15, **Gemini es el proveedor activo**.
+El producto no depende de una marca: el proveedor y el modelo se eligen en
+el servidor. Android conserva `RepositorioIa` y el endpoint `ia-generar`.
+Las credenciales de cualquier proveedor viven exclusivamente en Supabase Secrets.
 
-Lo que sí hacemos:
+El prompt de `PROMPT-REDACCION.md` expresa reglas del producto. Cada integración
+lo traduce al formato de mensajes de su API y devuelve el mismo contrato HTTP.
+Los GPT usados en ChatGPT durante el diseño son herramientas de prototipado,
+no endpoints de la aplicación ni una obligación de usar OpenAI en producción.
 
-1. Se diseña el prompt de redacción. Eso es **S3-T11**, y quedó en
-   `docs/producto/PROMPT-REDACCION.md`.
-2. Se arma y se afina el "GPT" dentro de ChatGPT, cómodamente, hasta que las
-   instrucciones den buenos resultados. Eso es **S3-T10**.
-3. Esas instrucciones se copian tal cual como *system prompt* en la Edge
-   Function, cuyo contrato es **S3-T12**.
-4. La Edge Function llama a la API de OpenAI con ese system prompt. Eso es
-   **S4-T10**, la tarea marcada PRIORITARIO.
+Cambiar de modelo Gemini se configura con `IA_MODELOS` en el servidor.
+Cambiar a otro proveedor requiere implementar su adaptador en la Edge Function,
+configurar su credencial y volver a desplegar; no requiere modificar Android.
+No se supone que todas las APIs acepten el mismo cuerpo o devuelvan lo mismo.
+Hoy solo Gemini está implementado. Ver `supabase/functions/README.md`.
 
-Los 20 dólares de Plus sirven para diseñar el prompt. El consumo real se paga
-aparte, por tokens, en la plataforma de desarrolladores.
+Todo cambio debe repetir los casos de redacción y de errores con el proveedor
+real. No modifica los límites, la autenticación ni las reglas del producto.
 
 ## Las tres funciones
 
@@ -83,9 +84,15 @@ función existe para poder medir, no para repartir el presupuesto. Al llegar al
 tope, el botón se deshabilita con el mensaje "Alcanzaste el límite de hoy". No es
 un error, es una condición normal.
 
+**Fallos del proveedor (`DEC-46`).** Un fallo técnico o tiempo de espera agotado
+no consume cupo y no se guarda en caché. Si hubo una reserva, el servidor debe
+liberarla sin afectar otras peticiones concurrentes. El rechazo de contenido
+del modelo conserva la regla distinta descrita en `CONTRATOS-API.md`.
+
 **Caché.** La tabla `ia_cache` guarda la respuesta indexada por el hash SHA-256
-del texto de entrada normalizado **y la función**. Dos peticiones idénticas se
-cobran una vez. Se consulta la caché **antes** de llamar a OpenAI, siempre.
+del texto de entrada normalizado **y la función**. Es **compartida entre
+usuarios** (`DEC-45`): el hash no incluye el usuario. Un acierto de caché no
+consume cupo de quien lo consulta. Se consulta la caché **antes** de llamar al proveedor de IA, siempre.
 
 La llave primaria es `(funcion, entrada_hash)`, las dos cosas. Con el hash
 solo, el mismo texto pedido a `redactar_perfil` y a `categorizar` se pisaba y
@@ -109,20 +116,20 @@ POST /ia/generar
 
 Respuestas: `200` con el resultado, `422` cuando la entrada no sirve (el título
 no es un servicio o el modelo contesta `NO_PUEDO_REDACTAR`), `429` cuando se
-alcanzó el tope diario, `503` cuando OpenAI no responde. `400` y `401` son
+alcanzó el tope diario, `503` cuando el proveedor de IA no responde. `400` y `401` son
 peticiones mal formadas o sin sesión. El detalle, con el orden de pasos, está en
 `CONTRATOS-API.md`. La aplicación trata `429` y `503` como
 situaciones normales con mensaje al usuario, nunca como una caída.
 
 ## Dónde vive el proxy
 
-Es una **Edge Function de Supabase** (DEC-16, 2026-09-14). La llave de OpenAI
+Es una **Edge Function de Supabase** (DEC-16, 2026-09-14). La llave del proveedor de IA
 vive en las variables de entorno del proyecto de Supabase, que no están en el
 repositorio ni pueden llegar al APK.
 
 La función hace, en este orden: valida la sesión del usuario que llama, consulta
 `ia_cache`, llama a `fn_ia_registrar_llamada` para el tope, y solo entonces
-llama a OpenAI. Si cualquiera de los tres primeros pasos resuelve, no se paga
+llama al proveedor de IA. Si cualquiera de los tres primeros pasos resuelve, no se paga
 nada.
 
 `ia_consumo` e `ia_cache` tienen RLS activo y **cero políticas**: con la
