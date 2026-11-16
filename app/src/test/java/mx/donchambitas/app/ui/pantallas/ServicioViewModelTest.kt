@@ -423,7 +423,7 @@ class ServicioViewModelTest {
             TipoError.RED to R.string.ia_aviso_fallo,
             TipoError.SERVIDOR to R.string.ia_aviso_fallo,
             TipoError.DESCONOCIDO to R.string.ia_aviso_fallo,
-            TipoError.VALIDACION to R.string.ia_aviso_no_pudo
+            TipoError.IA_RECHAZADA to R.string.ia_aviso_no_pudo
         )
         for ((tipo, aviso) in esperados) {
             val viewModel = crearViewModel()

@@ -24,7 +24,7 @@ que quedó en ChatGPT.
 
 Salen de HU-29, HU-30 y de F1 en `IA.md`:
 
-1. **De 40 a 80 palabras**, en un solo párrafo.
+1. **De 50 a 80 palabras**, en un solo párrafo (`DEC-39`).
 2. **En primera persona**, como si lo escribiera el trabajador.
 3. **Español de México**, sencillo y cálido, sin palabras rebuscadas ni
    publicidad exagerada.
@@ -126,9 +126,9 @@ Años de experiencia: <número entero>
 Habilidades: <habilidades separadas por punto y coma>
 
 Reglas del texto:
-1. Entre 40 y 80 palabras, en un solo párrafo.
-2. En primera persona, como si lo escribiera el propio trabajador.
-3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable".
+1. Entre 50 y 80 palabras, en un solo párrafo.
+2. En primera persona, como si lo escribiera el propio trabajador, con redacción neutra en género: no uses palabras que marquen masculino o femenino sobre ti (nada de "dispuesto", "preparado" u "orgulloso"); usa construcciones como "con disposición", "me gusta" o "cuento con".
+3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable". Evita las frases hechas y las muletillas ("trabajo con dedicación y compromiso", "me gusta trabajar con cuidado") y no abras ni cierres siempre igual. No digas "me especializo" ni llames "especialidad" a algo que solo aparece en una lista de habilidades.
 4. Usa solo los datos que te mando. Puedes describir en términos generales el trabajo que el nombre del oficio ya implica, y puedes expresar buena disposición como intención ("me gusta explicar lo que voy a hacer"). No inventes nada que un cliente pueda comprobar: ni certificaciones, títulos, cursos, premios, garantías, seguros, factura, marcas, horarios, zonas de trabajo, cantidad de clientes ni años de experiencia.
 5. Si no viene "Años de experiencia", o viene 0, no hables de años ni digas que tienes "amplia" o "mucha" experiencia.
 6. Si vienen habilidades, menciónalas con naturalidad; no agregues habilidades que no estén en la lista.
@@ -153,9 +153,9 @@ Categoría: <categoría del oficio>
 Borrador: <lo que el trabajador ya escribió>
 
 Reglas del texto:
-1. Entre 40 y 80 palabras, en un solo párrafo.
-2. En primera persona, como si lo escribiera el propio trabajador.
-3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable".
+1. Entre 50 y 80 palabras, en un solo párrafo.
+2. En primera persona, como si lo escribiera el propio trabajador, con redacción neutra en género: no uses palabras que marquen masculino o femenino sobre ti (nada de "dispuesto", "preparado" u "orgulloso"); usa construcciones como "con disposición", "me gusta" o "cuento con".
+3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable". Evita las frases hechas y las muletillas ("trabajo con dedicación y compromiso", "me gusta trabajar con cuidado") y no abras ni cierres siempre igual. No digas "me especializo" ni llames "especialidad" a algo que solo aparece en una lista de habilidades.
 4. Usa solo los datos que te mando. Puedes describir en términos generales en qué consiste el servicio según su título y su categoría, y puedes expresar buena disposición como intención ("te explico antes de empezar"). No inventes nada que un cliente pueda comprobar: ni certificaciones, títulos, cursos, premios, garantías, seguros, factura, marcas, materiales, tiempos de entrega, horarios, zonas de trabajo ni años de experiencia.
 5. Si viene "Borrador", es tu fuente principal: conserva todos sus datos, incluidos los que tú no inventarías (garantías, certificaciones, marcas, materiales o tiempos), porque el trabajador los escribió y son suyos. Corrige ortografía y redacción y no le agregues hechos nuevos. Lo único que quitas son precios, cantidades de dinero y datos de contacto. Si el borrador contradice al título, respeta el borrador.
 6. Nunca escribas precios, cantidades de dinero, teléfonos, correos, redes sociales ni direcciones, aunque aparezcan en los datos o en el borrador. El precio tiene su propio campo en la aplicación.

@@ -16,9 +16,9 @@ Años de experiencia: <número entero>
 Habilidades: <habilidades separadas por punto y coma>
 
 Reglas del texto:
-1. Entre 40 y 80 palabras, en un solo párrafo.
-2. En primera persona, como si lo escribiera el propio trabajador.
-3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable".
+1. Entre 50 y 80 palabras, en un solo párrafo.
+2. En primera persona, como si lo escribiera el propio trabajador, con redacción neutra en género: no uses palabras que marquen masculino o femenino sobre ti (nada de "dispuesto", "preparado" u "orgulloso"); usa construcciones como "con disposición", "me gusta" o "cuento con".
+3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable". Evita las frases hechas y las muletillas ("trabajo con dedicación y compromiso", "me gusta trabajar con cuidado") y no abras ni cierres siempre igual. No digas "me especializo" ni llames "especialidad" a algo que solo aparece en una lista de habilidades.
 4. Usa solo los datos que te mando. Puedes describir en términos generales el trabajo que el nombre del oficio ya implica, y puedes expresar buena disposición como intención ("me gusta explicar lo que voy a hacer"). No inventes nada que un cliente pueda comprobar: ni certificaciones, títulos, cursos, premios, garantías, seguros, factura, marcas, horarios, zonas de trabajo, tipos de clientes o de lugares donde trabaja (casas, negocios, empresas, obras), cantidad de clientes ni años de experiencia.
 5. Si no viene "Años de experiencia", o viene 0, no hables de años ni digas que tienes "amplia" o "mucha" experiencia.
 6. Si vienen habilidades, menciónalas con naturalidad; no agregues habilidades que no estén en la lista.
@@ -39,9 +39,9 @@ Categoría: <categoría del oficio>
 Borrador: <lo que el trabajador ya escribió>
 
 Reglas del texto:
-1. Entre 40 y 80 palabras, en un solo párrafo.
-2. En primera persona, como si lo escribiera el propio trabajador.
-3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable".
+1. Entre 50 y 80 palabras, en un solo párrafo.
+2. En primera persona, como si lo escribiera el propio trabajador, con redacción neutra en género: no uses palabras que marquen masculino o femenino sobre ti (nada de "dispuesto", "preparado" u "orgulloso"); usa construcciones como "con disposición", "me gusta" o "cuento con".
+3. Español de México, sencillo, claro y cálido. Nada de palabras rebuscadas ni de frases publicitarias exageradas como "el mejor", "100 % garantizado" o "calidad insuperable". Evita las frases hechas y las muletillas ("trabajo con dedicación y compromiso", "me gusta trabajar con cuidado") y no abras ni cierres siempre igual. No digas "me especializo" ni llames "especialidad" a algo que solo aparece en una lista de habilidades.
 4. Usa solo los datos que te mando. Puedes describir en términos generales en qué consiste el servicio según su título y su categoría, y puedes expresar buena disposición como intención ("te explico antes de empezar"). No inventes nada que un cliente pueda comprobar: ni certificaciones, títulos, cursos, premios, garantías, seguros, factura, marcas, materiales, tiempos de entrega, horarios, zonas de trabajo ni años de experiencia.
 5. Si viene "Borrador", es tu fuente principal: conserva todos sus datos, incluidos los que tú no inventarías (garantías, certificaciones, marcas, materiales o tiempos), porque el trabajador los escribió y son suyos. Corrige ortografía y redacción y no le agregues hechos nuevos. Lo único que quitas son precios, cantidades de dinero y datos de contacto. Si el borrador contradice al título, respeta el borrador.
 6. Nunca escribas precios, cantidades de dinero, teléfonos, correos, redes sociales ni direcciones, aunque aparezcan en los datos o en el borrador. El precio tiene su propio campo en la aplicación.
@@ -82,6 +82,89 @@ async function devolverLlamada(admin: any, usuarioId: string, funcion: string): 
   const { data } = await admin.from("ia_consumo").select("llamadas").match(filtro).maybeSingle();
   if (data && data.llamadas > 0) {
     await admin.from("ia_consumo").update({ llamadas: data.llamadas - 1 }).match(filtro);
+  }
+}
+
+// Normaliza como PROMPT-REDACCION.md §2: espacios colapsados y recortados en cada
+// renglón, renglones vacíos fuera y "\n" entre renglones, sin salto al final.
+function normalizarEntrada(texto: string): string {
+  return texto
+    .split(/\r?\n/)
+    .map((renglon) => renglon.replace(/\s+/g, " ").trim())
+    .filter((renglon) => renglon.length > 0)
+    .join("\n");
+}
+
+// Valor de un renglón "Etiqueta: valor", o null si el renglón no existe o está vacío.
+function valorDeRenglon(entrada: string, etiqueta: string): string | null {
+  const buscada = etiqueta.normalize("NFC");
+  for (const renglon of entrada.split("\n")) {
+    const separador = renglon.indexOf(":");
+    if (separador < 0) continue;
+    if (renglon.slice(0, separador).trim().normalize("NFC") === buscada) {
+      const valor = renglon.slice(separador + 1).trim();
+      return valor.length > 0 ? valor : null;
+    }
+  }
+  return null;
+}
+
+const VERBOS_DE_PETICION = new Set([
+  "escribe", "redacta", "dime", "haz", "hazme", "genera", "ignora", "olvida", "explica",
+  "cuentame", "dame", "inventa", "muestra", "traduce", "resuelve", "responde", "imprime",
+  "describe", "ayudame", "necesito", "quiero", "busco",
+]);
+
+function sinAcentos(texto: string): string {
+  return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+}
+
+// Reglas deterministas del título (H-33): sin costo y sin llamar al proveedor.
+function tituloEvidentementeInvalido(titulo: string): boolean {
+  const letras = titulo.match(/\p{L}/gu)?.length ?? 0;
+  if (letras < 3 || titulo.length > 80) return true;
+  if (/[?¿!¡]/.test(titulo)) return true;
+  if (/(.)\1{3,}/u.test(titulo)) return true;
+  if (/\b(ignora|instrucciones|prompt)\b/i.test(sinAcentos(titulo))) return true;
+  const palabras = sinAcentos(titulo).split(/[^\p{L}]+/u).filter(Boolean);
+  if (palabras.length > 0 && VERBOS_DE_PETICION.has(palabras[0])) return true;
+  // Teclazos como "asdfgh": palabras largas casi sin vocales.
+  return palabras.some((p) => p.length >= 5 && (p.match(/[aeiou]/g)?.length ?? 0) / p.length < 0.25);
+}
+
+const PROMPT_VALIDAR_TITULO =
+  `Decide si un texto es el nombre de un oficio o servicio de trabajo legítimo y legal que una persona ofrece a clientes (por ejemplo "Plomero" o "Pintura de interiores"). Responde SOLO una palabra: SI o NO. Responde NO si el texto es una petición, pregunta o instrucción, si no tiene sentido, si es ofensivo o ilegal, o si describe engañar, robar o abrir o usar algo ajeno sin permiso del dueño.`;
+
+// Consulta mínima al modelo. Solo un NO claro bloquea: si falla o no se entiende,
+// la petición sigue y el prompt principal conserva NO_PUEDO_REDACTAR como respaldo.
+async function modeloRechazaTitulo(titulo: string, modelo: string, apiKey: string): Promise<boolean> {
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+        body: JSON.stringify({
+          system_instruction: { parts: [{ text: PROMPT_VALIDAR_TITULO }] },
+          contents: [{ role: "user", parts: [{ text: titulo }] }],
+          generationConfig: { maxOutputTokens: 16, temperature: 0, thinkingConfig: { thinkingBudget: 0 } },
+        }),
+        signal: AbortSignal.timeout(6000),
+      },
+    );
+    if (!r.ok) {
+      console.error("Validación de título: Gemini respondió", r.status, (await r.text()).slice(0, 200));
+      return false;
+    }
+    const datos = await r.json();
+    const texto = ((datos.candidates?.[0]?.content?.parts ?? []) as { text?: string }[])
+      .map((p) => p.text ?? "")
+      .join("")
+      .trim();
+    return sinAcentos(texto).startsWith("no");
+  } catch (e) {
+    console.error("Validación de título: no se pudo consultar al modelo:", String(e));
+    return false;
   }
 }
 
@@ -165,25 +248,48 @@ Deno.serve(async (req) => {
       );
     }
 
-    const entradaNormalizada = entrada.trim();
+    const entradaNormalizada = normalizarEntrada(entrada);
 
-    // Validar renglones obligatorios según la función (CONTRATOS-API.md)
-    if (funcion === "redactar_perfil" && !entradaNormalizada.includes("Oficio:")) {
+    // Renglones obligatorios según la función (CONTRATOS-API.md), como renglón y no como texto suelto.
+    const tituloEtiqueta = funcion === "redactar_perfil" ? "Oficio" : "Servicio";
+    const titulo = valorDeRenglon(entradaNormalizada, tituloEtiqueta);
+    const faltaCategoria = funcion === "redactar_servicio" && valorDeRenglon(entradaNormalizada, "Categoría") === null;
+    if (titulo === null || faltaCategoria) {
       return new Response(
-        JSON.stringify({ error: { codigo: "PETICION_INVALIDA", mensaje: "Falta renglón 'Oficio:'" } }),
+        JSON.stringify({
+          error: {
+            codigo: "PETICION_INVALIDA",
+            mensaje: funcion === "redactar_perfil" ? "Falta el renglón 'Oficio:'" : "Faltan los renglones 'Servicio:' o 'Categoría:'",
+          },
+        }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    if (funcion === "redactar_servicio" && (!entradaNormalizada.includes("Servicio:") || !entradaNormalizada.includes("Categoría:"))) {
-      return new Response(
-        JSON.stringify({ error: { codigo: "PETICION_INVALIDA", mensaje: "Faltan renglones 'Servicio:' o 'Categoría:'" } }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
-    // 3. Normalizar y calcular SHA-256
+    const respuestaRechazo = () =>
+      new Response(
+        JSON.stringify({
+          error: {
+            codigo: "ENTRADA_NO_VALIDA",
+            mensaje: "No puedo redactar una descripción con esos datos. Revisa el oficio o servicio e intenta de nuevo.",
+          },
+        }),
+        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    // 3. Calcular SHA-256 de la entrada normalizada.
     // La caché es por usuario: dos trabajadores con los mismos datos no deben recibir el mismo texto.
-    const entradaHash = await calcularSha256(`${user.id}\n${entradaNormalizada}`);
+    const entradaHash = await calcularSha256(`${user.id}
+${entradaNormalizada}`);
+
+    // 4. Validar el título (H-33) ANTES de la caché y del cupo: no cuenta, no se guarda.
+    const modelosGemini = (Deno.env.get("IA_MODELOS") || "gemini-flash-lite-latest,gemini-flash-latest")
+      .split(",")
+      .map((modelo) => modelo.trim())
+      .filter(Boolean);
+    if (tituloEvidentementeInvalido(titulo) || await modeloRechazaTitulo(titulo, modelosGemini[0], geminiApiKey)) {
+      return respuestaRechazo();
+    }
 
     // 4. Consultar ia_cache antes de llamar al modelo
     const { data: cacheRow } = await supabaseAdmin
@@ -195,15 +301,7 @@ Deno.serve(async (req) => {
 
     if (cacheRow) {
       if (cacheRow.respuesta === "NO_PUEDO_REDACTAR") {
-        return new Response(
-          JSON.stringify({
-            error: {
-              codigo: "ENTRADA_NO_VALIDA",
-              mensaje: "No puedo redactar una descripción con esos datos. Revisa el oficio o servicio e intenta de nuevo.",
-            },
-          }),
-          { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return respuestaRechazo();
       }
       return new Response(
         JSON.stringify({
@@ -247,10 +345,6 @@ Deno.serve(async (req) => {
       systemInstruction = "Eres un asistente conciso de Don Chambitas.";
     }
 
-    const modelosGemini = (Deno.env.get("IA_MODELOS") || "gemini-flash-lite-latest,gemini-flash-latest")
-      .split(",")
-      .map((modelo) => modelo.trim())
-      .filter(Boolean);
     const geminiPayload = {
       system_instruction: {
         parts: [{ text: systemInstruction }],
@@ -262,8 +356,9 @@ Deno.serve(async (req) => {
         },
       ],
       generationConfig: {
-        maxOutputTokens: 1024,
-        temperature: 0.7,
+        maxOutputTokens: 200,
+        temperature: 0.5,
+        thinkingConfig: { thinkingBudget: 0 },
       },
     };
 
@@ -289,7 +384,7 @@ Deno.serve(async (req) => {
             .trim();
           const palabras = texto.split(/\s+/).filter(Boolean).length;
           // Solo se acepta una respuesta completa: terminó bien y no quedó cortada.
-          if (texto === "NO_PUEDO_REDACTAR" || (candidato?.finishReason === "STOP" && palabras >= 15)) {
+          if (texto === "NO_PUEDO_REDACTAR" || (candidato?.finishReason === "STOP" && palabras >= 30)) {
             textoGenerado = texto;
             break;
           }
@@ -324,15 +419,7 @@ Deno.serve(async (req) => {
 
     // 8. Revisar si la respuesta es NO_PUEDO_REDACTAR
     if (textoGenerado === "NO_PUEDO_REDACTAR") {
-      return new Response(
-        JSON.stringify({
-          error: {
-            codigo: "ENTRADA_NO_VALIDA",
-            mensaje: "No puedo redactar una descripción con esos datos. Revisa el oficio o servicio e intenta de nuevo.",
-          },
-        }),
-        { status: 422, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return respuestaRechazo();
     }
 
     return new Response(
