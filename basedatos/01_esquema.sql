@@ -1081,4 +1081,39 @@ begin
 end;
 $$;
 
+-- ---- S5-T07 (H-50): la bandeja de chats en una sola lectura ----
+-- Todo lo que pinta P-15. security_invoker: respeta RLS, y filtra por auth.uid() como
+-- vw_mis_solicitudes. Un hilo sin mensajes se lista con ultimo_mensaje nulo.
+-- Para una base que ya tiene el esquema, pegar este bloque tal cual: es "create or replace".
+create or replace view public.vw_mis_conversaciones
+with (security_invoker = on) as
+select c.id,
+       c.solicitud_id,
+       s.titulo                       as solicitud_titulo,
+       c.creado_en,
+       c.ultimo_mensaje_en,
+       u.id                           as otro_id,
+       u.nombre                       as otro_nombre,
+       u.apellidos                    as otro_apellidos,
+       u.foto_url                     as otro_foto_url,
+       m.contenido                    as ultimo_mensaje,
+       (select count(*)::integer
+          from public.mensajes x
+         where x.conversacion_id = c.id
+           and x.emisor_id <> auth.uid()
+           and x.leido_en is null)    as sin_leer
+  from public.conversaciones c
+  join public.usuarios u
+    on u.id = case when c.cliente_id = auth.uid() then c.trabajador_id else c.cliente_id end
+  left join public.solicitudes s on s.id = c.solicitud_id
+  left join lateral (select contenido
+                       from public.mensajes
+                      where conversacion_id = c.id
+                      order by creado_en desc
+                      limit 1) m on true
+ where c.cliente_id = auth.uid() or c.trabajador_id = auth.uid();
+
+grant select on public.vw_mis_conversaciones to authenticated;
+-- ---- fin S5-T07 ----
+
 commit;

@@ -10,6 +10,8 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.realtime.Realtime
+import io.ktor.client.engine.okhttp.OkHttp
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import javax.inject.Singleton
@@ -33,6 +35,8 @@ object ModuloSupabase {
             "Faltan SUPABASE_URL y SUPABASE_ANON_KEY en local.properties. Nunca se suben al repositorio."
         }
         return createSupabaseClient(BuildConfig.SUPABASE_URL, BuildConfig.SUPABASE_ANON_KEY) {
+            // El motor Android de Ktor no soporta WebSockets, que Realtime necesita (S5-T07).
+            httpEngine = OkHttp.create()
             install(Auth) {
                 // El flujo se queda en IMPLICIT, el de omision: con PKCE el
                 // enlace de recuperacion pierde type=recovery (CONTRATOS-API.md).
@@ -47,6 +51,8 @@ object ModuloSupabase {
             install(Storage)
             // Invocacion de Edge Functions (ia-generar)
             install(Functions)
+            // Mensajes nuevos y cambios de conversaciones en tiempo real (S5-T07)
+            install(Realtime)
         }
     }
 }

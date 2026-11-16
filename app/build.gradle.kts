@@ -85,7 +85,8 @@ dependencies {
     implementation(libs.supabase.storage)
     implementation(libs.supabase.realtime)
     implementation(libs.supabase.functions)
-    implementation(libs.ktor.client.android)
+    // OkHttp y no el motor Android: Realtime necesita WebSockets (S5-T07).
+    implementation(libs.ktor.client.okhttp)
 
     // Serialization
     implementation(libs.kotlinx.serialization.json)

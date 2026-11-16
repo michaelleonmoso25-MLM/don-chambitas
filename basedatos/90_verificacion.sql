@@ -227,6 +227,12 @@ from (values
             and not has_function_privilege('anon', 'public.fn_ia_restantes(uuid)', 'execute')
             and not has_function_privilege('authenticated',
                     'public.fn_ia_liberar_llamada(uuid, public.funcion_ia, date)', 'execute'))::text), 'true')
+,
+  -- S5-T07 (H-50): la bandeja de chats es una vista y la lee la sesion.
+  (48, 'S5-T07 la vista de mis conversaciones existe y la lee la sesion',
+       (select (exists (select 1 from information_schema.views
+                         where table_schema = 'public' and table_name = 'vw_mis_conversaciones')
+            and has_table_privilege('authenticated', 'public.vw_mis_conversaciones', 'select'))::text), 'true')
 
 ) as t(orden, prueba, obtenido, esperado)
 order by orden;

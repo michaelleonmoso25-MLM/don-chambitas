@@ -62,7 +62,7 @@ grant select, insert, update, delete on
 to authenticated;
 
 grant select on public.vw_trabajador_calificacion, public.vw_busqueda_trabajadores,
-    public.vw_mis_solicitudes to authenticated;
+    public.vw_mis_solicitudes, public.vw_mis_conversaciones to authenticated;
 
 -- Las tablas de IA no las toca nadie con la anon key. Punto.
 revoke all on public.ia_consumo, public.ia_cache from anon, authenticated;

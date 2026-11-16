@@ -144,7 +144,7 @@ S4-T10 sigue en curso y #62 abierta, sin integrar.
 | `S5-T04` | 900 | Gestión del estado de la solicitud (abierta / asignada / cerrada) | RRC | pendiente | S5-T03 |
 | `S5-T05` | 850 | Chat interno: lista de conversaciones y detalle (interfaz) | GRI | hecha | S1-T10 |
 | `S5-T06` | 800 | Contrato de la API de mensajería, postulaciones y reseñas (`DEC-43`) | BCJL | hecha | — |
-| `S5-T07` | 750 | Implementación real de la mensajería en tiempo real (Supabase Realtime) | LMM | pendiente | S5-T06 |
+| `S5-T07` | 750 | Implementación real de la mensajería en tiempo real (Supabase Realtime) | LMM | hecha | S5-T06 |
 | `S5-T08` | 700 | Pantalla de reseñas y calificaciones | RRC | pendiente | S5-T04 |
 | `S5-T09` | 650 | Cálculo y despliegue de la calificación promedio del trabajador | GRI | pendiente | S5-T08 |
 | `S5-T10` | 600 | Notificaciones locales de postulaciones y mensajes | BCJL | pendiente | — |

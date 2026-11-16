@@ -199,6 +199,11 @@ primero). Resuelve `H-50`, `H-51` y `H-54`; deja `H-56` a `H-58` para el líder.
 `S5-T06`. P-15 y P-16 sobre el falso; faltan lo diseñado que no se construyó (ver el ticket). La
 mensajería real es `S5-T07`.
 
+**`S5-T07` — Mensajería real en tiempo real**, `hecha`. Rama `feat/S5-T07-mensajeria-real`, apilada sobre la
+de `S5-T05`. **Antes de probarla hay que correr en Supabase el bloque `S5-T07` de `01_esquema.sql`** (la vista
+`vw_mis_conversaciones`; ya está aplicado en el proyecto del líder). Cambia el motor de red de toda la app a
+OkHttp. Falta recuperar mensajes al reconectar. `H-58` sigue abierto.
+
 ## Tarea en curso
 
 | Campo | Valor |
