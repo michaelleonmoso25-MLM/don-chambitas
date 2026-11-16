@@ -107,6 +107,16 @@ Con `S4-T11` se pueden tomar después `S4-T14` y las opcionales `S4-T12` y
 
 ---
 
+## Políticas de IA resueltas el 2026-11-16
+
+Por decisión del líder, las discrepancias de #62 sobre caché y consumo quedan
+resueltas: `DEC-45` ratifica la caché compartida entre usuarios, y `DEC-46`
+establece que los fallos técnicos del proveedor no consumen cupo. No son
+pendientes de decisión. Su implementación y verificación corresponden a
+S4-T11, coordinada con S4-T10; ninguna de las dos se marca hecha por este registro.
+
+---
+
 ## Plantilla para pendientes nuevos
 
 ```

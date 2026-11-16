@@ -19,15 +19,19 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 
 ## Resumen
 
-| Sprint | Tareas | Pendientes | Bloqueadas | Opcionales | Hechas |
-|---|---|---|---|---|---|
-| 1 | 16 | 0 | 0 | 0 | 16 |
-| 2 | 16 | 0 | 0 | 0 | 16 |
-| 3 | 15 | 0 | 0 | 0 | 15 |
-| 4 | 11 | 2 | 0 | 0 | 9 |
-| 5 | 18 | 16 | 0 | 2 | 0 |
-| 6 | 13 | 13 | 0 | 0 | 0 |
-| **Total** | **89** | **31** | **0** | **2** | **56** |
+| Sprint | Tareas | Pendientes | En curso | Bloqueadas | Opcionales | Hechas |
+|---|---|---|---|---|---|---|
+| 1 | 16 | 0 | 0 | 0 | 0 | 16 |
+| 2 | 16 | 0 | 0 | 0 | 0 | 16 |
+| 3 | 15 | 0 | 0 | 0 | 0 | 15 |
+| 4 | 11 | 0 | 0 | 0 | 0 | 11 |
+| 5 | 18 | 15 | 1 | 0 | 2 | 0 |
+| 6 | 13 | 13 | 0 | 0 | 0 | 0 |
+| **Total** | **89** | **28** | **1** | **0** | **2** | **58** |
+
+Resumen actualizado el 2026-11-16 según las filas de tareas. El Sprint 4 tiene
+sus 11 tareas hechas; falta registrar su cierre formal y abrir el Sprint 5.
+S4-T10 sigue en curso y #62 abierta, sin integrar.
 
 > **La línea de inteligencia artificial se reanudó entera** (`DEC-33`, cierra
 > `PEND-03`): `S4-T10` y `S4-T11` pasaron a `pendiente` el 2026-11-09. El Sprint 4
@@ -147,11 +151,24 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | `S5-T11` | 550 | Integración de módulos y revisión de la navegación completa | LMM | pendiente | — |
 | `S5-T12` | 500 | Pruebas de integración del flujo cliente-trabajador | RRC | pendiente | — |
 | `S5-T13` | 450 | Implementación real de postulaciones y reseñas en Supabase (`DEC-43`) | — | pendiente | S5-T06 |
-| `S4-T10` | 400 | Consumir la API del GPT previamente entrenado desde la Edge Function (PRIORITARIO), con el `TipoError` de `H-37` (`DEC-43`) | GRI | en curso | S3-T10, S3-T12 |
+| `S4-T10` | 400 | Consumir una API de IA desde la Edge Function (Gemini activo; proveedor intercambiable), con el `TipoError` de `H-37` (`DEC-43`) | GRI | en curso | S3-T10, S3-T12 |
 | `S4-T11` | 300 | Tope de llamadas de IA por usuario al día y caché de respuestas | BCJL | pendiente | S3-T13 |
 | `S4-T14` | 250 | Manejo de errores y reintentos, con `H-17`, `H-27` y `H-28` (`DEC-43`) | GRI | pendiente | S4-T11 |
 | `S4-T12` | — | Categorización automática de la solicitud a partir de texto libre | LMM | opcional | S4-T11 |
 | `S4-T13` | — | Ranking de trabajadores sugeridos para una solicitud (sin ubicacion) | RRC | opcional | S4-T11 |
+
+> Continuidad de #62 actualizada el 2026-11-16: ver «Continuidad» en
+> `docs/control/ESTADO.md`. El líder acordó entregar la rama
+> `docs/S4-T10-contrato-ia-proveedores` para completar S4-T10 y preparar una PR
+> que sustituya #62. Por `DEC-47`, la persona continuará después con S4-T11,
+> sin nueva confirmación inicial ni selección automática de otra tarea.
+> S4-T10 permanece en curso y S4-T11 pendiente hasta que se tome. Detenerse
+> tras ambas; no considerar abierto todo el Sprint 5.
+
+> Políticas para S4-T10/S4-T11 decididas el 2026-11-16: `DEC-45`, caché
+> compartida entre usuarios y aciertos sin consumo; `DEC-46`, fallos técnicos
+> del proveedor sin consumo, con liberación segura del cupo reservado.
+> Falta implementar y verificar; no se alteran estados, prioridades ni dependencias.
 
 > Las cinco `S4-T10` a `S4-T14` vienen del Sprint 4 por `DEC-44` y conservan su ID,
 > que ya citan las decisiones y los contratos. Las opcionales no llevan prioridad:

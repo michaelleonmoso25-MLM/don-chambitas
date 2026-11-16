@@ -47,7 +47,7 @@ class RepositorioIaReal @Inject constructor(
                 funcion = funcion.valor,
                 entrada = entrada
             )
-            val response = supabase.functions.invoke("swift-responder", peticion)
+            val response = supabase.functions.invoke("ia-generar", peticion)
             val cuerpo = response.bodyAsText()
             val resultadoDto = json.decodeFromString<RespuestaIaDto>(cuerpo)
             Resultado.Exito(

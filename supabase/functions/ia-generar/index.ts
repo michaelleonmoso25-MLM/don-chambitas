@@ -247,7 +247,10 @@ Deno.serve(async (req) => {
       systemInstruction = "Eres un asistente conciso de Don Chambitas.";
     }
 
-    const modelosGemini = ["gemini-flash-lite-latest", "gemini-flash-latest"];
+    const modelosGemini = (Deno.env.get("IA_MODELOS") || "gemini-flash-lite-latest,gemini-flash-latest")
+      .split(",")
+      .map((modelo) => modelo.trim())
+      .filter(Boolean);
     const geminiPayload = {
       system_instruction: {
         parts: [{ text: systemInstruction }],
@@ -269,7 +272,7 @@ Deno.serve(async (req) => {
     for (const modelo of modelosGemini) {
       try {
         const r = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
