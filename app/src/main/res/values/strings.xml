@@ -357,4 +357,16 @@
         <item quantity="many">%1$d postulaciones sin revisar</item>
         <item quantity="other">%1$d postulaciones sin revisar</item>
     </plurals>
+
+    <!-- Chat: Conversaciones (P-15) y Chat (P-16). DISENO-POSTULACION-CONTACTO-RESENAS.md, seccion 8 -->
+    <string name="chats_titulo">Chats</string>
+    <string name="chats_vacio_titulo">Aún no tienes conversaciones</string>
+    <string name="chats_vacio_mensaje">Aquí aparecerán cuando escribas a un trabajador desde su perfil, o cuando un cliente te escriba</string>
+    <string name="chat_titulo">Chat</string>
+    <string name="chat_campo_hint">Escribe un mensaje</string>
+    <string name="chat_enviar">Enviar</string>
+    <string name="chat_primer_mensaje">Escribe el primer mensaje</string>
+    <string name="chat_enviando">Enviando…</string>
+    <string name="chat_leido">Leído</string>
+    <string name="chat_no_enviado">No se envió. Toca para reintentar</string>
 </resources>

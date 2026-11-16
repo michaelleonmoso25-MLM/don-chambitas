@@ -3,6 +3,7 @@ package mx.donchambitas.app.dominio.repositorio
 import kotlinx.coroutines.flow.Flow
 import mx.donchambitas.app.dominio.modelo.Conversacion
 import mx.donchambitas.app.dominio.modelo.Mensaje
+import mx.donchambitas.app.dominio.modelo.ResumenConversacion
 import mx.donchambitas.app.util.Resultado
 
 /**
@@ -13,7 +14,7 @@ interface RepositorioChat {
     /**
      * Obtiene las conversaciones del usuario autenticado ordenadas por fecha del ultimo mensaje.
      */
-    suspend fun obtenerConversaciones(): Resultado<List<Conversacion>>
+    suspend fun obtenerConversaciones(): Resultado<List<ResumenConversacion>>
 
     /**
      * Inicia una conversacion con un trabajador. Segun DEC-20, siempre la abre el cliente.
@@ -39,4 +40,10 @@ interface RepositorioChat {
      * Suscripcion reactiva a nuevos mensajes en tiempo real para una conversacion.
      */
     fun mensajesNuevos(conversacionId: String): Flow<Mensaje>
+
+    /**
+     * Emite Unit cada vez que cambia una conversacion (llego un mensaje): P-15 vuelve a pedir la
+     * bandeja. Sin ella, "la bandeja sube ese hilo" (HU-26) no se cumple sin sondear.
+     */
+    fun cambiosEnConversaciones(): Flow<Unit>
 }

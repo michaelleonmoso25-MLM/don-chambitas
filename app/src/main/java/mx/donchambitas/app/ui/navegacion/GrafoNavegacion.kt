@@ -57,6 +57,8 @@ import androidx.navigation.compose.rememberNavController
 import mx.donchambitas.app.R
 import mx.donchambitas.app.ui.componentes.BarraSuperior
 import mx.donchambitas.app.dominio.modelo.RolUsuario
+import mx.donchambitas.app.ui.pantallas.ChatPantalla
+import mx.donchambitas.app.ui.pantallas.ConversacionesPantalla
 import mx.donchambitas.app.ui.pantallas.IniciarSesionPantalla
 import mx.donchambitas.app.ui.pantallas.MiCuentaPantalla
 import mx.donchambitas.app.ui.pantallas.MiPerfilPantalla
@@ -310,6 +312,10 @@ private const val CLAVE_SOLICITUD_PUBLICADA = "solicitud_publicada"
  *   sin barra inferior.
  * - P-09 trae su BarraSuperior "Mis solicitudes" (S4-T06), sin flecha: es una
  *   pestana. Conserva la barra inferior.
+ * - P-15 trae su BarraSuperior "Chats" (S5-T05), sin flecha: es una pestana de los dos
+ *   roles. Conserva la barra inferior.
+ * - P-16 trae su BarraSuperior con el nombre de la otra persona (S5-T05). Se abre encima,
+ *   sin barra inferior.
  *
  * Sin esto salen dos barras encimadas, con dos títulos y dos flechas de
  * regreso. El andamio nació cuando los 19 destinos eran MarcadorPantalla y su
@@ -330,7 +336,9 @@ private val RUTAS_SIN_BARRA_DEL_ANDAMIO = setOf(
     Ruta.Resultados.ruta,
     Ruta.PerfilTrabajador.ruta,
     Ruta.PublicarSolicitud.ruta,
-    Ruta.MisSolicitudes.ruta
+    Ruta.MisSolicitudes.ruta,
+    Ruta.Conversaciones.ruta,
+    Ruta.Chat.ruta
 )
 
 /**
@@ -553,34 +561,16 @@ private fun NavGraphBuilder.subgrafoTrabajador(navController: NavHostController)
  */
 private fun NavGraphBuilder.pantallasCompartidas(navController: NavHostController) {
     composable(Ruta.Conversaciones.ruta) {
-        MarcadorPantalla(
-            ruta = Ruta.Conversaciones,
-            descripcion = "Bandeja de chats ordenada por mensaje más reciente. Presente en ambas barras inferiores.",
-            navController = navController,
-            acciones = listOf(
-                AccionNavegacion("Abrir chat (P-16)") {
-                    navController.navigate(Ruta.Chat.crearRuta("conv-demo-02"))
-                }
-            )
+        ConversacionesPantalla(
+            alAbrirConversacion = { conversacionId -> navController.navigate(Ruta.Chat.crearRuta(conversacionId)) }
         )
     }
 
     composable(
         route = Ruta.Chat.ruta,
         arguments = Ruta.Chat.argumentos
-    ) { backStackEntry ->
-        val convId = backStackEntry.arguments?.getString(Ruta.Chat.ARG_CONVERSACION_ID)
-        MarcadorPantalla(
-            ruta = Ruta.Chat,
-            descripcion = "Conversación de texto plano con un usuario. Pantalla encima (sin barra).",
-            argumentos = mapOf(Ruta.Chat.ARG_CONVERSACION_ID to convId),
-            navController = navController,
-            acciones = listOf(
-                AccionNavegacion("Volver a Conversaciones (P-15)") {
-                    navController.popBackStack()
-                }
-            )
-        )
+    ) {
+        ChatPantalla(alRegresar = { navController.popBackStack() })
     }
 
     composable(

@@ -195,6 +195,10 @@ formalmente. Hallazgos `H-49` a `H-55` pendientes de decisión (ver el documento
 `docs/S5-T06-contrato-mensajeria-postulaciones-resenas`, apilada sobre la de `S5-T01` (integrar esa
 primero). Resuelve `H-50`, `H-51` y `H-54`; deja `H-56` a `H-58` para el líder. Solo documento.
 
+**`S5-T05` — Chat interno (interfaz)**, `hecha`. Rama `feat/S5-T05-chat-interfaz`, apilada sobre la de
+`S5-T06`. P-15 y P-16 sobre el falso; faltan lo diseñado que no se construyó (ver el ticket). La
+mensajería real es `S5-T07`.
+
 ## Tarea en curso
 
 | Campo | Valor |

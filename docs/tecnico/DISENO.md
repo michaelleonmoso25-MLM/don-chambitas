@@ -120,6 +120,9 @@ falta un componente, se agrega aquí primero.
 | `TarjetaSolicitud` | Título, categoría, presupuesto, estado, fecha |
 | `ChipCategoria` | Mostaza cuando está activo, Arena cuando no |
 | `Estrellas` | Terracota, media estrella permitida en lectura |
+| `TarjetaConversacion` | Foto, nombre, título de la solicitud, último mensaje, hora y punto de «sin leer» (P-15). Registrada por `S5-T05` (`H-49`) |
+| `BurbujaMensaje` | Propios a la derecha en Mostaza, de la otra persona a la izquierda en Arena, con hora y estado de envío (P-16). Registrada por `S5-T05` (`H-49`) |
+| `CampoMensaje` | Campo de hasta 4 líneas con botón de enviar apagado con el texto en blanco (P-16). Registrada por `S5-T05` (`H-49`) |
 | `EtiquetaEstado` | Color según estado de la solicitud |
 | `Cargando` | Indicador centrado, mostaza |
 | `EstadoVacio` | Icono, texto y botón opcional |

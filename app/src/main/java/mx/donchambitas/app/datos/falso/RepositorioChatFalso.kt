@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filter
 import mx.donchambitas.app.dominio.modelo.Conversacion
 import mx.donchambitas.app.dominio.modelo.Mensaje
+import mx.donchambitas.app.dominio.modelo.ParticipanteChat
+import mx.donchambitas.app.dominio.modelo.ResumenConversacion
 import mx.donchambitas.app.dominio.repositorio.RepositorioChat
 import mx.donchambitas.app.util.Resultado
 import mx.donchambitas.app.util.TipoError
@@ -23,13 +25,14 @@ class RepositorioChatFalso @Inject constructor(
     var errorForzado: TipoError? = null
 
     private val flujoMensajes = MutableSharedFlow<Mensaje>(extraBufferCapacity = 64)
+    private val flujoCambios = MutableSharedFlow<Unit>(extraBufferCapacity = 64)
 
     private suspend fun verificarSimulacion(): Resultado.Error? {
         if (retrasoMs > 0) delay(retrasoMs)
         return errorForzado?.let { Resultado.Error(it, "Error simulado en RepositorioChat: $it") }
     }
 
-    override suspend fun obtenerConversaciones(): Resultado<List<Conversacion>> {
+    override suspend fun obtenerConversaciones(): Resultado<List<ResumenConversacion>> {
         verificarSimulacion()?.let { return it }
 
         val usuarioId = fuente.obtenerUsuarioActivoId()
@@ -38,6 +41,20 @@ class RepositorioChatFalso @Inject constructor(
         val lista = fuente.conversaciones
             .filter { it.clienteId == usuarioId || it.trabajadorId == usuarioId }
             .sortedByDescending { it.ultimoMensajeEn ?: it.creadoEn }
+            .mapNotNull { conversacion ->
+                val otroId = if (conversacion.clienteId == usuarioId) conversacion.trabajadorId else conversacion.clienteId
+                val otro = fuente.usuarios.firstOrNull { it.id == otroId } ?: return@mapNotNull null
+                val mensajes = fuente.mensajes.filter { it.conversacionId == conversacion.id }
+                ResumenConversacion(
+                    id = conversacion.id,
+                    solicitudId = conversacion.solicitudId,
+                    solicitudTitulo = fuente.solicitudes.firstOrNull { it.id == conversacion.solicitudId }?.titulo,
+                    otraPersona = ParticipanteChat(otro.id, otro.nombre, otro.apellidos, otro.fotoUrl),
+                    ultimoMensaje = mensajes.maxByOrNull { it.creadoEn }?.contenido,
+                    ultimoMensajeEn = conversacion.ultimoMensajeEn,
+                    sinLeer = mensajes.count { it.emisorId != usuarioId && it.leidoEn == null }
+                )
+            }
 
         return Resultado.Exito(lista)
     }
@@ -71,6 +88,7 @@ class RepositorioChatFalso @Inject constructor(
             ultimoMensajeEn = ahora
         )
         fuente.conversaciones.add(nueva)
+        flujoCambios.tryEmit(Unit)
         return Resultado.Exito(nueva)
     }
 
@@ -80,9 +98,12 @@ class RepositorioChatFalso @Inject constructor(
     ): Resultado<List<Mensaje>> {
         verificarSimulacion()?.let { return it }
 
+        // CONTRATOS-API.md: pagina desde 1, de 30 en 30, del mas reciente al mas antiguo.
         val mensajesConv = fuente.mensajes
             .filter { it.conversacionId == conversacionId }
-            .sortedBy { it.creadoEn }
+            .sortedByDescending { it.creadoEn }
+            .drop((pagina - 1) * TAMANO_PAGINA)
+            .take(TAMANO_PAGINA)
 
         return Resultado.Exito(mensajesConv)
     }
@@ -115,6 +136,7 @@ class RepositorioChatFalso @Inject constructor(
         }
 
         flujoMensajes.tryEmit(nuevoMensaje)
+        flujoCambios.tryEmit(Unit)
         return Resultado.Exito(nuevoMensaje)
     }
 
@@ -131,10 +153,17 @@ class RepositorioChatFalso @Inject constructor(
                 fuente.mensajes[i] = m.copy(leidoEn = ahora)
             }
         }
+        flujoCambios.tryEmit(Unit)
         return Resultado.Exito(Unit)
     }
 
     override fun mensajesNuevos(conversacionId: String): Flow<Mensaje> {
         return flujoMensajes.filter { it.conversacionId == conversacionId }
+    }
+
+    override fun cambiosEnConversaciones(): Flow<Unit> = flujoCambios
+
+    private companion object {
+        const val TAMANO_PAGINA = 30
     }
 }
