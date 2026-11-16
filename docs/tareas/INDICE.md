@@ -26,8 +26,8 @@ adelantarse, sin saltarse. El detalle, en `AGENTS.md` §3.
 | 3 | 15 | 0 | 0 | 0 | 0 | 15 |
 | 4 | 11 | 0 | 0 | 0 | 0 | 11 |
 | 5 | 18 | 15 | 1 | 0 | 2 | 0 |
-| 6 | 13 | 13 | 0 | 0 | 0 | 0 |
-| **Total** | **89** | **28** | **1** | **0** | **2** | **58** |
+| 6 | 13 | 10 | 0 | 0 | 0 | 3 |
+| **Total** | **89** | **25** | **1** | **0** | **2** | **61** |
 
 Resumen actualizado el 2026-11-16 según las filas de tareas. El Sprint 4 tiene
 sus 11 tareas hechas; falta registrar su cierre formal y abrir el Sprint 5.
@@ -183,16 +183,25 @@ S4-T10 sigue en curso y #62 abierta, sin integrar.
 | `S6-T01` | 1000 | Pruebas generales y correccion de errores criticos | BCJL | pendiente | — |
 | `S6-T02` | 970 | Revisión de accesibilidad, textos y consistencia visual | LMM | pendiente | — |
 | `S6-T03` | 950 | Optimización de rendimiento y del tamaño del paquete (AAB) | RRC | pendiente | — |
-| `S6-T04` | 900 | Revisión de seguridad: llaves, permisos y ofuscación (R8 / ProGuard) | GRI | pendiente | — |
-| `S6-T05` | 850 | Despliegue del proyecto de Supabase en producción | BCJL | pendiente | S2-T07 |
+| `S6-T04` | 900 | Revisión de seguridad: llaves, permisos y ofuscación (R8 / ProGuard) | GRI | hecha | — |
+| `S6-T05` | 850 | Despliegue del proyecto de Supabase en producción | BCJL | hecha | S2-T07 |
 | `S6-T06` | 800 | Configuración de la cuenta de Google Play Console | LMM | pendiente | — |
-| `S6-T07` | 750 | Generación de la llave de firma y del Android App Bundle firmado | RRC | pendiente | S6-T04 |
+| `S6-T07` | 750 | Generación de la llave de firma y del Android App Bundle firmado | RRC | hecha | S6-T04 |
 | `S6-T08` | 700 | Política de privacidad y formulario de seguridad de los datos | GRI | pendiente | — |
 | `S6-T09` | 650 | Ficha de la tienda: nombre, descripción, capturas, icono y gráfico | BCJL | pendiente | S6-T07 |
 | `S6-T10` | 600 | Pruebas internas o cerradas y correccion de observaciones | LMM | pendiente | — |
 | `S6-T11` | 550 | Envío a revisión y publicación en producción | RRC | pendiente | S6-T10 |
 | `S6-T12` | 500 | Documentación final, manual de usuario y entrega | GRI | pendiente | — |
 | `S6-T13` | 450 | SMTP propio en Supabase Auth para que el correo de recuperación llegue a cualquier usuario | — | pendiente | S6-T05 |
+
+> **Seguridad y despliegue: hecho**, confirmado expresamente por el líder el
+> 2026-11-16. Corresponde al bloque del Sprint 5 de `docs/SCRUM1.ods` y aquí a
+> `S6-T04`, `S6-T05` y `S6-T07`: seguridad, Supabase en producción y firma/AAB
+> ya realizados. Se registra trabajo previo confirmado por el líder, no una
+> nueva auditoría del agente. **Queda pendiente generar/subir el AAB de la
+> versión final y lanzar la actualización**, dentro de `S6-T11`; no hay que
+> rehacer la configuración de firma. `S6-T03` (optimización de rendimiento y
+> tamaño) no se da por terminada con esta confirmación.
 
 ---
 
