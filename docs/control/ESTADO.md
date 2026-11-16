@@ -7,6 +7,19 @@
 
 ---
 
+## Seguridad y despliegue — confirmado por el líder el 2026-11-16
+
+El líder confirma completado el bloque «Seguridad y despliegue (Supabase en
+producción y aplicación firmada)» del Sprint 5 de `docs/SCRUM1.ods`.
+En el índice técnico se marcan hechas `S6-T04`, `S6-T05` y `S6-T07`.
+Es un registro del trabajo ya realizado, no una nueva verificación del agente.
+
+La aplicación ya fue publicada y pasó la fase de testers, según el líder.
+**Queda pendiente el AAB de la versión final y su lanzamiento como actualización**
+(`S6-T11`); se reutiliza la firma existente. La optimización de rendimiento y
+tamaño (`S6-T03`) conserva su estado pendiente. Esta actualización no cierra
+las tareas de IA ni el resto del sprint.
+
 ## Sprint en curso
 
 | Campo | Valor |
