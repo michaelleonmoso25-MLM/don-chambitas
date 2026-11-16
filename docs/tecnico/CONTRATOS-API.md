@@ -1575,6 +1575,21 @@ función leyendo `ia_consumo` con la `service_role` (`H-36`).
 **La llave del proveedor de IA vive solo en las variables de entorno de la función.** Ni
 este contrato, ni la aplicación, ni el repositorio la llevan.
 
+**Mecanismo de cupo (`S4-T11`, `DEC-39` y `DEC-46`).** Todo vive en la base, en
+funciones `security definer` que solo ejecuta la `service_role` (excepto la consulta):
+
+| Función | Qué hace |
+|---|---|
+| `fn_ia_limite_diario()` | El tope (10). Único lugar donde vive el número (`H-36`) |
+| `fn_ia_registrar_llamada(uid, funcion, tokens)` | Reserva una llamada con un candado por usuario (`pg_advisory_xact_lock`): dos reservas simultáneas no pasan del tope. Devuelve lo que queda o `-1` |
+| `fn_ia_liberar_llamada(uid, funcion, fecha)` | Libera la reserva de **una** petición con un solo `UPDATE llamadas = llamadas - 1` (con `llamadas > 0`), sin pisar las de otras. La Edge Function la llama una sola vez por petición y con la fecha de su reserva |
+| `fn_ia_restantes(uid)` | Cupo que queda hoy. Con sesión devuelve el del propio usuario (la app la consulta al abrir P-11 y P-13); con la `service_role`, el del usuario que se pida |
+| `fn_ia_sumar_tokens(uid, funcion, tokens, fecha)` | Suma los tokens reales (`usageMetadata.totalTokenCount`) después de la respuesta |
+
+Límite conocido: si la reserva y la liberación cruzan la medianoche UTC, la fecha
+que viaja es la de la reserva, pero el reloj de la base y el de la función pueden
+diferir por milisegundos justo en ese instante.
+
 #### Hallazgos de `S3-T12`
 
 Salen de escribir este contrato. **Ninguno se resolvió aquí**: los decide el líder

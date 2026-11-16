@@ -19,6 +19,14 @@ Supabase proporciona `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
 `SUPABASE_SERVICE_ROLE_KEY` al entorno alojado. La última solo la usa el servidor.
 La app conserva únicamente URL y anon key en su configuración local.
 
+## Base de datos (S4-T11)
+
+Antes de desplegar la función nueva, correr en el SQL Editor el bloque marcado
+`S4-T11` de `basedatos/01_esquema.sql` y el bloque `S4-T11` de
+`basedatos/02_politicas_rls.sql` (todo es `create or replace`; es seguro repetirlo).
+Sin eso, la función responde error al reservar cupo. `90_verificacion.sql` trae la
+comprobación 47 y los conteos 33 y 34 actualizados.
+
 ## Desplegar
 
 En el proyecto correcto, crear una Edge Function llamada **ia-generar**, pegar
@@ -67,12 +75,9 @@ No hay cambio automático entre proveedores ni selección desde el cliente.
    Probar también sin red.
 6. Repetir los casos de `docs/producto/RESULTADOS-GPT.md` con la API real.
 
-**Estado:** esta guía no certifica esas pruebas. La PR sigue incompleta:
-validación del título antes del consumo, error de rechazo de DEC-43, prompt de
-DEC-39 y aplicación de caché compartida/cupo sin consumo ante fallos técnicos
-(`DEC-45` y `DEC-46`, decididas el 2026-11-16). Las políticas ya no requieren
-otra decisión; falta implementarlas y verificarlas en S4-T11, coordinada con
-S4-T10. El ticket S4-T10 todavía falta.
+**Estado (2026-11-16):** las verificaciones de `S4-T10` y `S4-T11` están en la
+sección «Evidencia de S4-T10 y S4-T11» de abajo. Quedan sin probar: sin conexión en el
+emulador y la repetición de los casos tras cambiar de modelo.
 
 Referencias oficiales consultadas:
 - [Secrets](https://supabase.com/docs/guides/functions/secrets)
@@ -139,3 +144,30 @@ inspeccionó el HTTP de la llamada autenticada ni la caché/consumo en servidor;
 no se probó el límite 429 ni se completó la batería de prompts. El rechazo en UI
 no demuestra que ocurra antes de consultar al proveedor ni que sea gratuito.
 S4-T10 continúa en curso por los pendientes documentados arriba.
+
+## Evidencia de S4-T10 y S4-T11 — 2026-11-16
+
+Cuentas de prueba propias (`prueba.ia.*@example.com`), servidor desplegado, no el cupo del líder.
+Cupo consultado con `rpc/fn_ia_restantes` y la sesión de cada cuenta; tokens y caché, con SQL.
+
+- Validaciones: `401`, `400` (4 formas), `422`. Casos 7, 8 y 13 de `RESULTADOS-GPT.md` dan `422`
+  sin consumir; el 6 produce una presentación. Casos 1 a 5 y 9 a 12 con la API real.
+- Caché compartida: dos usuarios, espacios distintos → `desde_cache: true`, mismo texto, cupo
+  del segundo en 10. Perfil y servicio con la misma cadena no se pisan. Con el cupo en 0, un
+  acierto responde `200` sin consumir; una entrada nueva da `429`.
+- Límite: la llamada 11 da `429` sin llamar al proveedor. Con cupo 1, 4 simultáneas: un `200` y
+  tres `429`.
+- Fallo del proveedor (secreto `IA_MODELOS=modelo-que-no-existe`, ya retirado): `503` en 2 s, cupo
+  en 10 tras una y tras 8 simultáneas; ninguna fila en `ia_cache`. Una ráfaga real de 12 dejó 2
+  éxitos y 10 fallos del proveedor, y el cupo quedó en 8.
+- Rechazo del modelo: cuenta una vez (10→9), repetido no, otro usuario no.
+- Tokens: p. ej. 10 llamadas con 7,934 tokens; la cuenta con solo fallos, 0 y 0.
+- Emulador (Pixel_8, APK de la rama apilada, trabajador de prueba): P-11 «Te quedan 10 de 10»
+  al abrir sin gastar; generó texto; rechazo con «La IA no pudo redactar con esos datos,
+  escríbelo tú» sin borrar lo escrito y sin consumo; P-13 pasó de 9 a 8 al generar.
+  La primera pulsación de P-11 no mostró texto (el proveedor tardó) y el cupo siguió cuadrando.
+- Limitaciones: el modelo no garantiza 50 palabras (49 y 41 en dos casos); a veces agrega
+  detalles pequeños («en tu hogar o negocio»); el proveedor gratuito se satura en ráfagas
+  (varios `503` seguidos); sin la caché por usuario, dos personas con los mismos datos reciben el
+  mismo texto (`DEC-45`); el validador del título hace una consulta extra al modelo sin cupo,
+  así que repetirla con títulos distintos gasta cuota del proveedor.

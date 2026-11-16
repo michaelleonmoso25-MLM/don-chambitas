@@ -21,6 +21,11 @@ class RepositorioIaFalso @Inject constructor() : RepositorioIa {
         return errorForzado?.let { Resultado.Error(it, "Error simulado en RepositorioIa: $it") }
     }
 
+    override suspend fun restantesHoy(): Resultado<Int> {
+        verificarSimulacion()?.let { return it }
+        return Resultado.Exito(llamadasRestantes)
+    }
+
     override suspend fun generar(
         funcion: FuncionIa,
         entrada: String

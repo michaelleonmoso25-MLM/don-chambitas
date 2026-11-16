@@ -59,7 +59,7 @@ data class EstadoServicio(
     @StringRes val errorUnidad: Int? = null,
     val errorPantalla: TipoError? = null,
     val guardando: Boolean = false,
-    val ia: EstadoBotonIa = EstadoBotonIa.FaltanDatos,
+    val ia: EstadoBotonIa = EstadoBotonIa.FaltanDatos(),
     val propuestaIa: String? = null,
     val fotoPorQuitar: FotoEnPantalla? = null,
     @StringRes val aviso: Int? = null,

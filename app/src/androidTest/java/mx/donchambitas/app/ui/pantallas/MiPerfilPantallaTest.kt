@@ -216,7 +216,7 @@ class MiPerfilPantallaTest {
 
     @Test
     fun botonIa_faltanDatos_estaDeshabilitadoYDiceQueFalta() {
-        montarContenido(EstadoMiPerfil(cargando = false, ia = EstadoBotonIa.FaltanDatos))
+        montarContenido(EstadoMiPerfil(cargando = false, ia = EstadoBotonIa.FaltanDatos()))
 
         boton(R.string.ia_redactar).performScrollTo().assertIsNotEnabled()
         composeTestRule.onNodeWithText(texto(R.string.mi_perfil_ia_falta_titulo)).assertIsDisplayed()

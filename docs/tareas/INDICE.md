@@ -152,7 +152,7 @@ S4-T10 sigue en curso y #62 abierta, sin integrar.
 | `S5-T12` | 500 | Pruebas de integración del flujo cliente-trabajador | RRC | pendiente | — |
 | `S5-T13` | 450 | Implementación real de postulaciones y reseñas en Supabase (`DEC-43`) | — | pendiente | S5-T06 |
 | `S4-T10` | 400 | Consumir una API de IA desde la Edge Function (Gemini activo; proveedor intercambiable), con el `TipoError` de `H-37` (`DEC-43`) | GRI | en curso | S3-T10, S3-T12 |
-| `S4-T11` | 300 | Tope de llamadas de IA por usuario al día y caché de respuestas | BCJL | pendiente | S3-T13 |
+| `S4-T11` | 300 | Tope de llamadas de IA por usuario al día y caché de respuestas | BCJL | en curso | S3-T13 |
 | `S4-T14` | 250 | Manejo de errores y reintentos, con `H-17`, `H-27` y `H-28` (`DEC-43`) | GRI | pendiente | S4-T11 |
 | `S4-T12` | — | Categorización automática de la solicitud a partir de texto libre | LMM | opcional | S4-T11 |
 | `S4-T13` | — | Ranking de trabajadores sugeridos para una solicitud (sin ubicacion) | RRC | opcional | S4-T11 |

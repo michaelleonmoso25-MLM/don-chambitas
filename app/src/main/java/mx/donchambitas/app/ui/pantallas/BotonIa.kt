@@ -31,7 +31,7 @@ internal fun BotonIa(
     alPedir: () -> Unit
 ) {
     val linea = when (estado) {
-        EstadoBotonIa.FaltanDatos -> textoFaltanDatos
+        is EstadoBotonIa.FaltanDatos -> textoFaltanDatos
         is EstadoBotonIa.Disponible -> estado.restantesHoy?.let { stringResource(R.string.ia_restantes, it) }
         EstadoBotonIa.Pidiendo -> null
         EstadoBotonIa.LimiteAlcanzado -> stringResource(R.string.ia_limite)

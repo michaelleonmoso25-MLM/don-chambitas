@@ -662,6 +662,19 @@ create index ix_ia_cache_creado on public.ia_cache (creado_en);
 -- La llama la Edge Function DESPUES de resolver que hay que pegarle a OpenAI.
 -- Devuelve cuantas llamadas le quedan al usuario hoy, o -1 si ya no le quedan
 -- y no se registro nada.
+-- ---- S4-T11 (DEC-39, DEC-45, DEC-46): cupo atomico, liberacion, consulta y tokens ----
+-- Pegar este bloque tal cual en el SQL Editor de una base que ya tiene el esquema:
+-- todo es "create or replace" y se puede repetir sin dano.
+
+-- El 10 vive aqui y en ningun otro lado (DEC-18, H-36).
+create or replace function public.fn_ia_limite_diario()
+returns integer
+language sql
+immutable
+as $$ select 10 $$;
+
+-- Reserva una llamada. El candado por usuario serializa las reservas simultaneas:
+-- sin el, dos peticiones a la vez leen la misma suma y pasan las dos del tope.
 create or replace function public.fn_ia_registrar_llamada(
     p_usuario_id uuid,
     p_funcion    funcion_ia,
@@ -673,14 +686,15 @@ security definer
 set search_path = public
 as $$
 declare
-    k_limite_diario constant integer := 10;
     v_usadas integer;
 begin
+    perform pg_advisory_xact_lock(hashtextextended(p_usuario_id::text, 0));
+
     select coalesce(sum(llamadas), 0) into v_usadas
       from public.ia_consumo
      where usuario_id = p_usuario_id and fecha = current_date;
 
-    if v_usadas >= k_limite_diario then
+    if v_usadas >= public.fn_ia_limite_diario() then
         return -1;
     end if;
 
@@ -690,12 +704,79 @@ begin
         set llamadas = public.ia_consumo.llamadas + 1,
             tokens   = public.ia_consumo.tokens + coalesce(p_tokens, 0);
 
-    return k_limite_diario - v_usadas - 1;
+    return public.fn_ia_limite_diario() - v_usadas - 1;
 end;
 $$;
 
 comment on function public.fn_ia_registrar_llamada is
     'Tope diario de IA (DEC-18). Devuelve llamadas restantes hoy, o -1 si ya no hay';
+
+-- Libera la reserva de UNA peticion que fallo por el proveedor (DEC-46). Una sola
+-- sentencia UPDATE: se descuenta 1 sobre el valor vigente de la fila, asi que no pisa
+-- las reservas de otras peticiones. Devuelve 1 si libero y 0 si no habia nada que liberar.
+-- Quien llama la usa una sola vez por peticion; la fecha es la de la reserva.
+create or replace function public.fn_ia_liberar_llamada(
+    p_usuario_id uuid,
+    p_funcion    funcion_ia,
+    p_fecha      date default current_date
+)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_filas integer;
+begin
+    update public.ia_consumo
+       set llamadas = llamadas - 1
+     where usuario_id = p_usuario_id and fecha = p_fecha
+       and funcion = p_funcion and llamadas > 0;
+    get diagnostics v_filas = row_count;
+    return v_filas;
+end;
+$$;
+
+comment on function public.fn_ia_liberar_llamada is
+    'DEC-46: libera la reserva de una peticion fallida sin tocar las de otras';
+
+-- Llamadas que le quedan hoy. Con sesion devuelve las del propio usuario; con la
+-- service_role, las del usuario que se pida.
+create or replace function public.fn_ia_restantes(p_usuario_id uuid default null)
+returns integer
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select greatest(0, public.fn_ia_limite_diario() - coalesce((
+        select sum(llamadas)::integer from public.ia_consumo
+         where usuario_id = case when auth.role() = 'service_role'
+                                 then coalesce(p_usuario_id, auth.uid())
+                                 else auth.uid() end
+           and fecha = current_date), 0));
+$$;
+
+comment on function public.fn_ia_restantes is
+    'H-36: llamadas que le quedan hoy al usuario, sin repetir el tope en otro lado';
+
+-- Suma los tokens reales despues de la respuesta del proveedor (DEC-39).
+create or replace function public.fn_ia_sumar_tokens(
+    p_usuario_id uuid,
+    p_funcion    funcion_ia,
+    p_tokens     integer,
+    p_fecha      date default current_date
+)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+    update public.ia_consumo
+       set tokens = tokens + greatest(coalesce(p_tokens, 0), 0)
+     where usuario_id = p_usuario_id and fecha = p_fecha and funcion = p_funcion;
+$$;
+-- ---- fin S4-T11 ----
 
 -- ============================================================================
 --  VISTAS
