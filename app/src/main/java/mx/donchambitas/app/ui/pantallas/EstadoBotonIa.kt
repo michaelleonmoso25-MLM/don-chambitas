@@ -37,13 +37,13 @@ fun EstadoBotonIa.recalcular(faltanDatos: Boolean): EstadoBotonIa = when {
 /**
  * El aviso cuando la IA no entrega un texto (1.9 y CONTRATOS-API.md). Con el limite
  * alcanzado no hay aviso: el propio boton ya lo dice. La entrada que el modelo
- * rechaza llega como VALIDACION (H-37) y tiene su aviso, porque "no respondio"
+ * rechaza llega como IA_RECHAZADA (H-37, DEC-39) y tiene su aviso, porque "no respondio"
  * no es cierto: si respondio, y dijo que no.
  */
 @StringRes
 internal fun avisoIaDe(tipo: TipoError): Int? = when (tipo) {
     TipoError.LIMITE_IA -> null
-    TipoError.VALIDACION -> R.string.ia_aviso_no_pudo
+    TipoError.IA_RECHAZADA -> R.string.ia_aviso_no_pudo
     else -> R.string.ia_aviso_fallo
 }
 

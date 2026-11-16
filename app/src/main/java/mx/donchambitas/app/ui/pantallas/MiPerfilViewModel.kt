@@ -169,7 +169,7 @@ class MiPerfilViewModel @Inject constructor(
                     )
                     texto.isEmpty() || texto == EntradaIa.NO_PUEDO_REDACTAR -> it.copy(
                         ia = antes.recalcular(faltanDatos),
-                        aviso = avisoIaDe(TipoError.VALIDACION)
+                        aviso = avisoIaDe(TipoError.IA_RECHAZADA)
                     )
                     else -> {
                         val restantes = (resultado as Resultado.Exito).dato.llamadasRestantesHoy

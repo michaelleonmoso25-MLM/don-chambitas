@@ -147,7 +147,7 @@ class ServicioViewModel @Inject constructor(
                     )
                     texto.isEmpty() || texto == EntradaIa.NO_PUEDO_REDACTAR -> it.copy(
                         ia = antes,
-                        aviso = avisoIaDe(TipoError.VALIDACION)
+                        aviso = avisoIaDe(TipoError.IA_RECHAZADA)
                     )
                     else -> {
                         val disponible = EstadoBotonIa.Disponible((resultado as Resultado.Exito).dato.llamadasRestantesHoy)

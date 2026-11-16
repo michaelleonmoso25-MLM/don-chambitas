@@ -166,21 +166,21 @@ las de emulador de la sesión anterior.
    DEC-39 sigue exigiendo consulta de restantes (`fn_ia_restantes`) y registro
    real de tokens después de responder; hoy se mandan cero tokens. Coordinar
    S4-T10 con S4-T11 sin declarar completada ninguna implementación pendiente.
-4. **Validación previa del título:** falta rechazar órdenes/texto inválido antes de
-   caché, consumo y proveedor (paso 4 del contrato; DEC-35). El rechazo observado
-   no demuestra cumplir ese orden. Repetir casos 7, 8 y 13 de RESULTADOS-GPT.md.
-5. **Errores Android:** falta TipoError específico para rechazo (DEC-43/H-37);
-   422 sigue como VALIDACION. 400 se mapea a VALIDACION, pero el contrato pide
-   DESCONOCIDO. Falta rechazo defensivo de un 200 con NO_PUEDO_REDACTAR y comprobar
-   ausencia de sesión antes de ir a red. Verificar 401/422/429/503 y sin conexión.
-6. **Prompt y parámetros:** DEC-39 exige mínimo 50 palabras, neutralidad de género
-   y evitar frases hechas/especialidades inventadas. Código/prompt aún dicen 40–80
-   y el código acepta desde 15. Parámetros 1024 tokens / 0.7 difieren de la tabla
-   de PROMPT-REDACCION.md (200 / 0.5). Alinear y repetir batería con la API real.
-7. **Cierre:** sigue faltando `docs/tareas/S4-T10.md`; completar criterios y
-   evidencias antes de marcar hecha. Las otras diferencias no quedaron autorizadas
-   solo por aprobar Gemini. Las políticas de caché y fallos ya están decididas en DEC-45 y DEC-46.
-   Cualquier nueva decisión corresponde al líder.
+4. **Validación previa del título (S4-T10, hecho, 2026-11-16):** reglas
+   deterministas más una consulta mínima al modelo, antes de caché y cupo.
+   Contra el servidor desplegado, los casos 6, 7, 8 y 13 de RESULTADOS-GPT.md
+   se comportan como se espera (6: presentación; 7, 8 y 13: `422` sin consumo).
+5. **Errores Android (S4-T10, hecho):** `TipoError.IA_RECHAZADA` (`H-37`);
+   422 y un 200 con `NO_PUEDO_REDACTAR` lo usan; 400 → `DESCONOCIDO`. 503
+   pruebas unitarias, 0 fallas. **Sin probar aún en emulador** esta rama.
+6. **Prompt y parámetros (S4-T10, hecho):** mínimo 50 palabras, redacción neutra y
+   sin frases hechas; temperatura 0.5 y 200 tokens como la tabla. Se quitó
+   `thinkingConfig`: `gemini-flash-lite-latest` lo rechaza con 400. Casos 1 a 5 y
+   9 a 12 con la API real: de 41 a 71 palabras; **dos quedan por debajo de 50**
+   (caso 10 con 49, caso 11 con 41 por respetar el borrador).
+7. **Cierre:** `S4-T10` **no se marca `hecha`**: sus comprobaciones de caché
+   entre usuarios, cupo, concurrencia y fallo sin consumo dependen de `S4-T11`.
+   Quedan pendientes las pruebas de emulador de esta rama.
 
 Guía y evidencias de pruebas: `supabase/functions/README.md`. La llave se
 configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
@@ -192,9 +192,9 @@ configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
 | ID | S4-T10 |
 | Título | Integración de IA mediante la Edge Function, Gemini activo |
 | Quién la tomó | Michael (implementación original); líder (revisión y entrega) |
-| Rama | `docs/S4-T10-contrato-ia-proveedores` |
+| Rama | `feat/S4-T10-ia-integracion` (T11 apilada en `feat/S4-T11-cache-compartida-y-cupo`) |
 | Desde | 2026-11-14; continuidad revisada el 2026-11-16 |
-| Estado | Incompleta; siguiente implementador por asignar por el líder |
+| Estado | En curso: integración, validaciones y errores hechos; cierre pendiente de `S4-T11` y de la prueba en emulador |
 
 ## Última tarea terminada
 

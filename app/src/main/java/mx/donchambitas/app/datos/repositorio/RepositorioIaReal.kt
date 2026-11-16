@@ -12,6 +12,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import mx.donchambitas.app.dominio.ia.EntradaIa
 import mx.donchambitas.app.dominio.modelo.FuncionIa
 import mx.donchambitas.app.dominio.modelo.ResultadoIa
 import mx.donchambitas.app.dominio.repositorio.RepositorioIa
@@ -49,29 +50,44 @@ class RepositorioIaReal @Inject constructor(
             )
             val response = supabase.functions.invoke("ia-generar", peticion)
             val cuerpo = response.bodyAsText()
-            val resultadoDto = json.decodeFromString<RespuestaIaDto>(cuerpo)
-            Resultado.Exito(
-                ResultadoIa(
-                    resultado = resultadoDto.resultado,
-                    desdeCache = resultadoDto.desdeCache,
-                    llamadasRestantesHoy = resultadoDto.llamadasRestantesHoy
-                )
-            )
+            resultadoDeCuerpo(json, cuerpo)
         } catch (e: CancellationException) {
             throw e
         } catch (e: RestException) {
-            when (e.statusCode) {
-                400 -> Resultado.Error(TipoError.VALIDACION, "Petición no válida")
-                401 -> Resultado.Error(TipoError.AUTENTICACION, "Inicia sesión para usar la IA")
-                422 -> Resultado.Error(TipoError.VALIDACION, "No puedo redactar una descripción con esos datos")
-                429 -> Resultado.Error(TipoError.LIMITE_IA, "Alcanzaste el límite de hoy")
-                503 -> Resultado.Error(TipoError.SERVIDOR, "El servicio de IA no está disponible en este momento")
-                else -> Resultado.Error(TipoError.SERVIDOR, e.error)
-            }
+            errorDeIa(e.statusCode, e.error)
         } catch (e: HttpRequestException) {
             Resultado.Error(TipoError.RED, "Sin conexión. Revisa tu conexión e intenta de nuevo.")
         } catch (e: Exception) {
             Resultado.Error(TipoError.DESCONOCIDO, e.message ?: "Error al consultar la IA")
         }
     }
+}
+
+/**
+ * Traduce el cuerpo de un 200 de ia-generar. Un 200 cuyo texto sea exactamente
+ * NO_PUEDO_REDACTAR es el mismo rechazo que el 422: nunca se pega en un campo (H-30).
+ */
+internal fun resultadoDeCuerpo(json: Json, cuerpo: String): Resultado<ResultadoIa> {
+    val dto = json.decodeFromString<RespuestaIaDto>(cuerpo)
+    if (dto.resultado.trim() == EntradaIa.NO_PUEDO_REDACTAR) return errorDeIa(422, "")
+    return Resultado.Exito(
+        ResultadoIa(
+            resultado = dto.resultado,
+            desdeCache = dto.desdeCache,
+            llamadasRestantesHoy = dto.llamadasRestantesHoy
+        )
+    )
+}
+
+/**
+ * La tabla de CONTRATOS-API.md. El 400 es un bug nuestro y no se disfraza (DESCONOCIDO);
+ * el 422 es el rechazo de la IA (IA_RECHAZADA, H-37).
+ */
+internal fun errorDeIa(codigoHttp: Int, detalle: String): Resultado.Error = when (codigoHttp) {
+    400 -> Resultado.Error(TipoError.DESCONOCIDO, "Petición no válida")
+    401 -> Resultado.Error(TipoError.AUTENTICACION, "Inicia sesión para usar la IA")
+    422 -> Resultado.Error(TipoError.IA_RECHAZADA, "No puedo redactar una descripción con esos datos")
+    429 -> Resultado.Error(TipoError.LIMITE_IA, "Alcanzaste el límite de hoy")
+    503 -> Resultado.Error(TipoError.SERVIDOR, "El servicio de IA no está disponible en este momento")
+    else -> Resultado.Error(TipoError.SERVIDOR, detalle)
 }

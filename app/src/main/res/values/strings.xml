@@ -46,6 +46,7 @@
     <string name="error_titulo_autenticacion">Sesión requerida</string>
     <string name="error_titulo_validacion">Datos incorrectos</string>
     <string name="error_titulo_correo_duplicado">Correo ya registrado</string>
+    <string name="error_titulo_ia_rechazada">La IA no pudo redactar</string>
     <string name="error_titulo_limite_ia">Límite alcanzado</string>
     <string name="error_titulo_servidor">Error del servidor</string>
     <string name="error_titulo_desconocido">Algo salió mal</string>
@@ -55,6 +56,7 @@
     <string name="error_autenticacion">Inicia sesión de nuevo para continuar.</string>
     <string name="error_validacion">Revisa los campos y corrige los datos ingresados.</string>
     <string name="error_correo_duplicado">El correo ya está registrado, inicia sesión</string>
+    <string name="error_ia_rechazada">La IA no pudo redactar con esos datos, escríbelo tú.</string>
     <string name="error_limite_ia">Alcanzaste el límite de hoy, vuelve a intentarlo mañana.</string>
     <string name="error_servidor">Ocurrió un problema en el servidor. Intenta de nuevo más tarde.</string>
     <string name="error_desconocido">Ocurrió un error inesperado. Intenta de nuevo más tarde.</string>

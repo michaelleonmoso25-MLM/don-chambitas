@@ -35,6 +35,7 @@ class EstadosTest {
         assertEquals(R.string.error_validacion, obtenerMensajeErrorRes(TipoError.VALIDACION))
         assertEquals(R.string.error_correo_duplicado, obtenerMensajeErrorRes(TipoError.CORREO_DUPLICADO))
         assertEquals(R.string.error_limite_ia, obtenerMensajeErrorRes(TipoError.LIMITE_IA))
+        assertEquals(R.string.error_ia_rechazada, obtenerMensajeErrorRes(TipoError.IA_RECHAZADA))
         assertEquals(R.string.error_servidor, obtenerMensajeErrorRes(TipoError.SERVIDOR))
         assertEquals(R.string.error_desconocido, obtenerMensajeErrorRes(TipoError.DESCONOCIDO))
     }
@@ -63,6 +64,7 @@ class EstadosTest {
         assertEquals(R.string.error_titulo_validacion, obtenerTituloErrorRes(TipoError.VALIDACION))
         assertEquals(R.string.error_titulo_correo_duplicado, obtenerTituloErrorRes(TipoError.CORREO_DUPLICADO))
         assertEquals(R.string.error_titulo_limite_ia, obtenerTituloErrorRes(TipoError.LIMITE_IA))
+        assertEquals(R.string.error_titulo_ia_rechazada, obtenerTituloErrorRes(TipoError.IA_RECHAZADA))
         assertEquals(R.string.error_titulo_servidor, obtenerTituloErrorRes(TipoError.SERVIDOR))
         assertEquals(R.string.error_titulo_desconocido, obtenerTituloErrorRes(TipoError.DESCONOCIDO))
     }

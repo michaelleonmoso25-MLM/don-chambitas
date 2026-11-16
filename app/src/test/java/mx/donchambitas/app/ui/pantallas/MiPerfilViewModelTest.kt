@@ -406,7 +406,7 @@ class MiPerfilViewModelTest {
         advanceUntilIdle()
         viewModel.alCambiarTitulo("Plomero")
         viewModel.alCambiarDescripcion("Mi texto")
-        repositorioIa.errorForzado = TipoError.VALIDACION
+        repositorioIa.errorForzado = TipoError.IA_RECHAZADA
 
         viewModel.alPedirIa()
         advanceUntilIdle()
