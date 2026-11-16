@@ -63,7 +63,7 @@ class ServicioViewModelTest {
         assertTrue(estado.creando)
         assertEquals(16, estado.categorias.size)
         assertEquals("", estado.titulo)
-        assertEquals(EstadoBotonIa.FaltanDatos, estado.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), estado.ia)
     }
 
     @Test
@@ -72,9 +72,9 @@ class ServicioViewModelTest {
         advanceUntilIdle()
 
         viewModel.alCambiarTitulo("Instalación de boiler")
-        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), viewModel.estado.value.ia)
         viewModel.alElegirCategoria(1)
-        assertEquals(EstadoBotonIa.Disponible(null), viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.Disponible(CUPO_INICIAL), viewModel.estado.value.ia)
     }
 
     @Test
@@ -89,7 +89,7 @@ class ServicioViewModelTest {
         assertEquals("350", estado.precioDesde)
         assertEquals("800", estado.precioHasta)
         assertEquals("por trabajo", estado.unidadPrecio)
-        assertEquals(EstadoBotonIa.Disponible(null), estado.ia)
+        assertEquals(EstadoBotonIa.Disponible(CUPO_INICIAL), estado.ia)
         // H-18: la foto sembrada llega con su id, lista para quitarse.
         val sembrada = fuente.fotosServicio.single { it.servicioId == "serv-1" }
         assertEquals(listOf(FotoEnPantalla.Guardada(sembrada)), estado.fotos)
@@ -447,6 +447,7 @@ class ServicioViewModelTest {
     @Test
     fun noDebePegarNoPuedoRedactar_cuandoLlegaComoTexto() = runTest(reglaCorrutinas.testDispatcher) {
         val ia = mockk<RepositorioIa> {
+            coEvery { restantesHoy() } returns Resultado.Exito(CUPO_INICIAL)
             coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("NO_PUEDO_REDACTAR"))
         }
         val viewModel = crearViewModel(ia = ia)
@@ -472,13 +473,14 @@ class ServicioViewModelTest {
         viewModel.alPedirIa()
         advanceUntilIdle()
 
-        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), viewModel.estado.value.ia)
         assertEquals(8, repositorioIa.llamadasRestantes)
     }
 
     @Test
     fun debeMandarLaEntradaConElFormatoDeLaSeccion2_conElBorradorSiLoHay() = runTest(reglaCorrutinas.testDispatcher) {
         val ia = mockk<RepositorioIa> {
+            coEvery { restantesHoy() } returns Resultado.Exito(CUPO_INICIAL)
             coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("Texto"))
         }
         val viewModel = crearViewModel(ia = ia)
@@ -527,3 +529,6 @@ class ServicioViewModelTest {
         const val ID_TRABAJADOR = "usr-trab-1"
     }
 }
+
+/** Lo que el falso dice que le queda al usuario al abrir la pantalla (DEC-39). */
+private const val CUPO_INICIAL = 8

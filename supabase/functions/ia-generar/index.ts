@@ -58,31 +58,24 @@ async function calcularSha256(texto: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const LIMITE_DIARIO = 10;
+// El tope de 10 y la lógica de cupo viven en la base (fn_ia_* en 01_esquema.sql, S4-T11).
+type Reserva = { usuarioId: string; funcion: string; fecha: string };
 
-// Fecha de hoy en UTC, igual que current_date en la base de Supabase.
+// Fecha UTC de la reserva, igual que current_date en la base de Supabase.
 function hoyUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-// Llamadas que le quedan hoy al usuario, sumando todas las funciones.
-async function restantesHoy(admin: any, usuarioId: string): Promise<number> {
-  const { data } = await admin
-    .from("ia_consumo")
-    .select("llamadas")
-    .eq("usuario_id", usuarioId)
-    .eq("fecha", hoyUtc());
-  const usadas = (data ?? []).reduce((s: number, f: { llamadas: number }) => s + f.llamadas, 0);
-  return Math.max(0, LIMITE_DIARIO - usadas);
-}
-
-// Si el modelo falla, la llamada ya registrada no debe contar contra el tope.
-async function devolverLlamada(admin: any, usuarioId: string, funcion: string): Promise<void> {
-  const filtro = { usuario_id: usuarioId, fecha: hoyUtc(), funcion };
-  const { data } = await admin.from("ia_consumo").select("llamadas").match(filtro).maybeSingle();
-  if (data && data.llamadas > 0) {
-    await admin.from("ia_consumo").update({ llamadas: data.llamadas - 1 }).match(filtro);
-  }
+// Libera la reserva de ESTA petición, una sola vez (DEC-46). La función SQL descuenta 1
+// sobre el valor vigente de la fila, así que no pisa las reservas de otras peticiones.
+async function liberarReserva(admin: any, reserva: Reserva | null): Promise<void> {
+  if (!reserva) return;
+  const { error } = await admin.rpc("fn_ia_liberar_llamada", {
+    p_usuario_id: reserva.usuarioId,
+    p_funcion: reserva.funcion,
+    p_fecha: reserva.fecha,
+  });
+  if (error) console.error("No se pudo liberar la reserva:", error.message);
 }
 
 // Normaliza como PROMPT-REDACCION.md §2: espacios colapsados y recortados en cada
@@ -167,10 +160,20 @@ async function modeloRechazaTitulo(titulo: string, modelo: string, apiKey: strin
   }
 }
 
+// Llamadas que le quedan hoy (H-36), calculadas por la base sin repetir el tope aquí.
+async function restantesDe(admin: any, usuarioId: string): Promise<number> {
+  const { data, error } = await admin.rpc("fn_ia_restantes", { p_usuario_id: usuarioId });
+  if (error) console.error("fn_ia_restantes falló:", error.message);
+  return typeof data === "number" ? data : 0;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
+  let reserva: Reserva | null = null;
+  let supabaseAdminGlobal: any = null;
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -219,6 +222,7 @@ Deno.serve(async (req) => {
 
     // Cliente con service_role para acceder a ia_cache e ia_consumo (que tienen RLS estricto)
     const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+    supabaseAdminGlobal = supabaseAdmin;
 
     // 2. Validar la forma del cuerpo
     let body: any;
@@ -277,9 +281,8 @@ Deno.serve(async (req) => {
       );
 
     // 3. Calcular SHA-256 de la entrada normalizada.
-    // La caché es por usuario: dos trabajadores con los mismos datos no deben recibir el mismo texto.
-    const entradaHash = await calcularSha256(`${user.id}
-${entradaNormalizada}`);
+    // La caché es compartida entre usuarios (DEC-45): el usuario no entra al hash.
+    const entradaHash = await calcularSha256(entradaNormalizada);
 
     // 4. Validar el título (H-33) ANTES de la caché y del cupo: no cuenta, no se guarda.
     const modelosGemini = (Deno.env.get("IA_MODELOS") || "gemini-flash-lite-latest,gemini-flash-latest")
@@ -306,7 +309,7 @@ ${entradaNormalizada}`);
         JSON.stringify({
           resultado: cacheRow.respuesta,
           desde_cache: true,
-          llamadas_restantes_hoy: await restantesHoy(supabaseAdmin, user.id),
+          llamadas_restantes_hoy: await restantesDe(supabaseAdmin, user.id),
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -325,6 +328,10 @@ ${entradaNormalizada}`);
         JSON.stringify({ error: { codigo: "ERROR_INTERNO", mensaje: rpcError.message } }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (llamadasRestantes !== -1) {
+      reserva = { usuarioId: user.id, funcion, fecha: hoyUtc() };
     }
 
     if (llamadasRestantes === -1) {
@@ -362,6 +369,7 @@ ${entradaNormalizada}`);
 
     // Prueba cada modelo en orden; si uno está saturado o no responde, pasa al siguiente.
     let textoGenerado = "";
+    let tokensUsados = 0;
     for (const modelo of modelosGemini) {
       try {
         const r = await fetch(
@@ -384,6 +392,7 @@ ${entradaNormalizada}`);
           // Solo se acepta una respuesta completa: terminó bien y no quedó cortada.
           if (texto === "NO_PUEDO_REDACTAR" || (candidato?.finishReason === "STOP" && palabras >= 30)) {
             textoGenerado = texto;
+            tokensUsados = Number(datos.usageMetadata?.totalTokenCount ?? 0);
             break;
           }
           console.error(`Gemini (${modelo}) devolvió una respuesta incompleta:`, candidato?.finishReason, palabras, "palabras");
@@ -396,7 +405,8 @@ ${entradaNormalizada}`);
     }
 
     if (!textoGenerado) {
-      await devolverLlamada(supabaseAdmin, user.id, funcion);
+      await liberarReserva(supabaseAdmin, reserva);
+      reserva = null;
       return new Response(
         JSON.stringify({ error: { codigo: "IA_NO_DISPONIBLE", mensaje: "El servicio de IA no está disponible en este momento." } }),
         { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -415,6 +425,18 @@ ${entradaNormalizada}`);
       }
     }
 
+    // La llamada se pagó: la reserva queda firme y se suman los tokens reales (DEC-39).
+    reserva = null;
+    if (tokensUsados > 0) {
+      const { error: tokensError } = await supabaseAdmin.rpc("fn_ia_sumar_tokens", {
+        p_usuario_id: user.id,
+        p_funcion: funcion,
+        p_tokens: tokensUsados,
+        p_fecha: hoyUtc(),
+      });
+      if (tokensError) console.error("No se pudieron sumar los tokens:", tokensError.message);
+    }
+
     // 8. Revisar si la respuesta es NO_PUEDO_REDACTAR
     if (textoGenerado === "NO_PUEDO_REDACTAR") {
       return respuestaRechazo();
@@ -430,6 +452,7 @@ ${entradaNormalizada}`);
     );
   } catch (error: any) {
     console.error("Error no controlado en ia-generar:", error);
+    await liberarReserva(supabaseAdminGlobal, reserva);
     return new Response(
       JSON.stringify({ error: { codigo: "ERROR_DESCONOCIDO", mensaje: error.message || "Error inesperado" } }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

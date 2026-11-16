@@ -149,10 +149,11 @@ from (values
          where n.nspname = 'public' and p.proname in (
                'fn_perfil_publico_trabajador', 'fn_aceptar_postulacion',
                'fn_cerrar_solicitud', 'fn_abrir_conversacion',
-               'fn_ia_registrar_llamada')), '5'),
+               'fn_ia_registrar_llamada', 'fn_ia_limite_diario', 'fn_ia_liberar_llamada',
+               'fn_ia_restantes', 'fn_ia_sumar_tokens')), '9'),
   (34, 'security definer con search_path fijo',
        (select count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-         where n.nspname = 'public' and p.prosecdef and p.proconfig is not null), '16'),
+         where n.nspname = 'public' and p.prosecdef and p.proconfig is not null), '19'),
   (35, 'auxiliares que rompen la recursion de RLS',
        (select count(*)::text from pg_proc p join pg_namespace n on n.oid = p.pronamespace
          where n.nspname = 'public'
@@ -215,7 +216,17 @@ from (values
        (select count(*)::text from pg_policies
          where schemaname = 'public' and tablename = 'solicitudes'
            and policyname = 'trabajador ve las solicitudes abiertas'
-           and qual like '%fn_soy_trabajador%'), '1')
+           and qual like '%fn_soy_trabajador%'), '1'),
+  -- S4-T11 (DEC-39, DEC-46): liberar y sumar tokens solo con la service_role; el cupo se consulta con sesion.
+  (47, 'S4-T11 el cupo de IA se libera y se consulta con los permisos correctos',
+       (select (has_function_privilege('service_role',
+                    'public.fn_ia_liberar_llamada(uuid, public.funcion_ia, date)', 'execute')
+            and has_function_privilege('service_role',
+                    'public.fn_ia_sumar_tokens(uuid, public.funcion_ia, integer, date)', 'execute')
+            and has_function_privilege('authenticated', 'public.fn_ia_restantes(uuid)', 'execute')
+            and not has_function_privilege('anon', 'public.fn_ia_restantes(uuid)', 'execute')
+            and not has_function_privilege('authenticated',
+                    'public.fn_ia_liberar_llamada(uuid, public.funcion_ia, date)', 'execute'))::text), 'true')
 
 ) as t(orden, prueba, obtenido, esperado)
 order by orden;

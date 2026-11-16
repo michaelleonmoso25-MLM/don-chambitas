@@ -477,6 +477,19 @@ grant execute on function
     public.fn_ia_registrar_llamada(uuid, public.funcion_ia, integer)
 to service_role;
 
+-- S4-T11: liberar y sumar tokens, solo la Edge Function; consultar el cupo, la sesion
+-- (para P-11 y P-13) y la Edge Function.
+revoke execute on function
+    public.fn_ia_liberar_llamada(uuid, public.funcion_ia, date),
+    public.fn_ia_sumar_tokens(uuid, public.funcion_ia, integer, date),
+    public.fn_ia_restantes(uuid)
+from public, anon, authenticated;
+grant execute on function
+    public.fn_ia_liberar_llamada(uuid, public.funcion_ia, date),
+    public.fn_ia_sumar_tokens(uuid, public.funcion_ia, integer, date)
+to service_role;
+grant execute on function public.fn_ia_restantes(uuid) to authenticated, service_role;
+
 -- El perfil publico es publico DENTRO de la aplicacion, o sea: exige sesion.
 -- Sin esto se lee sin iniciar sesion, con solo conocer el uuid, y trae el
 -- telefono de contacto del trabajador.

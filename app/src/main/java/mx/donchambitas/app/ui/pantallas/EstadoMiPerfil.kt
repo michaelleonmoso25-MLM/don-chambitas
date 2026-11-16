@@ -56,7 +56,7 @@ data class EstadoMiPerfil(
     val errorPantalla: TipoError? = null,
     val soloFaltanHabilidades: Boolean = false,
     val guardando: Boolean = false,
-    val ia: EstadoBotonIa = EstadoBotonIa.FaltanDatos,
+    val ia: EstadoBotonIa = EstadoBotonIa.FaltanDatos(),
     val propuestaIa: String? = null,
     @StringRes val aviso: Int? = null
 ) {

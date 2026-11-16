@@ -12,8 +12,11 @@ import mx.donchambitas.app.util.TipoError
  * propone, el usuario escribe (HU-31).
  */
 sealed interface EstadoBotonIa {
-    /** Faltan los datos de los que sale la entrada; el boton dice cuales. */
-    data object FaltanDatos : EstadoBotonIa
+    /**
+     * Faltan los datos de los que sale la entrada; el boton dice cuales.
+     * @property restantesHoy Usos que quedan hoy, o nulo si todavia no se conocen.
+     */
+    data class FaltanDatos(val restantesHoy: Int? = null) : EstadoBotonIa
 
     /** @property restantesHoy Usos que quedan hoy, o nulo si todavia no se conocen. */
     data class Disponible(val restantesHoy: Int? = null) : EstadoBotonIa
@@ -30,8 +33,27 @@ sealed interface EstadoBotonIa {
  */
 fun EstadoBotonIa.recalcular(faltanDatos: Boolean): EstadoBotonIa = when {
     this == EstadoBotonIa.Pidiendo || this == EstadoBotonIa.LimiteAlcanzado -> this
-    faltanDatos -> EstadoBotonIa.FaltanDatos
-    else -> EstadoBotonIa.Disponible((this as? EstadoBotonIa.Disponible)?.restantesHoy)
+    faltanDatos -> EstadoBotonIa.FaltanDatos(restantesConocidos)
+    else -> EstadoBotonIa.Disponible(restantesConocidos)
+}
+
+/** Los usos que quedan hoy, si ya se consultaron o se supieron en una respuesta. */
+val EstadoBotonIa.restantesConocidos: Int?
+    get() = when (this) {
+        is EstadoBotonIa.Disponible -> restantesHoy
+        is EstadoBotonIa.FaltanDatos -> restantesHoy
+        else -> null
+    }
+
+/**
+ * El estado del boton tras consultar el cupo al abrir la pantalla (DEC-39, H-36).
+ * Sin usos se deshabilita desde el principio; mientras pide no cambia.
+ */
+fun EstadoBotonIa.conRestantes(restantes: Int): EstadoBotonIa = when {
+    this == EstadoBotonIa.Pidiendo || this == EstadoBotonIa.LimiteAlcanzado -> this
+    restantes <= 0 -> EstadoBotonIa.LimiteAlcanzado
+    this is EstadoBotonIa.FaltanDatos -> EstadoBotonIa.FaltanDatos(restantes)
+    else -> EstadoBotonIa.Disponible(restantes)
 }
 
 /**

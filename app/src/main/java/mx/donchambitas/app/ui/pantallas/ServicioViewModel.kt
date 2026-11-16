@@ -63,6 +63,17 @@ class ServicioViewModel @Inject constructor(
 
     init {
         cargar()
+        consultarRestantesIa()
+    }
+
+    /** El cupo se consulta al abrir (DEC-39, H-36); si falla, el boton queda como estaba. */
+    private fun consultarRestantesIa() {
+        viewModelScope.launch {
+            val restantes = repositorioIa.restantesHoy()
+            if (restantes is Resultado.Exito) {
+                _estado.update { it.copy(ia = it.ia.conRestantes(restantes.dato)) }
+            }
+        }
     }
 
     fun alReintentarCarga() {

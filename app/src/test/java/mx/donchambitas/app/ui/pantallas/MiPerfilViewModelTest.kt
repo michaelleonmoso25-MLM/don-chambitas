@@ -67,7 +67,7 @@ class MiPerfilViewModelTest {
         assertTrue(estado.municipios.isNotEmpty())
         assertTrue(estado.municipios.all { it.estadoId == perfil.estadoId })
         assertTrue(estado.faltantes.isEmpty())
-        assertEquals(EstadoBotonIa.Disponible(null), estado.ia)
+        assertEquals(EstadoBotonIa.Disponible(CUPO_INICIAL), estado.ia)
     }
 
     @Test
@@ -84,7 +84,7 @@ class MiPerfilViewModelTest {
         assertTrue(estado.estados.isNotEmpty())
         assertTrue(estado.municipios.isEmpty())
         assertEquals(FaltaPerfil.entries, estado.faltantes)
-        assertEquals(EstadoBotonIa.FaltanDatos, estado.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), estado.ia)
     }
 
     @Test
@@ -124,10 +124,10 @@ class MiPerfilViewModelTest {
         advanceUntilIdle()
 
         viewModel.alCambiarTitulo("  ")
-        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), viewModel.estado.value.ia)
 
         viewModel.alCambiarTitulo("Plomero")
-        assertEquals(EstadoBotonIa.Disponible(null), viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.Disponible(CUPO_INICIAL), viewModel.estado.value.ia)
     }
 
     @Test
@@ -419,6 +419,7 @@ class MiPerfilViewModelTest {
     @Test
     fun noDebePegarNoPuedoRedactar_cuandoLlegaComoTexto() = runTest(reglaCorrutinas.testDispatcher) {
         val ia = mockk<RepositorioIa> {
+            coEvery { restantesHoy() } returns Resultado.Exito(CUPO_INICIAL)
             coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("NO_PUEDO_REDACTAR"))
         }
         val viewModel = crearViewModel(ia = ia)
@@ -436,6 +437,15 @@ class MiPerfilViewModelTest {
     }
 
     @Test
+    fun debeDeshabilitarLaIa_alAbrir_cuandoYaNoQuedaCupo() = runTest(reglaCorrutinas.testDispatcher) {
+        repositorioIa.llamadasRestantes = 0
+        val viewModel = crearViewModel()
+        advanceUntilIdle()
+
+        assertEquals(EstadoBotonIa.LimiteAlcanzado, viewModel.estado.value.ia)
+    }
+
+    @Test
     fun noDebePedir_cuandoFaltaElTitulo() = runTest(reglaCorrutinas.testDispatcher) {
         val viewModel = crearViewModel()
         advanceUntilIdle()
@@ -444,13 +454,14 @@ class MiPerfilViewModelTest {
         viewModel.alPedirIa()
         advanceUntilIdle()
 
-        assertEquals(EstadoBotonIa.FaltanDatos, viewModel.estado.value.ia)
+        assertEquals(EstadoBotonIa.FaltanDatos(CUPO_INICIAL), viewModel.estado.value.ia)
         assertEquals(8, repositorioIa.llamadasRestantes)
     }
 
     @Test
     fun debeMandarLaEntradaConElFormatoDeLaSeccion2_yUnaSolaVez() = runTest(reglaCorrutinas.testDispatcher) {
         val ia = mockk<RepositorioIa> {
+            coEvery { restantesHoy() } returns Resultado.Exito(CUPO_INICIAL)
             coEvery { generar(any(), any()) } returns Resultado.Exito(ResultadoIa("Texto"))
         }
         val viewModel = crearViewModel(trabajadorSimulado(), ia)
@@ -501,3 +512,6 @@ class MiPerfilViewModelTest {
         const val ID_TRABAJADOR = "usr-trab-1"
     }
 }
+
+/** Lo que el falso dice que le queda al usuario al abrir la pantalla (DEC-39). */
+private const val CUPO_INICIAL = 8

@@ -5,6 +5,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.exceptions.HttpRequestException
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.postgrest.postgrest
 import io.ktor.client.statement.bodyAsText
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -59,6 +60,19 @@ class RepositorioIaReal @Inject constructor(
             Resultado.Error(TipoError.RED, "Sin conexión. Revisa tu conexión e intenta de nuevo.")
         } catch (e: Exception) {
             Resultado.Error(TipoError.DESCONOCIDO, e.message ?: "Error al consultar la IA")
+        }
+    }
+    override suspend fun restantesHoy(): Resultado<Int> {
+        return try {
+            Resultado.Exito(supabase.postgrest.rpc("fn_ia_restantes").decodeAs<Int>())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: RestException) {
+            Resultado.Error(TipoError.SERVIDOR, e.error)
+        } catch (e: HttpRequestException) {
+            Resultado.Error(TipoError.RED, "Sin conexión. Revisa tu conexión e intenta de nuevo.")
+        } catch (e: Exception) {
+            Resultado.Error(TipoError.DESCONOCIDO, e.message ?: "Error al consultar el cupo de IA")
         }
     }
 }
