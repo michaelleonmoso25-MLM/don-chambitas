@@ -562,3 +562,7 @@ Lo decide el líder.
 
 Siguen abiertos de antes y tocan estas pantallas: **`H-47`** (cancelar una
 solicitud `asignada` no está definido, 2.3).
+
+**Actualización de `S5-T06`:** el contrato resuelve `H-50` (vista `vw_mis_conversaciones`), `H-51`
+(`obtenerResena`) y `H-54` (datos embebidos) en `CONTRATOS-API.md`, y agrega tres hallazgos de la base:
+`H-56`, `H-57` y `H-58`. Siguen abiertos `H-49`, `H-52` (con valores propuestos), `H-53` y `H-55`.

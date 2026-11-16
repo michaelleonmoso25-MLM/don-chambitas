@@ -1356,55 +1356,381 @@ funciones sí están en español, pero P-08, P-09 y P-19 pintan siempre el mensa
 
 ## Postulaciones · `RepositorioPostulaciones`
 
-| Operación | Con qué |
-|---|---|
-| `obtenerMisPostulaciones()` | `postulaciones` where `trabajador_id = auth.uid()` |
-| `obtenerDeSolicitud(solicitudId)` | `postulaciones` de esa solicitud |
-| `postularse(solicitudId, mensaje, precio)` | `insert` en `postulaciones` |
-| `retirar(id)` | `update estatus = 'retirada'` |
-| `aceptar(id)` | **RPC `fn_aceptar_postulacion(id)`** |
+Escrito a detalle en `S5-T06` (`DEC-43`), contra `basedatos/01_esquema.sql`, `02_politicas_rls.sql` y
+`DISENO-POSTULACION-CONTACTO-RESENAS.md`. **El repositorio real lo construye `S5-T13`** (`DEC-43`);
+`S5-T02` (P-14 y la vista del trabajador de P-19) y `S5-T03` (la vista del cliente) construyen sus
+pantallas sobre `RepositorioPostulacionesFalso` hasta entonces, y agregan `rechazar` y los modelos
+nuevos a la interfaz y al falso. **Verificado contra el proyecto de Supabase solo la forma de las
+lecturas** (200 con lista vacía, 2026-11-16); ninguna escritura se probó.
 
-**`aceptar` es RPC y no se negocia.** Son tres escrituras: aceptar esa, rechazar
-las demás y asignar la solicitud. Sueltas desde la aplicación, una caída a medio
-camino deja a dos trabajadores creyendo que ganaron.
+### Resumen
 
-Un trabajador **no ve** las postulaciones de sus competidores. Lo impide RLS.
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `obtenerMisPostulaciones()` | `select` de `postulaciones` con la solicitud y su categoría embebidas, por `creado_en` descendente | `Resultado<List<PostulacionConSolicitud>>` |
+| `obtenerDeSolicitud(solicitudId)` | `select` de `postulaciones` con el trabajador embebido, más la calificación de cada uno | `Resultado<List<PostulacionConTrabajador>>` |
+| `postularse(solicitudId, mensaje, precio)` | `insert` en `postulaciones` | `Resultado<Postulacion>` |
+| `retirar(id)` | `update estatus = 'retirada'`, solo si sigue `enviada` | `Resultado<Postulacion>` |
+| `rechazar(id)` **(nueva)** | `update estatus = 'rechazada'`, solo si sigue `enviada` | `Resultado<Postulacion>` |
+| `aceptar(id)` | **RPC `fn_aceptar_postulacion(p_postulacion_id)`** y vuelve a leer la fila | `Resultado<Postulacion>` |
+
+**`rechazar` no estaba en el resumen anterior** y HU-23 la pide ("rechazo una postulación suelta"); la
+política "cliente rechaza postulaciones a sus solicitudes" ya existe para ella. Se agrega a la interfaz.
+
+**El uid** sale de `auth.currentUserOrNull()?.id`. Sin sesión, `AUTENTICACION` sin ir a la red.
+
+**Quién ve qué** (políticas de `02_politicas_rls.sql`):
+
+| Quién | Lee | Escribe |
+|---|---|---|
+| El trabajador | Sus postulaciones. **Nunca** las de sus competidores ni cuántos son (HU-22) | `insert` con `trabajador_id = uid`; `update` de las suyas |
+| El cliente | Las postulaciones a **sus** solicitudes | `update` de las de sus solicitudes |
+| El cliente (aceptar) | — | Solo por la RPC, que verifica que la solicitud sea suya y esté `abierta` |
+
+**Reglas del contrato, no de la base (como `DEC-21`).** La base deja a un trabajador o a un cliente
+cambiar **cualquier columna** de una postulación con un `update` suelto, y no valida la transición
+de `estatus`. Aquí **solo se hacen estas transiciones**, y siempre con el filtro `estatus = 'enviada'`
+en el `update`: `enviada → retirada` (el trabajador), `enviada → rechazada` (el cliente) y
+`enviada → aceptada` **solo por la RPC**. Un `update` que toque otra columna o salte esas
+transiciones es un defecto en revisión de código. Ver `H-56` y `H-57`.
+
+### Los modelos nuevos
+
+```text
+PostulacionConSolicitud(postulacion: Postulacion, solicitudTitulo: String,
+                        categoriaNombre: String, solicitudEstatus: EstadoSolicitud)
+PostulacionConTrabajador(postulacion: Postulacion, trabajador: ParticipanteChat,
+                         tituloOficio: String, promedio: Double, totalResenas: Int)
+ParticipanteChat(id: String, nombre: String, apellidos: String, fotoUrl: String?)
+```
+
+`ParticipanteChat` se comparte con el chat y las reseñas (más abajo). Van en
+`dominio/modelo/ModelosRepositorio.kt`. Resuelven `H-54`.
+
+### `obtenerMisPostulaciones`
+
+```kotlin
+from("postulaciones")
+    .select(Columns.raw("*, solicitudes(id, titulo, estatus, categorias(nombre))")) {
+        order("creado_en", Order.DESCENDING)
+    }
+    .decodeList<PostulacionConSolicitudDto>()
+```
+
+- No lleva filtro de uid: RLS ya deja solo las del trabajador.
+- La solicitud embebida se lee aunque ya no esté `abierta`, por la política "trabajador ve las
+  solicitudes en las que participa". Sin postulaciones devuelve lista vacía: es el vacío de P-14.
+- **Sin paginar**, como `obtenerMisSolicitudes`.
+
+### `obtenerDeSolicitud`
+
+```kotlin
+from("postulaciones")
+    .select(Columns.raw("*, perfiles_trabajador(titulo, usuarios(nombre, apellidos, foto_url))")) {
+        filter { eq("solicitud_id", solicitudId) }
+        order("creado_en", Order.DESCENDING)
+    }
+    .decodeList<PostulacionConTrabajadorDto>()
+```
+
+Después, **una segunda lectura** para las calificaciones, con los `trabajador_id` de lo recibido:
+
+```kotlin
+from("vw_trabajador_calificacion")
+    .select(Columns.list("trabajador_id", "promedio", "total_resenas")) {
+        filter { isIn("trabajador_id", ids) }
+    }
+    .decodeList<CalificacionDto>()
+```
+
+- La vista no tiene llave foránea hacia `postulaciones`, así que no se puede embeber: se unen en la
+  aplicación por `trabajador_id`. Un trabajador sin reseñas trae `total_resenas = 0` y `promedio = 0`.
+- Si la segunda lectura falla, **la lista se muestra sin calificación** (el promedio es decoración
+  de P-19, no su función) y el error no se propaga.
+- Lo usa la vista del cliente de P-19. Un trabajador que lo llame solo recibe la suya.
+
+### `postularse`
+
+```kotlin
+from("postulaciones")
+    .insert(PostulacionEscrituraDto(solicitudId, uid, mensaje.trim(), precio))
+    { select() }
+    .decodeSingle<PostulacionDto>()
+```
+
+- **Manda cuatro columnas** (`solicitud_id`, `trabajador_id`, `mensaje`, `precio_propuesto`); `estatus`
+  y las fechas los pone la base.
+- `mensaje`: de 1 a 500 caracteres después de `trim()`; `precio`: de 0 a 99,999.99, obligatorio. Los
+  topes son **propuesta** (`H-52`): la base permite nulo y no limita el largo, y la aplicación lo
+  exige porque HU-21 pide los dos.
+- **Errores de la base**: una segunda postulación a la misma solicitud choca con
+  `uq_una_postulacion_por_solicitud` (`409`, `VALIDACION`); postularse a una solicitud que ya no está
+  `abierta`, o a la propia, lo rechaza `tg_postulaciones_validar` (`400`, `VALIDACION`) con un
+  mensaje que se muestra tal cual sobre el botón (HU-21).
+
+### `retirar` y `rechazar`
+
+```kotlin
+from("postulaciones")
+    .update({ set("estatus", "retirada") }) {   // "rechazada" en rechazar
+        filter { eq("id", id); eq("estatus", "enviada") }
+        select()
+    }
+    .decodeList<PostulacionDto>()
+```
+
+- **Cero filas es `VALIDACION`**: la postulación no existe, ya no es `enviada` o RLS no deja
+  tocarla, y no se distinguen. Es un caso normal: el cliente la rechazó mientras el trabajador la
+  retiraba.
+- `retirar` la llama el trabajador y `rechazar` el cliente; la política de cada uno decide.
+
+### `aceptar`
+
+```kotlin
+supabase.postgrest.rpc("fn_aceptar_postulacion", buildJsonObject { put("p_postulacion_id", id) })
+// y después se vuelve a leer la fila
+from("postulaciones").select { filter { eq("id", id) } }.decodeSingle<PostulacionDto>()
+```
+
+- **Es RPC y no se negocia** (`DEC-21`): aceptar esa, rechazar las demás `enviada` y asignar la
+  solicitud pasan juntas o ninguna.
+- La función valida que quien llama sea el cliente dueño y que la solicitud esté `abierta`; **no
+  valida que la postulación esté `enviada`** (`H-57`). Por eso la pantalla solo ofrece "Aceptar" en
+  las `enviada`.
+- Una solicitud que dejó de estar `abierta` devuelve `400` con "La solicitud ya no esta abierta":
+  `VALIDACION`, con ese texto.
+
+### Errores de `RepositorioPostulaciones`
+
+Los de `traducirErrorDatos`, sin cambios: `401` y `403` son `AUTENTICACION`; `400` y `409` son
+`VALIDACION` con el texto de la base; `5xx` es `SERVIDOR`; sin red es `RED`. Lo que muestra la pantalla
+está en `DISENO-POSTULACION-CONTACTO-RESENAS.md` 1.4.
 
 ## Chat · `RepositorioChat`
 
-| Operación | Con qué |
+Escrito a detalle en `S5-T06` (`DEC-43`). **Lo construye `S5-T07`**, con el SQL que pide `H-50`, y
+la interfaz la dibuja `S5-T05`. Hasta entonces lo resuelve `RepositorioChatFalso`. **Verificado contra
+Supabase solo la forma de las lecturas** (2026-11-16): `conversaciones` y `mensajes` responden `200`;
+**la vista `vw_mis_conversaciones` aún no existe** (`404`).
+
+### Resumen
+
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `obtenerConversaciones()` | `select` de la vista **`vw_mis_conversaciones`** (nueva, `H-50`) | `Resultado<List<ResumenConversacion>>` |
+| `abrirConversacion(trabajadorId, solicitudId?)` | RPC `fn_abrir_conversacion` | `Resultado<Conversacion>` |
+| `obtenerMensajes(conversacionId, pagina)` | `select` de `mensajes`, de 30 en 30 | `Resultado<List<Mensaje>>` |
+| `enviar(conversacionId, contenido)` | `insert` en `mensajes` | `Resultado<Mensaje>` |
+| `marcarLeidos(conversacionId)` | `update mensajes set leido_en` | `Resultado<Unit>` |
+| `mensajesNuevos(conversacionId)` | **Supabase Realtime** sobre `mensajes` | `Flow<Mensaje>` |
+| `cambiosEnConversaciones()` **(nueva)** | Realtime sobre `conversaciones` | `Flow<Unit>` |
+
+**La conversación la abre siempre el cliente** (`DEC-20`) y **hay un hilo por cliente, trabajador y
+solicitud, más uno suelto** por pareja (`DEC-24`). El botón de contactar vive en P-07 y en P-19 del
+cliente; el trabajador no tiene desde dónde iniciar. Ver `H-58`: la base no lo sostiene por completo.
+
+**Quién ve qué:** cada participante lee su conversación y sus mensajes; el cliente la abre; cada uno
+escribe en las suyas; y marcar leído solo toca la columna `leido_en` de los mensajes **recibidos**
+(permiso por columna, `02_politicas_rls.sql`).
+
+### Los modelos nuevos
+
+```text
+ResumenConversacion(id, solicitudId: String?, solicitudTitulo: String?,
+                    otraPersona: ParticipanteChat, ultimoMensaje: String?,
+                    ultimoMensajeEn: Instant?, sinLeer: Int)
+```
+
+`ParticipanteChat` es el de "Postulaciones". Cada fila de la bandeja trae **todo** lo que pinta P-15.
+
+### `obtenerConversaciones` y la vista `vw_mis_conversaciones` (resuelve `H-50`)
+
+```kotlin
+from("vw_mis_conversaciones")
+    .select { order("ultimo_mensaje_en", Order.DESCENDING, nullsFirst = false) }
+    .decodeList<ResumenConversacionDto>()
+```
+
+La vista **no existe todavía**; `S5-T07` la crea. Su forma, para no discutirla otra vez:
+
+| Columna | Qué es |
 |---|---|
-| `obtenerConversaciones()` | `conversaciones` ordenadas por `ultimo_mensaje_en` |
-| `abrirConversacion(trabajadorId, solicitudId?)` | RPC `fn_abrir_conversacion` |
-| `obtenerMensajes(conversacionId, pagina)` | `mensajes` paginados |
-| `enviar(conversacionId, contenido)` | `insert` en `mensajes` |
-| `marcarLeidos(conversacionId)` | `update mensajes set leido_en` |
-| `mensajesNuevos(conversacionId): Flow<Mensaje>` | **Supabase Realtime** sobre `mensajes` |
+| `id`, `solicitud_id`, `creado_en`, `ultimo_mensaje_en` | De `conversaciones` |
+| `solicitud_titulo` | `solicitudes.titulo`, nulo en el hilo suelto |
+| `otro_id`, `otro_nombre`, `otro_apellidos`, `otro_foto_url` | De `usuarios`, la **otra** persona (la contraparte de `auth.uid()`) |
+| `ultimo_mensaje` | `contenido` del mensaje más reciente, nulo si no hay |
+| `sin_leer` | Cuántos mensajes recibidos (`emisor_id <> auth.uid()`) siguen con `leido_en` nulo |
 
-El tiempo real es una suscripción, no un sondeo. El sondeo cada 5 segundos era
-el plan de respaldo mientras PEND-01 estaba abierto y ya no aplica.
+`security_invoker = on` y filtrada por `auth.uid()`, como `vw_mis_solicitudes`: respeta RLS. Un hilo
+sin mensajes se lista (el cliente acaba de contactar) y va al final por `ultimo_mensaje_en` nulo.
 
-`abrirConversacion` es RPC porque es un upsert con una condición de unicidad que
-incluye un `COALESCE`, y eso no se expresa bien desde postgrest.
+### `abrirConversacion`
 
-**La conversación la abre siempre el cliente** (DEC-20). La RPC fija
-`cliente_id = auth.uid()`, así que si la llama un trabajador, falla. El
-trabajador responde en un hilo que ya existe; nunca inicia uno. Para S5-T05 y
-S5-T06 eso significa que el botón de contactar vive en P-07 y en P-19 del lado
-del cliente, y **no** en las pantallas del trabajador.
+```kotlin
+supabase.postgrest.rpc("fn_abrir_conversacion", buildJsonObject {
+    put("p_trabajador_id", trabajadorId)
+    solicitudId?.let { put("p_solicitud_id", it) }
+})
+```
+
+Devuelve el `id` del hilo (nuevo o el que ya existía). El repositorio lo lee y entrega la
+`Conversacion`. Un hilo por `(cliente, trabajador, solicitud)`; con `solicitudId` nulo es el hilo
+suelto de P-07. Llamarla con el uid propio como trabajador falla en la base.
+
+### `obtenerMensajes`
+
+```kotlin
+from("mensajes")
+    .select {
+        filter { eq("conversacion_id", conversacionId) }
+        order("creado_en", Order.DESCENDING)
+        range(((pagina - 1) * 30L)..(pagina * 30L - 1))
+    }
+    .decodeList<MensajeDto>()
+```
+
+- **`pagina` empieza en 1** (la interfaz ya lo tiene así) y trae **30**: del más reciente al más
+  antiguo. P-16 los invierte para pintarlos. Menos de 30 es la última página. Usa
+  `ix_mensajes_conversacion`.
+- Una conversación sin mensajes devuelve lista vacía: es el "Escribe el primer mensaje" de P-16.
+
+### `enviar`
+
+```kotlin
+from("mensajes")
+    .insert(MensajeEscrituraDto(conversacionId, uid, contenido.trim())) { select() }
+    .decodeSingle<MensajeDto>()
+```
+
+- **Manda tres columnas**; `leido_en` y `creado_en` los pone la base.
+- `contenido`: de 1 a 1,000 caracteres después de `trim()`, **propuesta** (`H-52`). La base solo rechaza
+  el vacío (`ck_mensaje_no_vacio`) y que el emisor no participe (`tg_mensajes_validar`): ambos `400`,
+  `VALIDACION`.
+- **Al insertar, la base sube el hilo en la bandeja** (`fn_tocar_conversacion` actualiza
+  `ultimo_mensaje_en`): HU-26.
+
+### `marcarLeidos`
+
+```kotlin
+from("mensajes")
+    .update({ set("leido_en", Clock.System.now().toString()) }) {
+        filter {
+            eq("conversacion_id", conversacionId)
+            neq("emisor_id", uid)
+            exact("leido_en", null)
+        }
+    }
+```
+
+Solo los **recibidos** y todavía sin leer, y solo esa columna. Cero filas afectadas es éxito: no
+había nada pendiente. La hora la pone el reloj del teléfono; un desfase no afecta ningún orden.
+
+### `mensajesNuevos` y `cambiosEnConversaciones` (Realtime)
+
+Detalle de **`S5-T07`**; el contrato fija esto:
+
+- **`mensajesNuevos(conversacionId)`**: canal `postgres_changes` de `INSERT` sobre `public.mensajes`
+  con `conversacion_id = eq.<id>`. Emite **también los mensajes propios**: la pantalla los reconcilia
+  por `id` con el que ya pintó como "enviando".
+- **`cambiosEnConversaciones()`** emite `Unit` en cada cambio de `public.conversaciones` (la base
+  actualiza `ultimo_mensaje_en` al llegar un mensaje); P-15 vuelve a pedir la bandeja. Nueva en la
+  interfaz: sin ella, HU-26 ("la bandeja sube ese hilo") no se cumple sin sondear.
+- Las dos tablas **ya están en la publicación `supabase_realtime`** (`02_politicas_rls.sql`) y
+  Realtime aplica RLS por suscriptor.
+- **Al reconectar**, el repositorio vuelve a pedir la página 1 de `obtenerMensajes` y entrega lo que
+  falte: un `Flow` no recupera lo que pasó mientras estuvo desconectado.
+- Sin sesión, el `Flow` termina sin emitir.
+
+### Errores de `RepositorioChat`
+
+Los de `traducirErrorDatos`. Un fallo al **enviar** conserva el borrador y deja el mensaje como "no
+se envió" (`DISENO-POSTULACION-CONTACTO-RESENAS.md` 1.4); un fallo de Realtime no es un error de
+pantalla, solo deja de actualizarse hasta reconectar.
 
 ## Reseñas · `RepositorioResenas`
 
-| Operación | Con qué |
-|---|---|
-| `dejarResena(solicitudId, calificacion, comentario)` | `insert` en `resenas` |
+Escrito a detalle en `S5-T06` (`DEC-43`). **Lo construye `S5-T13`** (`RepositorioResenasReal`) y lo
+usa `S5-T08` (P-17). Hasta entonces lo resuelve `RepositorioResenasFalso`. **Verificado contra Supabase
+solo la forma de la lectura** (`200`, 2026-11-16).
 
-Una sola por solicitud, solo el cliente que la publicó, solo si está cerrada, y
-solo sobre el trabajador asignado. Lo verifica el trigger `tg_resenas_validar`
-además de RLS. **No se editan ni se borran.**
+### Resumen
 
-La calificación promedio no se pide aparte: viene en
-`fn_perfil_publico_trabajador` y en `vw_busqueda_trabajadores`.
+| Operación | Con qué | Devuelve |
+|---|---|---|
+| `dejarResena(solicitudId, calificacion, comentario?)` | `insert` en `resenas` | `Resultado<Resena>` |
+| `obtenerResena(solicitudId)` **(nueva, `H-51`)** | `select` de `resenas` por `solicitud_id` | `Resultado<Resena?>` |
+
+La calificación promedio no se pide aparte: viene en `fn_perfil_publico_trabajador` y en
+`vw_busqueda_trabajadores`, y la base la recalcula al publicar (HU-28).
+
+### `dejarResena`
+
+```kotlin
+// 1. el trabajador asignado, de la propia solicitud (RLS la deja leer al cliente que la publicó)
+val trabajadorId = from("solicitudes").select(Columns.list("trabajador_id")) {
+    filter { eq("id", solicitudId) }
+}.decodeSingle<AsignadoDto>().trabajadorId
+// 2. la reseña
+from("resenas")
+    .insert(ResenaEscrituraDto(solicitudId, uid, trabajadorId, calificacion, comentario?.trim()))
+    { select() }
+    .decodeSingle<ResenaDto>()
+```
+
+- La interfaz **no cambia**: `trabajador_id` es obligatorio en la tabla y sale de la solicitud, no
+  de la pantalla. Una solicitud sin trabajador asignado es `VALIDACION`.
+- `calificacion`: entero de 1 a 5 (la aplicación lo valida; `ck_resena_calificacion` lo respalda).
+  `comentario`: opcional, hasta 500 caracteres, **propuesta** (`H-52`); en blanco se manda nulo.
+- **Errores de la base**: `tg_resenas_validar` rechaza que la solicitud no esté `cerrada`, que quien
+  escribe no sea su cliente o que el trabajador no sea el asignado (`400`, `VALIDACION`); una segunda
+  reseña de la misma solicitud choca con la llave única de `solicitud_id` (`409`, `VALIDACION`).
+- **No se edita ni se borra**: no hay política de `update` ni de `delete`. Si alguna hay que
+  moderarla, se hace desde la consola de Supabase (`DEC-13`).
+
+### `obtenerResena` (resuelve `H-51`)
+
+```kotlin
+from("resenas")
+    .select { filter { eq("solicitud_id", solicitudId) } }
+    .decodeList<ResenaDto>()
+    .firstOrNull()
+```
+
+**Cero filas es `Exito(null)`**, no un error: es la solicitud cerrada que aún no se califica, y
+decide si P-19 ofrece "Calificar" o muestra la reseña publicada. Cualquier usuario con sesión puede
+leerla ("reseñas visibles"), así que sirve igual para P-07.
+
+### Errores de `RepositorioResenas`
+
+Los de `traducirErrorDatos`. Lo que muestra la pantalla está en
+`DISENO-POSTULACION-CONTACTO-RESENAS.md` 6.2.
+
+## Hallazgos de `S5-T06`
+
+Salen de escribir este contrato contra la base. **Ninguno se resolvió aquí**: los decide el líder o la
+tarea que se nombra. Los de `S5-T01` (`H-49` a `H-55`) están en
+`DISENO-POSTULACION-CONTACTO-RESENAS.md`; este contrato **resuelve `H-50`, `H-51` y `H-54`** con
+las formas de arriba y deja `H-52` con valores propuestos.
+
+**`H-56` · Cualquiera de las dos partes puede reescribir una postulación.**
+`postulaciones` tiene política de `update` para el trabajador y para el cliente, sin permiso por
+columna ni trigger de transición. Un trabajador puede ponerse `aceptada` sin que nadie lo haya
+aceptado, y cualquiera de los dos puede cambiar el `precio_propuesto` o el `mensaje` después de
+enviada. Es el mismo caso que `DEC-21` aceptó para las solicitudes. **Propuesta:** `grant update
+(estatus)` por columna y un trigger que solo permita `enviada → retirada` (trabajador), `enviada →
+rechazada` (cliente) y `aceptada` solo desde `fn_aceptar_postulacion`. Mientras no esté, es regla del
+contrato (arriba).
+
+**`H-57` · `fn_aceptar_postulacion` acepta una postulación que no está `enviada`.** Valida el dueño y que
+la solicitud esté `abierta`, pero no el `estatus` de la postulación: una `retirada` o `rechazada` se
+puede aceptar llamando a la RPC. La pantalla no lo ofrece, pero la base no lo impide. **Propuesta:** un
+`if` más en la función.
+
+**`H-58` · `DEC-20` se sostiene a medias.** `fn_abrir_conversacion` fija `cliente_id = auth.uid()` y
+confía en que la llave foránea rechace a un trabajador, pero `conversaciones.cliente_id` apunta a
+`usuarios(id)`, no a "clientes": un trabajador que la llame con **otro trabajador** crea un hilo
+válido. Hacia un cliente sí falla, porque `trabajador_id` apunta a `perfiles_trabajador`. **Propuesta:**
+que la función verifique que quien llama es cliente (hay `fn_soy_trabajador()`, falta el espejo).
 
 ## Inteligencia artificial · `RepositorioIa`
 

@@ -191,6 +191,10 @@ configura exclusivamente en Supabase Secrets; no copiarla a `.env` ni al APK.
 `S5-T05`, `S5-T07`. **Falta que el líder registre ese permiso**; el Sprint 5 no se abrió
 formalmente. Hallazgos `H-49` a `H-55` pendientes de decisión (ver el documento, sección 10).
 
+**`S5-T06` — Contrato de mensajería, postulaciones y reseñas**, `hecha`. Rama
+`docs/S5-T06-contrato-mensajeria-postulaciones-resenas`, apilada sobre la de `S5-T01` (integrar esa
+primero). Resuelve `H-50`, `H-51` y `H-54`; deja `H-56` a `H-58` para el líder. Solo documento.
+
 ## Tarea en curso
 
 | Campo | Valor |
