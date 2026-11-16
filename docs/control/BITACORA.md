@@ -919,3 +919,5 @@ Modelado completo de las entidades del esquema relacional en Kotlin dentro de `m
 - **El dominio `@prueba.donchambitas.mx` no sirve para el alta por la API.**
   Supabase valida que el dominio exista y ese es ficticio. `91` nunca se topó
   con ello porque inserta directo en `auth.users`. Le va a tocar a `S2-T07`.
+
+| 2026-11-16 | S4-T11 | Codex | main | — | Hallazgo SQL post despliegue en `HALLAZGO-S4-T11-CUPO-2026-11-16.md`: el consumo del trabajador no coincide con las reservas por función. Los contadores agregados se repiten en el join; la causa no está determinada. Correlacionar logs/IDs y versión desplegada; no editar datos de producción. |
